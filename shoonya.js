@@ -47,7 +47,7 @@ shoonya_api = function () {
                     default:
                         let elm = document.getElementById(res.tk)
                         $(elm).html(res.lp)
-                        elm = document.getElementById("trades" + res.tk)  // In Active Trades table
+                        elm = document.getElementById("open_order_" + res.tk)  // In Active Trades table
                         $(elm).html(res.lp)
                         break;
                 }
@@ -157,11 +157,57 @@ shoonya_api = function () {
             }
     });
 
-    function get_orderbook() {
-        let values          = {};
-        values["uid"]       = user ;
-        post_request('https://shoonya.finvasia.com/NorenWClientWeb/OrderBook', values)
-    }
+    const orderbook = {
+
+        get_orderbook : function() {
+            let values          = {};
+            values["uid"]       = user ;
+            let payload = get_payload(values)
+            $.ajax({
+                url: 'https://shoonya.finvasia.com/NorenWClientWeb/OrderBook',
+                type: "POST",
+                dataType: "json",
+                data: payload,
+                success: function (data, textStatus, jqXHR) {
+                    data.forEach(orderbook.add_open_order)
+                },
+                error: function (jqXHR, textStatus, errorThrown) {
+                    console.log("Ajax error")
+                }
+            });
+        },
+
+        add_open_order : function(item) {
+            if (item.status == "OPEN") {
+                console.log(item.norenordno)
+                let badge = '';
+                if (item.trantype == "B") {
+                    badge = '<span class="badge badge-success">Buy</span>'
+                } else {
+                    badge = '<span class="badge badge-danger">Sell</span>'
+                }
+                let open = item.amo == "Yes"? "AMO Open": "Open";
+
+                $('#open_order_list').append(`<tr>
+                        <td scope="row"><span class="badge badge-info">${open}</span></td>
+                        <td>${item.norenordno}</td>
+                        <td>${item.dname}</td>
+                        <td>${badge}</td>
+                        <th id="open_order_${item.token}"></th>
+                        <td><input type="text" class="form-control" placeholder="" aria-label="strike"
+                                                    aria-describedby="basic-addon1" value="${item.prc}"></td>
+                        <td><input type="text" class="form-control" placeholder="" aria-label="strike"
+                                                   aria-describedby="basic-addon1" value="${item.qty}"></td>
+    
+                        <td><button type="button" class="btn btn-success" onclick="orderbook.modify_order">Modify</button></td>
+                        <td><button type="button" class="btn btn-danger" onclick="orderbook.cancel_order">Cancel</button></td>
+                </tr>`);
+
+                let token = item.exch + "|" + item.token
+                subscribe_tokens([token])
+            }
+        }
+    };
 
     /*Attach functions to connect, add to watch list button, etc*/
     $(document).ready(function() {
@@ -169,7 +215,7 @@ shoonya_api = function () {
             user = $('#userId').val()
             session_token = $('#sessionToken').val()
             connect()
-            get_orderbook()
+            orderbook.get_orderbook()
         });
 
         $('#add_to_watchlist').click(function() {
@@ -222,7 +268,7 @@ shoonya_api = function () {
         "connect" : connect,
         "delete_row": delete_row,
         "post_request": post_request,
-        "get_orderbook": get_orderbook,
+        "get_orderbook": orderbook.get_orderbook,
     }
 
 }();
