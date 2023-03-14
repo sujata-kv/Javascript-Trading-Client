@@ -91,7 +91,7 @@ shoonya_api = function () {
         return payload
     }
 
-    function post_request(url, params) {
+    function post_request(url, params, success_cb) {
         let payload = get_payload(params)
         $.ajax({
             url: url,
@@ -100,6 +100,9 @@ shoonya_api = function () {
             data: payload,
             success: function (data, textStatus, jqXHR) {
                 console.log("Ajax success")
+                if (success_cb != undefined) {
+                    success_cb(data)
+                }
             },
             error: function (jqXHR, textStatus, errorThrown) {
                 console.log("Ajax error")
@@ -116,7 +119,7 @@ shoonya_api = function () {
     $( "input.search-instrument" ).autocomplete({
             minLength: 3,
             autoFocus: true,
-            appendTo: '#instr-drop-down',
+            // appendTo: '#instr-drop-down',
             source:  function(request, response){ $.ajax({
                         url: "https://shoonya.finvasia.com/NorenWClientWeb/SearchScrip",
                         type: "POST",
@@ -128,7 +131,7 @@ shoonya_api = function () {
                                 return {
                                     label: item.dname,
                                     value: item.dname,
-                                    tsymbol: item.tsym,
+                                    tsym: item.tsym,
                                     lot_size: item.ls,
                                     exch: item.exch,
                                     token: item.token,
@@ -147,7 +150,7 @@ shoonya_api = function () {
                 $(this).attr('lot_size', ui.item.lot_size)
                 $(this).attr('exch', ui.item.exch)
                 $(this).attr('token', ui.item.token)
-                $(this).attr('tsymbol', ui.item.tsymbol)
+                $(this).attr('tsym', ui.item.tsym)
                 $(this).attr('optt', ui.item.optt)
                 console.log("Selected item : ", ui.item)
             },
@@ -212,6 +215,57 @@ shoonya_api = function () {
                 let token = item.exch + "|" + item.token
                 subscribe_tokens([token])
             }
+        },
+
+        get_entry_object : function(pelm) {
+            entry = pelm.find('.entry').val()
+            spot_based_entry = false;
+
+            if(entry != undefined && entry != '' && (entry.contains('N') || entry.contains('B'))) {
+                spot_based_entry = true
+            }
+
+            return {spot_based_entry : spot_based_entry, value : entry.replace(/N|B/g, '').trim()}
+        },
+
+        buy : function(elm) {
+            pelm = $(elm).parent().parent();
+            entry = orderbook.get_entry_object(pelm);
+            qty = pelm.find('.qty').val()
+
+            if (entry.spot_based_entry) {
+                console.log('Place waiting order')
+            } else {
+                params = orderbook.get_order_params(pelm, 'B', entry, qty)
+                post_request('https://shoonya.finvasia.com/NorenWClientWeb/PlaceOrder', params)
+            }
+        },
+
+        sell : function(elm) {
+
+        },
+
+        get_order_params: function(elm, buy_or_sell, entry, qty) {
+
+            let prctyp = 'LMT', price = "0.0";
+            if(entry.value == '') {
+                prctyp = 'MKT'
+            } else price = entry.value.toString()
+
+            let values          =  {'ordersource':'WEB'};
+            values["uid"]       = user;
+            values["actid"]     = user;
+            values["trantype"]  = buy_or_sell;
+            values["prd"]       = 'M' ;                 /* "C" For CNC, "M" FOR NRML, "I" FOR MIS, "B" FOR BRACKET ORDER, "H" FOR COVER ORDER*/
+            values["exch"]      = elm.attr('exch');
+            values["tsym"]      = elm.attr('tsym');
+            values["qty"]       = qty;
+            values["dscqty"]    = qty;
+            values["prctyp"]    = prctyp       /*  LMT / MKT / SL-LMT / SL-MKT / DS / 2L / 3L */
+            values["prc"]       = price;
+            values["ret"]       = 'DAY';
+
+            return values;
         }
     };
 
@@ -229,33 +283,33 @@ shoonya_api = function () {
             lot_size = $('input.watch_item').attr('lot_size')
             exch = $('input.watch_item').attr('exch')
             token = $('input.watch_item').attr('token')
-            tsymbol = $('input.watch_item').attr('tsymbol')
+            tsym = $('input.watch_item').attr('tsym')
             optt = $('input.watch_item').attr('optt')
             put_option = false
             if (optt == "PE") {
                 put_option = true
             }
-            add_row_to_watch(sym, lot_size, exch, token, put_option)
+            add_row_to_watch(sym, lot_size, exch, token, tsym, put_option)
         })
     });
 
 
-    function add_row_to_watch(sym, lot_size, exch, token, put_option) {
+    function add_row_to_watch(sym, lot_size, exch, token, tsym, put_option) {
         subscribe_tokens( [exch + '|' + token])
         class_name = ''
         if(put_option) {
             class_name = 'table-danger'
         }
 
-        $('#watch_list_tbody').append(`<tr id="R${++row_index}" class="${class_name}">
+        $('#watch_list_tbody').append(`<tr id="R${++row_index}" class="${class_name}" exch="${exch}" tsym="${tsym}" lot_size="${lot_size}">
 
             <th scope="row" ">${row_index}</th>
             <td>${sym}</td>
             <th id="${token}"></th>
-            <td><input type="text" class="form-control" placeholder="" aria-label="limit" aria-describedby="basic-addon1"></td>
-            <td><input type="text" class="form-control" placeholder="" aria-label="qty" aria-describedby="basic-addon1" value="${lot_size}"></td>
-            <td><button type="button" class="btn btn-success">BUY</button></td>
-            <td><button type="button" class="btn btn-danger">SELL</button></td>
+            <td><input type="text" class="form-control entry" placeholder="" aria-label="limit" aria-describedby="basic-addon1"></td>
+            <td><input type="text" class="form-control qty" placeholder="" aria-label="qty" aria-describedby="basic-addon1" value="${lot_size}"></td>
+            <td><button type="button" class="btn btn-success" onclick="shoonya_api.orderbook.buy(this)">BUY</button></td>
+            <td><button type="button" class="btn btn-danger" onclick="shoonya_api.orderbook.sell(this)">SELL</button></td>
             <th class="del-icon" onclick="shoonya_api.delete_row(this)">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-trash" viewBox="0 0 16 16">
                     <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/>
@@ -275,6 +329,7 @@ shoonya_api = function () {
         "delete_row": delete_row,
         "post_request": post_request,
         "get_orderbook": orderbook.get_orderbook,
+        "orderbook": orderbook,
     }
 
 }();
