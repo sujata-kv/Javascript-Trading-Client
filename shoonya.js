@@ -174,6 +174,7 @@ shoonya_api = function () {
                 dataType: "json",
                 data: payload,
                 success: function (data, textStatus, jqXHR) {
+                    $('#open_order_list').html('')
                     data.forEach(orderbook.add_open_order)
                 },
                 error: function (jqXHR, textStatus, errorThrown) {
