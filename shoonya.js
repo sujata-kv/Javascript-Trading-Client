@@ -26,7 +26,7 @@ shoonya_api = function () {
 
         ws.onmessage = function (event) {
             res = JSON.parse(event.data)
-            console.log(res)
+            // console.log(res)
             if ('s' in res) {
                 if (res.s == 'OK') {
                     console.log('Login successful')
@@ -46,6 +46,8 @@ shoonya_api = function () {
                         break;
                     default:
                         let elm = document.getElementById(res.tk)
+                        $(elm).html(res.lp)
+                        elm = document.getElementById("trades" + res.tk)  // In Active Trades table
                         $(elm).html(res.lp)
                         break;
                 }
@@ -75,34 +77,41 @@ shoonya_api = function () {
 
     function get_search_payload(stext) {
         params = {"uid": user, "stext": stext}
+        return get_payload(params)
+    }
+
+    function get_payload(params) {
         let payload = 'jData=' + JSON.stringify(params);
         payload = payload + "&jKey=" + session_token;
         return payload
     }
 
-    search_instrument = function(stext) {
-        let payload = get_search_payload(stext)
-        $(document).ready(function () {
-            $.ajax({
-                url: "https://shoonya.finvasia.com/NorenWClientWeb/SearchScrip",
-                type: "POST",
-                dataType: "json",
-                data: payload,
-                success: function (data, textStatus, jqXHR) {
-                    console.log("Ajax success")
-                },
-                error: function (jqXHR, textStatus, errorThrown) {
-                    console.log("Ajax error")
-                }
-            });
+    function post_request(url, params) {
+        let payload = get_payload(params)
+        $.ajax({
+            url: url,
+            type: "POST",
+            dataType: "json",
+            data: payload,
+            success: function (data, textStatus, jqXHR) {
+                console.log("Ajax success")
+            },
+            error: function (jqXHR, textStatus, errorThrown) {
+                console.log("Ajax error")
+            }
         });
+    }
+
+    search_instrument = function(stext) {
+        params = {"uid": user, "stext": stext}
+        post_request("https://shoonya.finvasia.com/NorenWClientWeb/SearchScrip", params);
     }
 
     /* Search instrument autocomplete */
     $( "input.search-instrument" ).autocomplete({
             minLength: 3,
             autoFocus: true,
-            // appendTo: '#instr-drop-down',
+            appendTo: '#instr-drop-down',
             source:  function(request, response){ $.ajax({
                         url: "https://shoonya.finvasia.com/NorenWClientWeb/SearchScrip",
                         type: "POST",
@@ -148,12 +157,19 @@ shoonya_api = function () {
             }
     });
 
+    function get_orderbook() {
+        let values          = {};
+        values["uid"]       = user ;
+        post_request('https://shoonya.finvasia.com/NorenWClientWeb/OrderBook', values)
+    }
 
+    /*Attach functions to connect, add to watch list button, etc*/
     $(document).ready(function() {
         $('#connect_to_server').click(function () {
             user = $('#userId').val()
             session_token = $('#sessionToken').val()
             connect()
+            get_orderbook()
         });
 
         $('#add_to_watchlist').click(function() {
@@ -204,7 +220,9 @@ shoonya_api = function () {
     return {
         "search_instrument" :  search_instrument,
         "connect" : connect,
-        "delete_row": delete_row
+        "delete_row": delete_row,
+        "post_request": post_request,
+        "get_orderbook": get_orderbook,
     }
 
 }();
