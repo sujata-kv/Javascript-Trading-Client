@@ -15,6 +15,10 @@
     .ui-autocomplete li {
         list-style-type:none;
     }
+
+    th.del-icon {
+        color: red;
+    }
 </style>
 <body>
 
@@ -40,10 +44,10 @@
         </div>
         <div class="col">
             <div class="col-auto">
-                <input type="text"  class="form-control" id="userId" placeholder="User">
+                <input type="text"  class="form-control" id="userId" placeholder="User" value="FA90807">
             </div>
             <div class="col-auto">
-                <input type="text" class="form-control" id="sessionToken" placeholder="Session Token">
+                <input type="text" class="form-control" id="sessionToken" placeholder="Session Token" value="4790a3100c27f20eec7b8e07878cd5e029ed57c76be26a9259b9f0c989b906a1">
             </div>
             <div class="col-auto">
                 <button class="btn btn-primary mb-3" id="connect_to_server">Connect</button>
@@ -59,6 +63,16 @@
 
     </div>
 
+    <div class="row">
+        <div class="col-auto">
+            <input type="text" class="form-control search-instrument watch_item" placeholder="Instrument" aria-label="Instrument" aria-describedby="basic-addon1">
+            <div id="instr-drop-down"></div>
+        </div>
+        <div class="col-auto">
+            <button class="btn btn-primary mb-3" id="add_to_watchlist">Add To Watchlist</button>
+        </div>
+    </div>
+
     <hr class="hr hr-blurry" />
 
     <table class="table table-light table-striped">
@@ -67,49 +81,29 @@
             <th scope="col">#</th>
             <th scope="col">Instrument</th>
             <th scope="col">LTP</th>
-            <th scope="col">Limit</th>
+            <th scope="col">Entry</th>
             <th scope="col">Qty</th>
             <th scope="col">Buy</th>
             <th scope="col">Sell</th>
+            <th scope="col" class="del-icon"> Delete
+                <!--                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-trash" viewBox="0 0 16 16">-->
+                <!--                <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/>-->
+                <!--                <path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/>-->
+                <!--                </svg>-->
+            </th>
         </tr>
         </thead>
-        <tbody>
-        <tr>
-            <th scope="row">1</th>
-            <td><input type="text" class="form-control search-instrument" id="instrument1" placeholder="" aria-label="instr" aria-describedby="basic-addon1"></td>
-            <th>101</th>
-            <td><input type="text" class="form-control" placeholder="" aria-label="limit" aria-describedby="basic-addon1"></td>
-            <td><input type="text" class="form-control" placeholder="" aria-label="qty" aria-describedby="basic-addon1"></td>
-            <td><button type="button" class="btn btn-success">BUY</button></td>
-            <td><button type="button" class="btn btn-danger">SELL</button></td>
-        </tr>
-        <tr>
-            <th scope="row">2</th>
-            <td><input type="text" class="form-control search-instrument" placeholder="" aria-label="strike" aria-describedby="basic-addon1"></td>
-            <th>101</th>
-            <td><input type="text" class="form-control" placeholder="" aria-label="strike" aria-describedby="basic-addon1"></td>
-            <td><input type="text" class="form-control" placeholder="" aria-label="strike" aria-describedby="basic-addon1"></td>
-            <td><button type="button" class="btn btn-success">BUY</button></td>
-            <td><button type="button" class="btn btn-danger">SELL</button></td>
-        </tr>
-        <tr>
-            <th scope="row">3</th>
-            <td><input type="text" class="form-control search-instrument" placeholder="" aria-label="strike" aria-describedby="basic-addon1"></td>
-            <th>101</th>
-            <td><input type="text" class="form-control" placeholder="" aria-label="strike" aria-describedby="basic-addon1"></td>
-            <td><input type="text" class="form-control" placeholder="" aria-label="strike" aria-describedby="basic-addon1"></td>
-            <td><button type="button" class="btn btn-success">BUY</button></td>
-            <td><button type="button" class="btn btn-danger">SELL</button></td>
-        </tr>
-        <tr>
-            <th scope="row">4</th>
-            <td><input type="text" class="form-control search-instrument" placeholder="" aria-label="strike" aria-describedby="basic-addon1"></td>
-            <th>101</th>
-            <td><input type="text" class="form-control" placeholder="" aria-label="strike" aria-describedby="basic-addon1"></td>
-            <td><input type="text" class="form-control" placeholder="" aria-label="strike" aria-describedby="basic-addon1"></td>
-            <td><button type="button" class="btn btn-success">BUY</button></td>
-            <td><button type="button" class="btn btn-danger">SELL</button></td>
-        </tr>
+        <tbody id="watch_list_tbody">
+<!--        <tr>-->
+<!--            <th scope="row">1</th>-->
+<!--            <td><input type="text" class="form-control " id="instrument1" placeholder="" aria-label="instr" aria-describedby="basic-addon1"></td>-->
+<!--            <th>101</th>-->
+<!--            <td><input type="text" class="form-control" placeholder="" aria-label="limit" aria-describedby="basic-addon1"></td>-->
+<!--            <td><input type="text" class="form-control" placeholder="" aria-label="qty" aria-describedby="basic-addon1"></td>-->
+<!--            <td><button type="button" class="btn btn-success">BUY</button></td>-->
+<!--            <td><button type="button" class="btn btn-danger">SELL</button></td>-->
+<!--        </tr>-->
+
 
         </tbody>
     </table>

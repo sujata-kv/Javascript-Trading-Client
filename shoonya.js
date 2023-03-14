@@ -5,7 +5,8 @@ shoonya_api = function () {
 
     let vix_tk = '26017', nifty_tk = '26000', bank_nifty_tk = '26009'
     let def_tokens = ["NSE|26017", "NSE|26000", "NSE|26009"]
-    let user = '', session_token='', ws = ''
+    let user = '', session_token='', ws = '';
+    let row_index = 0;
 
     function connect() {
         ws = new WebSocket("wss://shoonya.finvasia.com/NorenWSWeb/");
@@ -25,7 +26,7 @@ shoonya_api = function () {
 
         ws.onmessage = function (event) {
             res = JSON.parse(event.data)
-            // console.log(res)
+            console.log(res)
             if ('s' in res) {
                 if (res.s == 'OK') {
                     console.log('Login successful')
@@ -44,7 +45,8 @@ shoonya_api = function () {
                         $('#bank_nifty').html(res.lp)
                         break;
                     default:
-                        console.log('Default')
+                        let elm = document.getElementById(res.tk)
+                        $(elm).html(res.lp)
                         break;
                 }
             }
@@ -63,13 +65,7 @@ shoonya_api = function () {
         };
     }
 
-    $(document).ready(function() {
-        $('#connect_to_server').click(function () {
-            user = $('#userId').val()
-            session_token = $('#sessionToken').val()
-            connect()
-        });
-    });
+
 
     function subscribe_tokens(tokens) {
         let symtokens = {"t":"t","k": tokens.join('#').concat('#')}
@@ -102,65 +98,117 @@ shoonya_api = function () {
         });
     }
 
+    /* Search instrument autocomplete */
     $( "input.search-instrument" ).autocomplete({
+            minLength: 3,
+            autoFocus: true,
+            // appendTo: '#instr-drop-down',
             source:  function(request, response){ $.ajax({
-                url: "https://shoonya.finvasia.com/NorenWClientWeb/SearchScrip",
-                type: "POST",
-                dataType: "json",
-                data: get_search_payload(request.term),
-                success: function (data, textStatus, jqXHR) {
-                    console.log("Ajax success")
-                    response($.map(data.values, function (item) {
-                        console.log(item.dname + ", " + item.tsym)
-                        return {
-                            label: item.dname,
-                            value: item.tsym
-                        };
-                    }));
-                },
-                select: function (event, ui) {
-                    // when item is selected
-                    $(this).val(ui.item.label);
-                },
-                // create: function () {
-                //     $(this).data('ui-autocomplete')._renderItem = function (ul, item) {
-                //         var path = 'basepath' + item.value;
-                //
-                //         return $('<li class="divSelection">')
-                //             .append('<div>')
-                //             .append('<img class="zoom" src="' + path + '" />')
-                //             .append('<span>')
-                //             .append(item.label)
-                //             .append('</span>')
-                //             .append('</div>')
-                //             .append('</li>')
-                //             .appendTo(ul); // customize your HTML
-                //     };
-                // },
-                error: function (jqXHR, textStatus, errorThrown) {
-                    console.log("Ajax error")
-                },
-                })},
-            minLength: 3
-    }).data('ui-autocomplete')._renderItem = function (ul, item) {
+                        url: "https://shoonya.finvasia.com/NorenWClientWeb/SearchScrip",
+                        type: "POST",
+                        dataType: "json",
+                        data: get_search_payload(request.term),
+                        success: function (data, textStatus, jqXHR) {
+                            console.log("Ajax success")
+                            response($.map(data.values, function (item) {
+                                return {
+                                    label: item.dname,
+                                    value: item.dname,
+                                    tsymbol: item.tsym,
+                                    lot_size: item.ls,
+                                    exch: item.exch,
+                                    token: item.token,
+                                    optt :  item.optt
+                                };
+                            }));
+                        },
+                        error: function (jqXHR, textStatus, errorThrown) {
+                            console.log("Ajax error")
+                        },
+                    })},
 
-            return $('<li class="divSelection">')
-                .append('<div>')
-                .append('<span>')
-                .append(item.label)
-                .append('</span>')
-                .append('</div>')
-                .append('</li>')
-                .appendTo(ul); // customize your HTML
-    };
+            select: function (event, ui) {
+                // when item is selected
+                $(this).val(ui.item.value);
+                $(this).attr('lot_size', ui.item.lot_size)
+                $(this).attr('exch', ui.item.exch)
+                $(this).attr('token', ui.item.token)
+                $(this).attr('tsymbol', ui.item.tsymbol)
+                $(this).attr('optt', ui.item.optt)
+                console.log("Selected item : ", ui.item)
+            },
 
+            create: function () {
+                $(this).data('ui-autocomplete')._renderItem = function (ul, item) {
+                    return $('<li class="dropdown-item">')
+                        .append(item.label)
+                        .append('</li>')
+                        .appendTo(ul); // customize your HTML
+                };
+            }
+    });
+
+
+    $(document).ready(function() {
+        $('#connect_to_server').click(function () {
+            user = $('#userId').val()
+            session_token = $('#sessionToken').val()
+            connect()
+        });
+
+        $('#add_to_watchlist').click(function() {
+            sym = $('input.watch_item').val()
+            lot_size = $('input.watch_item').attr('lot_size')
+            exch = $('input.watch_item').attr('exch')
+            token = $('input.watch_item').attr('token')
+            tsymbol = $('input.watch_item').attr('tsymbol')
+            optt = $('input.watch_item').attr('optt')
+            put_option = false
+            if (optt == "PE") {
+                put_option = true
+            }
+            add_row_to_watch(sym, lot_size, exch, token, put_option)
+        })
+    });
+
+
+    function add_row_to_watch(sym, lot_size, exch, token, put_option) {
+        subscribe_tokens( [exch + '|' + token])
+        class_name = ''
+        if(put_option) {
+            class_name = 'table-danger'
+        }
+
+        $('#watch_list_tbody').append(`<tr id="R${++row_index}" class="${class_name}">
+
+            <th scope="row" ">${row_index}</th>
+            <td>${sym}</td>
+            <th id="${token}"></th>
+            <td><input type="text" class="form-control" placeholder="" aria-label="limit" aria-describedby="basic-addon1"></td>
+            <td><input type="text" class="form-control" placeholder="" aria-label="qty" aria-describedby="basic-addon1" value="${lot_size}"></td>
+            <td><button type="button" class="btn btn-success">BUY</button></td>
+            <td><button type="button" class="btn btn-danger">SELL</button></td>
+            <th class="del-icon" onclick="shoonya_api.delete_row(this)">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-trash" viewBox="0 0 16 16">
+                    <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/>
+                    <path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/>
+                </svg>
+            </th>
+           </tr>`);
+    }
+
+    function delete_row(elm) {
+        $(elm).parent().remove();
+    }
 
     return {
         "search_instrument" :  search_instrument,
-        "connect" : connect
+        "connect" : connect,
+        "delete_row": delete_row
     }
 
 }();
+
 
 
 $(document).ready(function(){
