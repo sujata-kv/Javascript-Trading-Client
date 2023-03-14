@@ -68,11 +68,16 @@ shoonya_api = function () {
     }
 
 
-
     function subscribe_tokens(tokens) {
         let symtokens = {"t":"t","k": tokens.join('#').concat('#')}
         console.log(symtokens)
-        ws.send(JSON.stringify(symtokens));
+        if (ws.readyState != WebSocket.OPEN) {
+            console.log("Web socket not ready yet..")
+            setTimeout(function(){subscribe_tokens(tokens)}, 1)
+        } else {
+            console.log("Web socket is ready.. Subscribing ", tokens)
+            ws.send(JSON.stringify(symtokens));
+        }
     }
 
     function get_search_payload(stext) {
