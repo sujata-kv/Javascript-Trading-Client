@@ -3,6 +3,7 @@ shoonya_api = window.shoonya_api || {};
 
 shoonya_api = function () {
 
+    //TODO - Remove these hardcoded values
     let vix_tk = '26017', nifty_tk = '26000', bank_nifty_tk = '26009'
     let def_tokens = ["NSE|26017", "NSE|26000", "NSE|26009"]
     let user_id = '', session_token='', ws = '';
@@ -35,6 +36,27 @@ shoonya_api = function () {
         };
 
         ws.onmessage = function (event) {
+
+            //TODO - IMPLEMENT THIS LATER
+            /*
+                    if(result.t == 'ck')
+                    {
+                         trigger("open", [result]);
+                    }
+                    if( result.t == 'tk' || result.t == 'tf')
+                    {
+                         trigger("quote", [result]);
+                    }
+                    if( result.t == 'dk' || result.t == 'df')
+                    {
+                         trigger("quote", [result]);
+                    }
+                    if(result.t == 'om')
+                    {
+                         trigger("order", [result]);
+                    }
+            */
+
             res = JSON.parse(event.data)
             // console.log(res)
             if ('s' in res) {
@@ -103,13 +125,19 @@ shoonya_api = function () {
             dataType: "json",
             data: payload,
             success: function (data, textStatus, jqXHR) {
-                console.log("Ajax success")
+                console.log("Ajax success");
+                console.log(data)
+                console.log(jqXHR)
+                console.log(textStatus)
                 if (success_cb != undefined) {
                     success_cb(data)
                 }
             },
             error: function (jqXHR, textStatus, errorThrown) {
-                console.log("Ajax error")
+                console.error("Ajax failed")
+                console.error(errorThrown)
+                console.error(jqXHR)
+                console.error(textStatus)
                 if (failure_cb != undefined) {
                     failure_cb(jqXHR, textStatus, errorThrown)
                 }
@@ -117,9 +145,9 @@ shoonya_api = function () {
         });
     }
 
-    search_instrument = function(stext) {
-        params = {"uid": user_id, "stext": stext}
-        post_request(search, params);
+    let search_instrument = function(stext) {
+        let params = {"uid": user_id, "stext": stext}
+        post_request(url.search_instrument, params);
     }
 
     /* Search instrument autocomplete */
@@ -176,7 +204,33 @@ shoonya_api = function () {
 
     const orderbook = {
 
-        get_orderbook : function() {
+        get_order_status : function(orderno) {
+            this.get_orderbook(orderno, function(order) {
+                switch (order.status) {
+                    case "OPEN" :
+                        $('#order_success_msg').html("Order is open. Order number: " + orderno + "  Symbol: " + order.tsym + " Qty: " + order.qty);
+                        $('#order_success_alert').removeClass('d-none');
+                        setTimeout(function(){$('#order_success_alert').addClass('d-none')}, 10000);
+                        break;
+                    case "COMPLETE" :
+                        $('#order_success_msg').html("Order completed. Order number: " + orderno + "  Symbol: " + order.tsym + " Qty: " + order.qty);
+                        $('#order_success_alert').removeClass('d-none');
+                        setTimeout(function(){$('#order_success_alert').addClass('d-none')}, 10000);
+                        break;
+                    case "REJECTED" :
+                        $('#order_error_msg').html("Order " + orderno + " rejected. Reason : " + order.rejreason  + "   Symbol: " + order.tsym + " Qty: " + order.qty );
+                        $('#order_error_alert').removeClass('d-none');
+                        setTimeout(function(){$('#order_error_alert').addClass('d-none')}, 10000);
+                        break;
+                    default:
+                        alert("Default order status" + JSON.stringify(order))
+                        break;
+
+                }
+            })
+        },
+
+        get_orderbook : function(orderno, order_found_cb) {
             let values          = {};
             values["uid"]       = user_id ;
             let payload = get_payload(values)
@@ -188,6 +242,11 @@ shoonya_api = function () {
                 success: function (data, textStatus, jqXHR) {
                     $('#open_order_list').html('')
                     data.forEach(orderbook.add_open_order)
+                    let matching_order = data.find(item => item.norenordno === orderno)
+                    if(matching_order != undefined) {
+                        console.log(matching_order)
+                        order_found_cb(matching_order);
+                    }
                 },
                 error: function (jqXHR, textStatus, errorThrown) {
                     console.log("Ajax error")
@@ -247,14 +306,21 @@ shoonya_api = function () {
                 console.log('Place waiting order')
             } else {
                 params = orderbook.get_order_params(pelm, 'B', entry, qty)
-                let reply = post_request(url.place_order, params)
+                let reply = post_request(url.place_order, params, this.place_order_success_cb)
                 console.log("Buy reply = ", reply)
+
                 return reply;
             }
         },
 
         sell : function(elm) {
 
+        },
+
+        place_order_success_cb : function(data) {
+            if( data.norenordno != undefined) {
+                shoonya_api.orderbook.get_order_status(data.norenordno)
+            }
         },
 
         get_order_params: function(elm, buy_or_sell, entry, qty) {
@@ -290,6 +356,9 @@ shoonya_api = function () {
 
             let reply = post_request(url.cancel_order, values, function() {relm.remove()});
             console.log('Cancel order reply = ', reply)
+
+            //TODO - Temp code added.. Fix later
+            setTimeout(shoonya_api.orderbook.get_orderbook, 10)
             return reply;
         },
 
@@ -316,6 +385,9 @@ shoonya_api = function () {
             values["prc"]           = price;
 
             let reply = post_request(url.modify_order, values);
+
+            //TODO - Temp code added.. Fix later
+            setTimeout(shoonya_api.orderbook.get_orderbook, 10)
             return reply;
         }
     };
@@ -379,7 +451,6 @@ shoonya_api = function () {
         "connect" : connect,
         "delete_row": delete_row,
         "post_request": post_request,
-        "get_orderbook": orderbook.get_orderbook,
         "orderbook": orderbook,
     }
 
