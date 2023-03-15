@@ -8,8 +8,18 @@ shoonya_api = function () {
     let user = '', session_token='', ws = '';
     let row_index = 0;
 
+    const url = {
+        websocket : "wss://shoonya.finvasia.com/NorenWSWeb/",
+        search_instrument : "https://shoonya.finvasia.com/NorenWClientWeb/SearchScrip",
+        order_book : "https://shoonya.finvasia.com/NorenWClientWeb/OrderBook",
+        place_order : "https://shoonya.finvasia.com/NorenWClientWeb/PlaceOrder",
+        modify_order : "https://shoonya.finvasia.com/NorenWClientWeb/ModifyOrder",
+        cancel_order : "https://shoonya.finvasia.com/NorenWClientWeb/CancelOrder",
+        exit_order : "https://shoonya.finvasia.com/NorenWClientWeb/ExitOrder",
+    }
+
     function connect() {
-        ws = new WebSocket("wss://shoonya.finvasia.com/NorenWSWeb/");
+        ws = new WebSocket(url.websocket);
         ws.onopen = function (event) {
             let data = {
                 "t": "c",
@@ -67,7 +77,6 @@ shoonya_api = function () {
         };
     }
 
-
     function subscribe_tokens(tokens) {
         let symtokens = {"t":"t","k": tokens.join('#').concat('#')}
         console.log(symtokens)
@@ -78,11 +87,6 @@ shoonya_api = function () {
             console.log("Web socket is ready.. Subscribing ", tokens)
             ws.send(JSON.stringify(symtokens));
         }
-    }
-
-    function get_search_payload(stext) {
-        params = {"uid": user, "stext": stext}
-        return get_payload(params)
     }
 
     function get_payload(params) {
@@ -112,7 +116,7 @@ shoonya_api = function () {
 
     search_instrument = function(stext) {
         params = {"uid": user, "stext": stext}
-        post_request("https://shoonya.finvasia.com/NorenWClientWeb/SearchScrip", params);
+        post_request(search, params);
     }
 
     /* Search instrument autocomplete */
@@ -120,25 +124,27 @@ shoonya_api = function () {
             minLength: 3,
             autoFocus: true,
             // appendTo: '#instr-drop-down',
-            source:  function(request, response){ $.ajax({
-                        url: "https://shoonya.finvasia.com/NorenWClientWeb/SearchScrip",
-                        type: "POST",
-                        dataType: "json",
-                        data: get_search_payload(request.term),
-                        success: function (data, textStatus, jqXHR) {
-                            console.log("Ajax success")
-                            response($.map(data.values, function (item) {
-                                return {
-                                    label: item.dname,
-                                    value: item.dname,
-                                    tsym: item.tsym,
-                                    lot_size: item.ls,
-                                    exch: item.exch,
-                                    token: item.token,
-                                    optt :  item.optt
-                                };
-                            }));
-                        },
+            source:  function(request, response){
+                        params = {"uid": user, "stext": request.term}
+                        $.ajax({
+                            url: url.search_instrument,
+                            type: "POST",
+                            dataType: "json",
+                            data: get_payload(params),
+                            success: function (data, textStatus, jqXHR) {
+                                console.log("Ajax success")
+                                response($.map(data.values, function (item) {
+                                    return {
+                                        label: item.dname,
+                                        value: item.dname,
+                                        tsym: item.tsym,
+                                        lot_size: item.ls,
+                                        exch: item.exch,
+                                        token: item.token,
+                                        optt :  item.optt
+                                    };
+                                }));
+                            },
                         error: function (jqXHR, textStatus, errorThrown) {
                             console.log("Ajax error")
                         },
@@ -172,7 +178,7 @@ shoonya_api = function () {
             values["uid"]       = user ;
             let payload = get_payload(values)
             $.ajax({
-                url: 'https://shoonya.finvasia.com/NorenWClientWeb/OrderBook',
+                url: url.order_book,
                 type: "POST",
                 dataType: "json",
                 data: payload,
@@ -197,10 +203,11 @@ shoonya_api = function () {
                 }
                 let open = item.amo == "Yes"? "AMO Open": "Open";
 
-                $('#open_order_list').append(`<tr>
+                let dname = (item.dname != undefined)? item.dname : item.tsym;
+                $('#open_order_list').append(`<tr exch="${item.exch}" tsym="${item.tsym}" qty="${item.qty}" token="${item.token}">
                         <td scope="row"><span class="badge badge-info">${open}</span></td>
                         <td>${item.norenordno}</td>
-                        <td>${item.dname}</td>
+                        <td>${dname}</td>
                         <td>${badge}</td>
                         <th id="open_order_${item.token}"></th>
                         <td><input type="text" class="form-control" placeholder="" aria-label="strike"
@@ -221,7 +228,7 @@ shoonya_api = function () {
             entry = pelm.find('.entry').val()
             spot_based_entry = false;
 
-            if(entry != undefined && entry != '' && (entry.contains('N') || entry.contains('B'))) {
+            if(entry != undefined && entry != '' && (entry.includes('N') || entry.includes('B'))) {
                 spot_based_entry = true
             }
 
@@ -237,7 +244,7 @@ shoonya_api = function () {
                 console.log('Place waiting order')
             } else {
                 params = orderbook.get_order_params(pelm, 'B', entry, qty)
-                post_request('https://shoonya.finvasia.com/NorenWClientWeb/PlaceOrder', params)
+                post_request(url.place_order, params)
             }
         },
 
