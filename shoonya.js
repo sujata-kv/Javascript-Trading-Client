@@ -314,7 +314,19 @@ shoonya_api = function () {
         },
 
         sell : function(elm) {
+            pelm = $(elm).parent().parent();
+            entry = orderbook.get_entry_object(pelm);
+            qty = pelm.find('.qty').val()
 
+            if (entry.spot_based_entry) {
+                console.log('Place waiting order')
+            } else {
+                params = orderbook.get_order_params(pelm, 'S', entry, qty)
+                let reply = post_request(url.place_order, params, this.place_order_success_cb)
+                console.log("Sell reply = ", reply)
+
+                return reply;
+            }
         },
 
         place_order_success_cb : function(data) {
