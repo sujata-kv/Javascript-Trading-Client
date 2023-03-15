@@ -5,7 +5,7 @@ shoonya_api = function () {
 
     let vix_tk = '26017', nifty_tk = '26000', bank_nifty_tk = '26009'
     let def_tokens = ["NSE|26017", "NSE|26000", "NSE|26009"]
-    let user = '', session_token='', ws = '';
+    let user_id = '', session_token='', ws = '';
     let row_index = 0;
 
     const url = {
@@ -23,8 +23,8 @@ shoonya_api = function () {
         ws.onopen = function (event) {
             let data = {
                 "t": "c",
-                "uid": user,
-                "actid": user,
+                "uid": user_id,
+                "actid": user_id,
                 "susertoken": session_token,
                 "source": "WEB"
             };
@@ -115,7 +115,7 @@ shoonya_api = function () {
     }
 
     search_instrument = function(stext) {
-        params = {"uid": user, "stext": stext}
+        params = {"uid": user_id, "stext": stext}
         post_request(search, params);
     }
 
@@ -125,7 +125,7 @@ shoonya_api = function () {
             autoFocus: true,
             // appendTo: '#instr-drop-down',
             source:  function(request, response){
-                        params = {"uid": user, "stext": request.term}
+                        params = {"uid": user_id, "stext": request.term}
                         $.ajax({
                             url: url.search_instrument,
                             type: "POST",
@@ -175,7 +175,7 @@ shoonya_api = function () {
 
         get_orderbook : function() {
             let values          = {};
-            values["uid"]       = user ;
+            values["uid"]       = user_id ;
             let payload = get_payload(values)
             $.ajax({
                 url: url.order_book,
@@ -206,7 +206,7 @@ shoonya_api = function () {
                 let dname = (item.dname != undefined)? item.dname : item.tsym;
                 $('#open_order_list').append(`<tr exch="${item.exch}" tsym="${item.tsym}" qty="${item.qty}" token="${item.token}">
                         <td scope="row"><span class="badge badge-info">${open}</span></td>
-                        <td>${item.norenordno}</td>
+                        <td class="order-num">${item.norenordno}</td>
                         <td>${dname}</td>
                         <td>${badge}</td>
                         <th id="open_order_${item.token}"></th>
@@ -215,8 +215,8 @@ shoonya_api = function () {
                         <td><input type="text" class="form-control" placeholder="" aria-label="strike"
                                                    aria-describedby="basic-addon1" value="${item.qty}"></td>
     
-                        <td><button type="button" class="btn btn-success" onclick="orderbook.modify_order">Modify</button></td>
-                        <td><button type="button" class="btn btn-danger" onclick="orderbook.cancel_order">Cancel</button></td>
+                        <td><button type="button" class="btn btn-success" onclick="shoonya_api.orderbook.modify_order(this)">Modify</button></td>
+                        <td><button type="button" class="btn btn-danger" onclick="shoonya_api.orderbook.cancel_order(this)">Cancel</button></td>
                 </tr>`);
 
                 let token = item.exch + "|" + item.token
@@ -244,7 +244,9 @@ shoonya_api = function () {
                 console.log('Place waiting order')
             } else {
                 params = orderbook.get_order_params(pelm, 'B', entry, qty)
-                post_request(url.place_order, params)
+                let reply = post_request(url.place_order, params)
+                console.log("Buy reply = ", reply)
+                return reply;
             }
         },
 
@@ -260,8 +262,8 @@ shoonya_api = function () {
             } else price = entry.value.toString()
 
             let values          =  {'ordersource':'WEB'};
-            values["uid"]       = user;
-            values["actid"]     = user;
+            values["uid"]       = user_id;
+            values["actid"]     = user_id;
             values["trantype"]  = buy_or_sell;
             values["prd"]       = 'M' ;                 /* "C" For CNC, "M" FOR NRML, "I" FOR MIS, "B" FOR BRACKET ORDER, "H" FOR COVER ORDER*/
             values["exch"]      = elm.attr('exch');
@@ -273,13 +275,26 @@ shoonya_api = function () {
             values["ret"]       = 'DAY';
 
             return values;
-        }
+        },
+
+        cancel_order : function(td_elm) {
+            relm = $(td_elm).parent().parent();
+            orderno = relm.find('.order-num').html()
+
+            let values            = {'ordersource':'WEB'};
+            values["uid"]         = user_id;
+            values["norenordno"]  = orderno;
+
+            let reply = post_request(url.cancel_order, values);
+            console.log('Cancel order reply = ', reply)
+            return reply;
+        },
     };
 
     /*Attach functions to connect, add to watch list button, etc*/
     $(document).ready(function() {
         $('#connect_to_server').click(function () {
-            user = $('#userId').val()
+            user_id = $('#userId').val()
             session_token = $('#sessionToken').val()
             connect()
             orderbook.get_orderbook()
