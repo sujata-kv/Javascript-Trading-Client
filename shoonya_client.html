@@ -19,6 +19,10 @@
     th.del-icon {
         color: red;
     }
+
+    #open_orders {
+        padding: 0.25rem 0.25rem;
+    }
 </style>
 <body>
 
@@ -83,7 +87,7 @@
             <th scope="col">Qty</th>
             <th scope="col">Buy</th>
             <th scope="col">Sell</th>
-            <th scope="col" class="del-icon"> Delete
+            <th scope="col"> Delete
                 <!--                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-trash" viewBox="0 0 16 16">-->
                 <!--                <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/>-->
                 <!--                <path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/>-->
@@ -125,36 +129,29 @@
                     </button>
                 </h2>
             </div>
+        </div>
+    </div>
 
-            <div id="collapse_open_orders" class="collapse show" aria-labelledby="open_orders" data-parent="#openOrderDiv">
-                <table class="table table-condensed">
-                    <thead>
-                    <tr>
-                        <th scope="col">Status</th>
-                        <th scope="col">OrderID</th>
-                        <th scope="col">Instrument</th>
-                        <th scope="col">Type</th>
-                        <th scope="col">LTP</th>
-                        <th scope="col">Limit</th>
-                        <th scope="col">Quantity</th>
-                        <th scope="col">Modify</th>
-                        <th scope="col">Cancel</th>
-                    </tr>
-                    </thead>
-                    <tbody id="spot_order_list">
-                        <tr>
-                            <th scope="row"><span class="badge badge-info">Open</span></th>
-                            <td>23031401076976</td>
-                            <td>NIFTY C17000</td>
-                            <td><span class="badge badge-success">Buy</span></td>
-                            <th>20.1</th>
-                            <td><input type="text" class="form-control" placeholder="" aria-label="strike" aria-describedby="basic-addon1"></td>
-                            <td><input type="text" class="form-control" placeholder="" aria-label="strike" aria-describedby="basic-addon1"></td>
-                            <td><button type="button" class="btn btn-success">Modify</button></td>
-                            <td><button type="button" class="btn btn-danger">Cancel</button></td>
-                        </tr>
-                    </tbody>
-                    <tbody id="open_order_list">
+    <div id="collapse_open_orders" class="collapse show" aria-labelledby="open_orders" data-parent="#openOrderDiv">
+        <table class="table table-condensed">
+            <thead>
+            <tr>
+                <th scope="col">Status</th>
+                <th scope="col">OrderID</th>
+                <th scope="col">Instrument</th>
+                <th scope="col">Type</th>
+                <th scope="col">LTP</th>
+                <th scope="col">Limit</th>
+                <th scope="col">Quantity</th>
+                <th scope="col">Modify</th>
+                <th scope="col">Cancel</th>
+            </tr>
+            </thead>
+
+            <tbody id="open_order_list">
+            </tbody>
+
+            <tbody id="spot_order_list">
 <!--                        <tr>-->
 <!--                            <th scope="row"><span class="badge badge-info">Open</span></th>-->
 <!--                            <td>23031401076976</td>-->
@@ -166,10 +163,8 @@
 <!--                            <td><button type="button" class="btn btn-success">Modify</button></td>-->
 <!--                            <td><button type="button" class="btn btn-danger">Cancel</button></td>-->
 <!--                        </tr>-->
-                    </tbody>
-                </table>
-            </div>
-        </div>
+            </tbody>
+        </table>
     </div>
 
 <!--    <div class="row " id="tabs">-->
