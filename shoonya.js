@@ -95,7 +95,7 @@ shoonya_api = function () {
         return payload
     }
 
-    function post_request(url, params, success_cb) {
+    function post_request(url, params, success_cb, failure_cb) {
         let payload = get_payload(params)
         $.ajax({
             url: url,
@@ -110,6 +110,9 @@ shoonya_api = function () {
             },
             error: function (jqXHR, textStatus, errorThrown) {
                 console.log("Ajax error")
+                if (failure_cb != undefined) {
+                    failure_cb(jqXHR, textStatus, errorThrown)
+                }
             }
         });
     }
@@ -210,9 +213,9 @@ shoonya_api = function () {
                         <td>${dname}</td>
                         <td>${badge}</td>
                         <th id="open_order_${item.token}"></th>
-                        <td><input type="text" class="form-control" placeholder="" aria-label="strike"
+                        <td><input type="text" class="form-control limit" placeholder="" aria-label="strike"
                                                     aria-describedby="basic-addon1" value="${item.prc}"></td>
-                        <td><input type="text" class="form-control" placeholder="" aria-label="strike"
+                        <td><input type="text" class="form-control qty" placeholder="" aria-label="strike"
                                                    aria-describedby="basic-addon1" value="${item.qty}"></td>
     
                         <td><button type="button" class="btn btn-success" onclick="shoonya_api.orderbook.modify_order(this)">Modify</button></td>
@@ -285,10 +288,36 @@ shoonya_api = function () {
             values["uid"]         = user_id;
             values["norenordno"]  = orderno;
 
-            let reply = post_request(url.cancel_order, values);
+            let reply = post_request(url.cancel_order, values, function() {relm.remove()});
             console.log('Cancel order reply = ', reply)
             return reply;
         },
+
+        modify_order : function(td_elm) {
+            let relm = $(td_elm).parent().parent();
+            let orderno = relm.find('.order-num').html()
+            let limit_value = relm.find('.limit').val()
+
+            let prctyp = 'LMT', price = "0.0";
+            if(limit_value == '') {
+                prctyp = 'MKT'
+            } else price = limit_value.toString()
+
+            let qty = relm.find('.qty').val()
+
+            let values                  = {'ordersource':'WEB'};
+            values["uid"]           = user_id;
+            values["actid"]         = user_id;
+            values["norenordno"]    = orderno;
+            values["exch"]          = relm.attr('exch');
+            values["tsym"]          = relm.attr('tsym');
+            values["qty"]           = qty;
+            values["prctyp"]        = prctyp;
+            values["prc"]           = price;
+
+            let reply = post_request(url.modify_order, values);
+            return reply;
+        }
     };
 
     /*Attach functions to connect, add to watch list button, etc*/
