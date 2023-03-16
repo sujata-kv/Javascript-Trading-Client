@@ -445,16 +445,20 @@ shoonya_api = function () {
                 } else {
                     badge = '<span class="badge badge-danger">' + type + 'Sell</span>'
                 }
-                let prdstr = '';
+                let prd = '';
                 switch (item.prd) {
-                    case "M" : prdstr = "Normal"; break;
-                    case "I" : prdstr = "MIS"; break;
-                    case "C" : prdstr = "CNC"; break;
-                    case "B" : prdstr = "Bracket Order"; break;
-                    case "H" : prdstr = "Cover Order"; break;
-                    default: prdstr = item.prd; break;
+                    case "M" : prd = "NRML"; break;
+                    case "I" : prd = "MIS"; break;
+                    case "C" : prd = "CNC"; break;
+                    case "B" : prd = "Bracket Order"; break;
+                    case "H" : prd = "Cover Order"; break;
+                    default: prd = item.prd; break;
                 }
-                prd = '<span class="badge badge-primary">' + prdstr + '</span>'
+
+                let status = item.status;
+                if (item.status == "OPEN")
+                    // status = '<span class="badge badge-warning"> OPEN </span>'
+                    status = '<button class="btn btn-warning"> OPEN </button>'
 
                 let dname = (item.dname != undefined)? item.dname : item.tsym;
                 let rej_reason = (item.rejreason != undefined)? item.rejreason : "";
@@ -462,7 +466,7 @@ shoonya_api = function () {
                 //<td>${item.tsym}</td>
                 $('#order_book_table').append(`<tr>
                         <td class="order-num">${item.norenordno}</td>
-                        <td>${item.status}</td>
+                        <td>${status}</td>
                         <td>${dname}</td>
                         <td>${item.qty}</td>
                         <td scope="row">${badge}</td>
