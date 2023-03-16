@@ -7,7 +7,6 @@ shoonya_api = function () {
     let vix_tk = '26017', nifty_tk = '26000', bank_nifty_tk = '26009'
     let def_tokens = ["NSE|26017", "NSE|26000", "NSE|26009"]
     let user_id = '', session_token='', ws = '';
-    let row_index = 0;
 
     const url = {
         websocket : "wss://shoonya.finvasia.com/NorenWSWeb/",
@@ -257,23 +256,27 @@ shoonya_api = function () {
         add_open_order : function(item) {
             if (item.status == "OPEN") {
                 console.log(item.norenordno)
+                let type = item.amo == "Yes"? "AMO ": "";
                 let badge = '';
                 if (item.trantype == "B") {
-                    badge = '<span class="badge badge-success">Buy</span>'
+                    badge = '<span class="badge badge-success">' + type + 'Buy</span>'
                 } else {
-                    badge = '<span class="badge badge-danger">Sell</span>'
+                    badge = '<span class="badge badge-danger">' + type + 'Sell</span>'
                 }
-                let open = item.amo == "Yes"? "AMO Open": "Open";
+
 
                 let dname = (item.dname != undefined)? item.dname : item.tsym;
                 $('#open_order_list').append(`<tr exch="${item.exch}" tsym="${item.tsym}" qty="${item.qty}" token="${item.token}">
-                        <td scope="row"><span class="badge badge-info">${open}</span></td>
+                        <td scope="row">${badge}</td>
                         <td class="order-num">${item.norenordno}</td>
                         <td>${dname}</td>
-                        <td>${badge}</td>
                         <th id="open_order_${item.token}"></th>
-                        <td><input type="text" class="form-control limit" placeholder="" aria-label="strike"
+                        <td><input type="text" class="form-control entry" placeholder="" aria-label="strike"
                                                     aria-describedby="basic-addon1" value="${item.prc}"></td>
+                        <td><input type="text" class="form-control target" placeholder="" aria-label="strike"
+                                                   aria-describedby="basic-addon1" value=""></td>
+                        <td><input type="text" class="form-control sl" placeholder="" aria-label="strike"
+                                                   aria-describedby="basic-addon1" value=""></td>
                         <td><input type="text" class="form-control qty" placeholder="" aria-label="strike"
                                                    aria-describedby="basic-addon1" value="${item.qty}"></td>
     
@@ -377,7 +380,7 @@ shoonya_api = function () {
         modify_order : function(td_elm) {
             let relm = $(td_elm).parent().parent();
             let orderno = relm.find('.order-num').html()
-            let limit_value = relm.find('.limit').val()
+            let limit_value = relm.find('.entry').val()
 
             let prctyp = 'LMT', price = "0.0";
             if(limit_value == '') {
@@ -436,9 +439,8 @@ shoonya_api = function () {
             class_name = 'table-danger'
         }
 
-        $('#watch_list_tbody').append(`<tr id="R${++row_index}" class="${class_name}" exch="${exch}" tsym="${tsym}" lot_size="${lot_size}">
+        $('#watch_list_tbody').append(`<tr class="${class_name}" exch="${exch}" tsym="${tsym}" lot_size="${lot_size}">
 
-            <th scope="row" ">${row_index}</th>
             <td>${sym}</td>
             <th id="${token}"></th>
             <td><input type="text" class="form-control entry" placeholder="" aria-label="limit" aria-describedby="basic-addon1"></td>

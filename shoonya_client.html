@@ -18,10 +18,16 @@
 
     th.del-icon {
         color: red;
+        padding-top: 1.35rem;
+        padding-left: 2.2rem;
     }
 
-    #open_orders {
-        padding: 0.25rem 0.25rem;
+    .su-collapse-div-title{
+        padding: 0.25rem 0.25rem !important;
+    }
+
+    .table thead th {
+       text-align: center !important;
     }
 </style>
 <body>
@@ -51,7 +57,7 @@
                 <input type="text"  class="form-control" id="userId" placeholder="User" value="FA90807">
             </div>
             <div class="col-auto">
-                <input type="text" class="form-control" id="sessionToken" placeholder="Session Token" value="f0731bd94e466224b5856fa85437ebac002e1685ffaf01a93e1fba076d6164f0">
+                <input type="text" class="form-control" id="sessionToken" placeholder="Session Token" value="1850547c8a60ab6f1103c00716455e5f176765ceb26bbb02c4ab02438edad2cb">
             </div>
             <div class="col-auto">
                 <button class="btn btn-primary mb-3" id="connect_to_server">Connect</button>
@@ -80,7 +86,6 @@
     <table class="table table-light table-striped">
         <thead>
         <tr>
-            <th scope="col">#</th>
             <th scope="col">Instrument</th>
             <th scope="col">LTP</th>
             <th scope="col">Entry</th>
@@ -105,8 +110,6 @@
 <!--            <td><button type="button" class="btn btn-success">BUY</button></td>-->
 <!--            <td><button type="button" class="btn btn-danger">SELL</button></td>-->
 <!--        </tr>-->
-
-
         </tbody>
     </table>
 
@@ -122,7 +125,7 @@
 
     <div class="row " id="openOrderDiv">
         <div class="card">
-            <div class="card-header" id="open_orders">
+            <div class="card-header su-collapse-div-title">
                 <h2 class="mb-0">
                     <button class="btn btn-warning" type="button" data-toggle="collapse" data-target="#collapse_open_orders" aria-expanded="true" aria-controls="collapse_open_orders">
                         Open Orders
@@ -136,12 +139,13 @@
         <table class="table table-condensed">
             <thead>
             <tr>
-                <th scope="col">Status</th>
+                <th scope="col">Type</th>
                 <th scope="col">OrderID</th>
                 <th scope="col">Instrument</th>
-                <th scope="col">Type</th>
                 <th scope="col">LTP</th>
-                <th scope="col">Limit</th>
+                <th scope="col">Entry</th>
+                <th scope="col">Target</th>
+                <th scope="col">SL</th>
                 <th scope="col">Quantity</th>
                 <th scope="col">Modify</th>
                 <th scope="col">Cancel</th>
@@ -152,70 +156,57 @@
             </tbody>
 
             <tbody id="spot_order_list">
-<!--                        <tr>-->
-<!--                            <th scope="row"><span class="badge badge-info">Open</span></th>-->
-<!--                            <td>23031401076976</td>-->
-<!--                            <td>NIFTY C17000</td>-->
-<!--                            <td><span class="badge badge-success">Buy</span></td>-->
-<!--                            <th>20.1</th>-->
-<!--                            <td><input type="text" class="form-control" placeholder="" aria-label="strike" aria-describedby="basic-addon1"></td>-->
-<!--                            <td><input type="text" class="form-control" placeholder="" aria-label="strike" aria-describedby="basic-addon1"></td>-->
-<!--                            <td><button type="button" class="btn btn-success">Modify</button></td>-->
-<!--                            <td><button type="button" class="btn btn-danger">Cancel</button></td>-->
-<!--                        </tr>-->
             </tbody>
         </table>
     </div>
+    
+    <div class="row " id="tabs">
+        <div class="card">
+            <div class="card-header  su-collapse-div-title" >
+                <h2 class="mb-0">
+                    <button class="btn btn-success" type="button" data-toggle="collapse" data-target="#collapse_active_trades" aria-expanded="true" aria-controls="collapse_active_trades">
+                        Active Trades
+                    </button>
+                </h2>
+            </div>
+       </div>
+    </div>
 
-<!--    <div class="row " id="tabs">-->
-<!--        <div class="card">-->
-<!--            <div class="card-header" id="active_trades">-->
-<!--                <h2 class="mb-0">-->
-<!--                    <button class="btn btn-success" type="button" data-toggle="collapse" data-target="#collapseActiveTrades" aria-expanded="true" aria-controls="collapseActiveTrades">-->
-<!--                        Active Trades-->
-<!--                    </button>-->
-<!--                </h2>-->
-<!--            </div>-->
+    <div id="collapse_active_trades" class="collapse show" aria-labelledby="active_trades" data-parent="#tabs">
+        <table class="table table-condensed">
+            <thead>
+            <tr>
+                <th scope="col">Type</th>
+                <th scope="col">Instrument</th>
+                <th scope="col">Entry</th>
+                <th scope="col">LTP</th>
+                <th scope="col">P&L</th>
+                <th scope="col">Target</th>
+                <th scope="col">SL</th>
+                <th scope="col">Exit Limit</th>
+                <th scope="col">Quantity</th>
+                <th scope="col">Modify</th>
+                <th scope="col">Exit</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr>
+                <td><span class="badge badge-success">Buy</span></td>
+                <td>NIFTY FUT GIT</td>
+                <th class="entry">231.9</th>
+                <th class="ltp">250</th>
+                <th class="pnl">1000</th>
+                <td><input type="text" class="form-control target" placeholder="" aria-label="strike" aria-describedby="basic-addon1"></td>
+                <td><input type="text" class="form-control sl" placeholder="" aria-label="strike" aria-describedby="basic-addon1"></td>
+                <td><input type="text" class="form-control exit-limit" placeholder="" aria-label="strike" aria-describedby="basic-addon1"></td>
+                <td><input type="text" class="form-control qty" placeholder="" aria-label="strike" aria-describedby="basic-addon1"></td>
+                <td><button type="button" class="btn btn-success" onclick="shoonya_api.trade.modify(this)">Modify</button></td>
+                <td><button type="button" class="btn btn-danger" onclick="shoonya_api.trade.exit(this)">Exit</button></td>
+            </tr>
 
-<!--            <div id="collapseActiveTrades" class="collapse show" aria-labelledby="active_trades" data-parent="#tabs">-->
-<!--                <table class="table table-condensed">-->
-<!--                    <thead>-->
-<!--                    <tr>-->
-<!--                        <th scope="col">Status</th>-->
-<!--                        <th scope="col">Instrument</th>-->
-<!--                        <th scope="col">Type</th>-->
-<!--                        <th scope="col">LTP</th>-->
-<!--                        <th scope="col">Exit Limit</th>-->
-<!--                        <th scope="col">Exit</th>-->
-<!--                        <th scope="col"></th>-->
-<!--                    </tr>-->
-<!--                    </thead>-->
-<!--                    <tbody>-->
-<!--                    <tr>-->
-<!--                        <th scope="row"><span class="badge badge-success">Active</span></th>-->
-<!--                        <td>NIFTY C17000</td>-->
-<!--                        <td><span class="badge badge-success">Buy</span></td>-->
-<!--                        <th>100</th>-->
-<!--                        <td><input type="text" class="form-control" placeholder="" aria-label="strike" aria-describedby="basic-addon1"></td>-->
-<!--                        <td><button type="button" class="btn btn-success">Modify</button></td>-->
-<!--                        <td><button type="button" class="btn btn-danger">Cancel</button></td>-->
-<!--                    </tr>-->
-
-<!--                    <tr>-->
-<!--                        <th scope="row"><span class="badge badge-info">Open</span></th>-->
-<!--                        <td>BANKNIFTY P40000</td>-->
-<!--                        <td><span class="badge badge-danger">Sell</span></td>-->
-<!--                        <th>100</th>-->
-<!--                        <td><input type="text" class="form-control" placeholder="" aria-label="strike" aria-describedby="basic-addon1"></td>-->
-<!--                        <td><button type="button" class="btn btn-success">Modify</button></td>-->
-<!--                        <td><button type="button" class="btn btn-danger">Cancel</button></td>-->
-<!--                    </tr>-->
-<!--                    </tbody>-->
-<!--                </table>-->
-<!--            </div>-->
-<!--        </div>-->
-
-<!--    </div>-->
+            </tbody>
+        </table>
+    </div>
 
 </div>
 
