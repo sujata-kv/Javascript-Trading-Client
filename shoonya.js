@@ -169,7 +169,7 @@ shoonya_api = function () {
     $( "input.search-instrument" ).autocomplete({
             minLength: 3,
             autoFocus: true,
-            // appendTo: '#instr-drop-down',
+            appendTo: '#instr-drop-down',
             source:  function(request, response){
                         params = {"uid": user_id, "stext": request.term}
                         $.ajax({
@@ -181,8 +181,8 @@ shoonya_api = function () {
                                 console.log("Ajax success")
                                 response($.map(data.values, function (item) {
                                     return {
-                                        label: item.dname,
-                                        value: item.dname,
+                                        label: item.dname != undefined? item.dname : item.tsym,
+                                        value: item.dname != undefined? item.dname : item.tsym,
                                         tsym: item.tsym,
                                         lot_size: item.ls,
                                         exch: item.exch,
