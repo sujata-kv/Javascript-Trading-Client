@@ -2,6 +2,7 @@
 shoonya_api = window.shoonya_api || {};
 
 shoonya_api = function () {
+    let alert_msg_disappear_after = 6000; // Unit milliseconds
 
     //TODO - Remove these hardcoded values
     let vix_tk = '26017', nifty_tk = '26000', bank_nifty_tk = '26009'
@@ -35,54 +36,69 @@ shoonya_api = function () {
         };
 
         ws.onmessage = function (event) {
-
-            //TODO - IMPLEMENT THIS LATER
-            /*
-                    if(result.t == 'ck')
-                    {
-                         trigger("open", [result]);
-                    }
-                    if( result.t == 'tk' || result.t == 'tf')
-                    {
-                         trigger("quote", [result]);
-                    }
-                    if( result.t == 'dk' || result.t == 'df')
-                    {
-                         trigger("quote", [result]);
-                    }
-                    if(result.t == 'om')
-                    {
-                         trigger("order", [result]);
-                    }
-            */
-
-            res = JSON.parse(event.data)
-            // console.log(res)
-            if ('s' in res) {
-                if (res.s == 'OK') {
+            result = JSON.parse(event.data)
+            if(result.t == 'ck') {
+                 // trigger("open", [result]);
+                if (result.s == 'OK') {
                     console.log('Login successful')
                     subscribe_tokens(def_tokens)
                 }
-            } else if ('lp' in res) {
-                // console.log(res.tk + " " + res.lp)
-                switch (res.tk) {
+            }
+            if( result.t == 'tk' || result.t == 'tf') {
+                 // trigger("quote", [result]);
+                switch (result.tk) {
                     case vix_tk:
-                        $('#vix').html(res.lp)
+                        $('#vix').html(result.lp)
                         break;
                     case nifty_tk:
-                        $('#nifty').html(res.lp)
+                        $('#nifty').html(result.lp)
                         break;
                     case bank_nifty_tk:
-                        $('#bank_nifty').html(res.lp)
+                        $('#bank_nifty').html(result.lp)
                         break;
                     default:
-                        let elm = document.getElementById(res.tk)
-                        $(elm).html(res.lp)
-                        elm = document.getElementById("open_order_" + res.tk)  // In Active Trades table
-                        $(elm).html(res.lp)
+                        let elm = document.getElementById(result.tk)
+                        $(elm).html(result.lp)
+                        elm = document.getElementById("open_order_" + result.tk)  // In Active Trades table
+                        $(elm).html(result.lp)
                         break;
                 }
             }
+            if( result.t == 'dk' || result.t == 'df') {
+                 // trigger("quote", [result]);
+            }
+            if(result.t == 'om') {
+                console.log("..................  OM ...................")
+                console.log(result)
+            }
+
+
+            // console.log(res)
+            // if ('s' in res) {
+            //     if (res.s == 'OK') {
+            //         console.log('Login successful')
+            //         subscribe_tokens(def_tokens)
+            //     }
+            // } else if ('lp' in res) {
+            //     // console.log(res.tk + " " + res.lp)
+            //     switch (res.tk) {
+            //         case vix_tk:
+            //             $('#vix').html(res.lp)
+            //             break;
+            //         case nifty_tk:
+            //             $('#nifty').html(res.lp)
+            //             break;
+            //         case bank_nifty_tk:
+            //             $('#bank_nifty').html(res.lp)
+            //             break;
+            //         default:
+            //             let elm = document.getElementById(res.tk)
+            //             $(elm).html(res.lp)
+            //             elm = document.getElementById("open_order_" + res.tk)  // In Active Trades table
+            //             $(elm).html(res.lp)
+            //             break;
+            //     }
+            // }
         }
 
         ws.onclose = function (event) {
@@ -204,32 +220,39 @@ shoonya_api = function () {
     const orderbook = {
 
         get_order_status : function(orderno) {
-            this.get_orderbook(orderno, function(order) {
+            this.get_orderbook(orderno, function(orders) {
+                let matching_order = orders.find(order => order.norenordno === orderno)
+                if(matching_order != undefined) {
+                    console.log(matching_order)
+                    display_order_exec_msg(matching_order);
+                }
+            })
+
+            function display_order_exec_msg(order) {
                 switch (order.status) {
                     case "OPEN" :
                         $('#order_success_msg').html("Order is open. Order number: " + orderno + "  Symbol: " + order.tsym + " Qty: " + order.qty);
                         $('#order_success_alert').removeClass('d-none');
-                        setTimeout(function(){$('#order_success_alert').addClass('d-none')}, 10000);
+                        setTimeout(function(){$('#order_success_alert').addClass('d-none')}, alert_msg_disappear_after);
                         break;
                     case "COMPLETE" :
                         $('#order_success_msg').html("Order completed. Order number: " + orderno + "  Symbol: " + order.tsym + " Qty: " + order.qty);
                         $('#order_success_alert').removeClass('d-none');
-                        setTimeout(function(){$('#order_success_alert').addClass('d-none')}, 10000);
+                        setTimeout(function(){$('#order_success_alert').addClass('d-none')}, alert_msg_disappear_after);
                         break;
                     case "REJECTED" :
                         $('#order_error_msg').html("Order " + orderno + " rejected. Reason : " + order.rejreason  + "   Symbol: " + order.tsym + " Qty: " + order.qty );
                         $('#order_error_alert').removeClass('d-none');
-                        setTimeout(function(){$('#order_error_alert').addClass('d-none')}, 10000);
+                        setTimeout(function(){$('#order_error_alert').addClass('d-none')}, alert_msg_disappear_after);
                         break;
                     default:
                         alert("Default order status" + JSON.stringify(order))
                         break;
-
                 }
-            })
+            }
         },
 
-        get_orderbook : function(orderno, order_found_cb) {
+        get_orderbook : function(success_cb) {
             let values          = {};
             values["uid"]       = user_id ;
             let payload = get_payload(values)
@@ -239,18 +262,17 @@ shoonya_api = function () {
                 dataType: "json",
                 data: payload,
                 success: function (data, textStatus, jqXHR) {
-                    $('#open_order_list').html('')
-                    data.forEach(orderbook.add_open_order)
-                    let matching_order = data.find(item => item.norenordno === orderno)
-                    if(matching_order != undefined) {
-                        console.log(matching_order)
-                        order_found_cb(matching_order);
-                    }
+                    success_cb(data)
                 },
                 error: function (jqXHR, textStatus, errorThrown) {
                     console.log("Ajax error")
                 }
             });
+        },
+
+        update_open_order_list : function(orders) {
+            $('#open_order_list').html('')
+            orders.forEach(orderbook.add_open_order)
         },
 
         add_open_order : function(item) {
@@ -404,19 +426,63 @@ shoonya_api = function () {
             //TODO - Temp code added.. Fix later
             setTimeout(shoonya_api.orderbook.get_orderbook, 10)
             return reply;
-        }
+        },
+
+        show_orderbook : function() {
+            hide_other_tabs('#order_book')
+            this.get_orderbook(function(orders) {
+                orders.forEach((order)=> orderbook.show_order(order))
+            })
+        },
+
+        show_order : function(item) {
+                console.log(item.norenordno)
+                let type = item.amo == "Yes"? "AMO ": "";
+                let badge = '';
+                if (item.trantype == "B") {
+                    badge = '<span class="badge badge-success">' + type + 'Buy</span>'
+                } else {
+                    badge = '<span class="badge badge-danger">' + type + 'Sell</span>'
+                }
+
+                let dname = (item.dname != undefined)? item.dname : item.tsym;
+
+                //<td>${item.tsym}</td>
+                $('#order_book_table').append(`<tr>
+                        <td class="order-num">${item.norenordno}</td>
+                        <td>${item.status}</td>
+                        <td>${dname}</td>
+                        <td>${item.qty}</td>
+                        <td scope="row">${badge}</td>
+                        <td>${item.prc}</td>
+                        <td>${item.prctyp}</td>
+                        <td>${item.norentm}</td>
+                        <td>${item.exch_tm}</td>
+                        <td>${item.exch}</td>
+                        <td>${item.prd}</td>
+                        <td>${item.token}</td>
+                        
+                        <td>${item.exchordid}</td>
+                        <th></th>
+                </tr>`);
+        },
+
+
     };
 
-    /*Attach functions to connect, add to watch list button, etc*/
-    $(document).ready(function() {
-        $('#connect_to_server').click(function () {
-            user_id = $('#userId').val()
-            session_token = $('#sessionToken').val()
-            connect()
-            orderbook.get_orderbook()
-        });
+    const trade = {
+        show_positions : function() {
+            hide_other_tabs('#positions')
+        },
 
-        $('#add_to_watchlist').click(function() {
+        show_active_trades : function() {
+            hide_other_tabs('#active_trades')
+        },
+
+    };
+
+    const watch_list = {
+        add_to_watchlist : function() {
             sym = $('input.watch_item').val()
             lot_size = $('input.watch_item').attr('lot_size')
             exch = $('input.watch_item').attr('exch')
@@ -427,34 +493,57 @@ shoonya_api = function () {
             if (optt == "PE") {
                 put_option = true
             }
-            add_row_to_watch(sym, lot_size, exch, token, tsym, put_option)
-        })
+            this.add_row_to_watch(sym, lot_size, exch, token, tsym, put_option)
+        },
+
+        add_row_to_watch : function(sym, lot_size, exch, token, tsym, put_option) {
+            subscribe_tokens( [exch + '|' + token])
+            class_name = ''
+            if(put_option) {
+                class_name = 'table-danger'
+            }
+
+            $('#watch_list_tbody').append(`<tr class="${class_name}" exch="${exch}" tsym="${tsym}" lot_size="${lot_size}">
+    
+                <td>${sym}</td>
+                <th id="${token}"></th>
+                <td><input type="text" class="form-control entry" placeholder="" aria-label="limit" aria-describedby="basic-addon1"></td>
+                <td><input type="text" class="form-control qty" placeholder="" aria-label="qty" aria-describedby="basic-addon1" value="${lot_size}"></td>
+                <td><button type="button" class="btn btn-success" onclick="shoonya_api.orderbook.buy(this)">BUY</button></td>
+                <td><button type="button" class="btn btn-danger" onclick="shoonya_api.orderbook.sell(this)">SELL</button></td>
+                <th class="del-icon" onclick="shoonya_api.delete_row(this)">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-trash" viewBox="0 0 16 16">
+                        <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/>
+                        <path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/>
+                    </svg>
+                </th>
+               </tr>`);
+        }
+    }
+
+    /*Attach functions to connect, add to watch list button, etc*/
+    $(document).ready(function() {
+        $('#connect_to_server').click(function () {
+            user_id = $('#userId').val()
+            session_token = $('#sessionToken').val()
+            connect()
+            orderbook.get_orderbook(orderbook.update_open_order_list)
+        });
     });
 
-
-    function add_row_to_watch(sym, lot_size, exch, token, tsym, put_option) {
-        subscribe_tokens( [exch + '|' + token])
-        class_name = ''
-        if(put_option) {
-            class_name = 'table-danger'
+    function hide_other_tabs(cur_tab) {
+        let other_tabs = []
+        switch(cur_tab) {
+            case '#active_trades' : other_tabs = ['#order_book', '#positions']; break;
+            case '#order_book' : other_tabs = ['#active_trades', '#positions']; break;
+            case '#positions' : other_tabs = ['#active_trades', '#order_book']; break;
         }
-
-        $('#watch_list_tbody').append(`<tr class="${class_name}" exch="${exch}" tsym="${tsym}" lot_size="${lot_size}">
-
-            <td>${sym}</td>
-            <th id="${token}"></th>
-            <td><input type="text" class="form-control entry" placeholder="" aria-label="limit" aria-describedby="basic-addon1"></td>
-            <td><input type="text" class="form-control qty" placeholder="" aria-label="qty" aria-describedby="basic-addon1" value="${lot_size}"></td>
-            <td><button type="button" class="btn btn-success" onclick="shoonya_api.orderbook.buy(this)">BUY</button></td>
-            <td><button type="button" class="btn btn-danger" onclick="shoonya_api.orderbook.sell(this)">SELL</button></td>
-            <th class="del-icon" onclick="shoonya_api.delete_row(this)">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-trash" viewBox="0 0 16 16">
-                    <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/>
-                    <path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/>
-                </svg>
-            </th>
-           </tr>`);
+        $(cur_tab).show();
+        other_tabs.forEach((tab) => {
+            $(tab).hide();
+        })
     }
+
 
     function delete_row(elm) {
         $(elm).parent().remove();
@@ -465,7 +554,9 @@ shoonya_api = function () {
         "connect" : connect,
         "delete_row": delete_row,
         "post_request": post_request,
+        "watch_list": watch_list,
         "orderbook": orderbook,
+        "trade" : trade,
     }
 
 }();

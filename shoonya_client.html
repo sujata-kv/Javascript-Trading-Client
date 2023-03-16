@@ -79,7 +79,18 @@
             <div id="instr-drop-down" class="ui-front" style="position:absolute;z-index:1000"></div>
         </div>
         <div class="col-auto">
-            <button class="btn btn-primary mb-3" id="add_to_watchlist">Add To Watchlist</button>
+            <button class="btn btn-primary mb-3" id="add_to_watchlist" onclick="shoonya_api.watch_list.add_to_watchlist()">Add To Watchlist</button>
+        </div>
+
+
+        <div class="offset-md-6">
+            <div class="card-header  su-collapse-div-title" >
+                <h2 class="mb-0">
+                    <button class="btn btn-danger" type="button" data-toggle="collapse" data-target="" aria-expanded="true" aria-controls="collapse_active_trades">
+                        Exit All Positions
+                    </button>
+                </h2>
+            </div>
         </div>
     </div>
 
@@ -114,6 +125,8 @@
     </table>
 
     <hr class="hr hr-blurry" />
+
+
     <div class="alert alert-success alert-dismissible d-none" id="order_success_alert">
         <button type="button" class="close" data-dismiss="alert">&times;</button>
         <span id="order_success_msg"></span>
@@ -159,20 +172,40 @@
             </tbody>
         </table>
     </div>
-    
-    <div class="row " id="tabs">
+
+    <hr class="hr hr-blurry" />
+
+    <div class="row" >
         <div class="card">
             <div class="card-header  su-collapse-div-title" >
                 <h2 class="mb-0">
-                    <button class="btn btn-success" type="button" data-toggle="collapse" data-target="#collapse_active_trades" aria-expanded="true" aria-controls="collapse_active_trades">
+                    <button class="btn btn-success" type="button" onclick="shoonya_api.trade.show_active_trades()" data-toggle="collapse" data-target="" aria-expanded="true" aria-controls="collapse_active_trades">
                         Active Trades
                     </button>
                 </h2>
             </div>
        </div>
+        <div class="card">
+            <div class="card-header  su-collapse-div-title" >
+                <h2 class="mb-0">
+                    <button class="btn btn-secondary" type="button" onclick="shoonya_api.orderbook.show_orderbook()" data-toggle="collapse" data-target="" aria-expanded="true" aria-controls="collapse_active_trades">
+                        Order book
+                    </button>
+                </h2>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-header  su-collapse-div-title" >
+                <h2 class="mb-0">
+                    <button class="btn btn-primary" type="button" onclick="shoonya_api.trade.show_positions()" data-toggle="collapse" data-target="" aria-expanded="true" aria-controls="collapse_active_trades">
+                        Positions
+                    </button>
+                </h2>
+            </div>
+        </div>
     </div>
 
-    <div id="collapse_active_trades" class="collapse show" aria-labelledby="active_trades" data-parent="#tabs">
+    <div id="active_trades" class="collapse show" aria-labelledby="active_trades" data-parent="">
         <table class="table table-condensed">
             <thead>
             <tr>
@@ -204,6 +237,53 @@
                 <td><button type="button" class="btn btn-danger" onclick="shoonya_api.trade.exit(this)">Exit</button></td>
             </tr>
 
+            </tbody>
+        </table>
+    </div>
+
+
+    <div id="order_book"  class="collapse hide" aria-labelledby="order_book" data-parent="">
+        <table class="table table-condensed">
+            <thead>
+            <tr>
+                <th scope="col">OrderID</th>
+                <th scope="col">Status</th>
+                <th scope="col">Instrument</th>
+                <th scope="col">Qty</th>
+                <th scope="col">Buy/Sell</th>
+                <th scope="col">Price</th>
+                <th scope="col">PriceType</th>
+                <th scope="col">Noren Time</th>
+                <th scope="col">Exch Time</th>
+                <th scope="col">Exch</th>
+                <th scope="col">Prod</th>
+                <th scope="col">Token</th>
+<!--                <th scope="col">TSym</th>-->
+                <th scope="col">Exch Order ID</th>
+            </tr>
+            </thead>
+            <tbody id="order_book_table">
+            </tbody>
+        </table>
+    </div>
+    <div id="positions"  class="collapse hide" aria-labelledby="positions" data-parent="">
+        <table class="table table-condensed">
+            <thead>
+            <tr>
+                <th scope="col">Type</th>
+                <th scope="col">Instrument</th>
+                <th scope="col">Entry</th>
+                <th scope="col">LTP</th>
+                <th scope="col">P&L</th>
+                <th scope="col">Target</th>
+                <th scope="col">SL</th>
+                <th scope="col">Exit Limit</th>
+                <th scope="col">Quantity</th>
+                <th scope="col">Modify</th>
+                <th scope="col">Exit</th>
+            </tr>
+            </thead>
+            <tbody>
             </tbody>
         </table>
     </div>
