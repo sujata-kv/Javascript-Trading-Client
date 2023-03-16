@@ -429,6 +429,7 @@ shoonya_api = function () {
         },
 
         show_orderbook : function() {
+            $('#order_book_table').html("")
             hide_other_tabs('#order_book')
             this.get_orderbook(function(orders) {
                 orders.forEach((order)=> orderbook.show_order(order))
