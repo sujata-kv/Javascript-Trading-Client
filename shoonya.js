@@ -220,7 +220,7 @@ shoonya_api = function () {
     const orderbook = {
 
         get_order_status : function(orderno) {
-            this.get_orderbook(orderno, function(orders) {
+            this.get_orderbook(function(orders) {
                 let matching_order = orders.find(order => order.norenordno === orderno)
                 if(matching_order != undefined) {
                     console.log(matching_order)
@@ -444,8 +444,19 @@ shoonya_api = function () {
                 } else {
                     badge = '<span class="badge badge-danger">' + type + 'Sell</span>'
                 }
+                let prdstr = '';
+                switch (item.prd) {
+                    case "M" : prdstr = "Normal"; break;
+                    case "I" : prdstr = "MIS"; break;
+                    case "C" : prdstr = "CNC"; break;
+                    case "B" : prdstr = "Bracket Order"; break;
+                    case "H" : prdstr = "Cover Order"; break;
+                    default: prdstr = item.prd; break;
+                }
+                prd = '<span class="badge badge-primary">' + prdstr + '</span>'
 
                 let dname = (item.dname != undefined)? item.dname : item.tsym;
+                let rej_reason = (item.rejreason != undefined)? item.rejreason : "";
 
                 //<td>${item.tsym}</td>
                 $('#order_book_table').append(`<tr>
@@ -457,12 +468,12 @@ shoonya_api = function () {
                         <td>${item.prc}</td>
                         <td>${item.prctyp}</td>
                         <td>${item.norentm}</td>
-                        <td>${item.exch_tm}</td>
+                        <td>${rej_reason}</td>
+                        <td>${item.exch_tm === undefined? "": item.exch_tm}</td>
                         <td>${item.exch}</td>
-                        <td>${item.prd}</td>
+                        <td>${prd}</td>
                         <td>${item.token}</td>
-                        
-                        <td>${item.exchordid}</td>
+                        <td>${item.exchordid === undefined?"":item.exchordid}</td>
                         <th></th>
                 </tr>`);
         },
