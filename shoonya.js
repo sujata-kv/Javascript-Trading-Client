@@ -9,6 +9,9 @@ shoonya_api = function () {
     let def_tokens = ["NSE|26017", "NSE|26000", "NSE|26009"]
     let user_id = '', session_token='', ws = '';
 
+    let subscribed_symbols = [];
+    let pending_to_subscribe_tokens = new Set();
+
     const url = {
         websocket : "wss://shoonya.finvasia.com/NorenWSWeb/",
         search_instrument : "https://shoonya.finvasia.com/NorenWClientWeb/SearchScrip",
@@ -42,7 +45,7 @@ shoonya_api = function () {
                  // trigger("open", [result]);
                 if (result.s == 'OK') {
                     console.log('Login successful')
-                    subscribe_tokens(def_tokens)
+                    def_tokens.forEach(subscribe_token)
                 }
             }
             if( result.t == 'tk' || result.t == 'tf') {
@@ -61,6 +64,8 @@ shoonya_api = function () {
                         let elm = document.getElementById(result.tk)
                         $(elm).html(result.lp)
                         elm = document.getElementById("open_order_" + result.tk)  // In Active Trades table
+                        $(elm).html(result.lp)
+                        elm = document.getElementById("pos_" + result.tk)  // In Active Trades table
                         $(elm).html(result.lp)
                         break;
                 }
@@ -115,15 +120,24 @@ shoonya_api = function () {
         };
     }
 
-    function subscribe_tokens(tokens) {
-        let symtokens = {"t":"t","k": tokens.join('#').concat('#')}
-        console.log(symtokens)
-        if (ws.readyState != WebSocket.OPEN) {
-            console.log("Web socket not ready yet..")
-            setTimeout(function(){subscribe_tokens(tokens)}, 1)
-        } else {
-            console.log("Web socket is ready.. Subscribing ", tokens)
-            ws.send(JSON.stringify(symtokens));
+    function subscribe_token(token) {
+        if (!subscribed_symbols.includes(token)) {  // Subscribe only if not subscribed earlier
+            pending_to_subscribe_tokens.add(token);
+        }
+        for(token of pending_to_subscribe_tokens.keys()) {
+            let symtoken = {"t": "t", "k": token.concat('#')}
+            console.log(symtoken)
+            if (ws.readyState != WebSocket.OPEN) {
+                console.log("Web socket not ready yet..")
+                setTimeout(function () {
+                    subscribe_token(token)
+                }, 10)
+            } else {
+                console.log("Web socket is ready.. Subscribing ", token)
+                ws.send(JSON.stringify(symtoken));
+                subscribed_symbols.push(token);
+                pending_to_subscribe_tokens.delete(token);
+            }
         }
     }
 
@@ -280,20 +294,20 @@ shoonya_api = function () {
             if (item.status == "OPEN") {
                 console.log(item.norenordno)
                 let type = item.amo == "Yes"? "AMO ": "";
-                let badge = '';
+                let buy_sell = '';
                 if (item.trantype == "B") {
-                    badge = '<span class="badge badge-success">' + type + 'Buy</span>'
+                    buy_sell = '<span class="badge badge-success">' + type + 'Buy</span>'
                 } else {
-                    badge = '<span class="badge badge-danger">' + type + 'Sell</span>'
+                    buy_sell = '<span class="badge badge-danger">' + type + 'Sell</span>'
                 }
 
 
                 let dname = (item.dname != undefined)? item.dname : item.tsym;
                 $('#open_order_list').append(`<tr exch="${item.exch}" tsym="${item.tsym}" qty="${item.qty}" token="${item.token}">
-                        <td scope="row">${badge}</td>
+                        <td scope="row">${buy_sell}</td>
                         <td class="order-num">${item.norenordno}</td>
                         <td>${dname}</td>
-                        <th id="open_order_${item.token}"></th>
+                        <th id="open_order_${item.token}" class="ltp"></th>
                         <td><input type="text" class="form-control entry" placeholder="" aria-label="strike"
                                                     aria-describedby="basic-addon1" value="${item.prc}"></td>
                         <td><input type="text" class="form-control target" placeholder="" aria-label="strike"
@@ -308,7 +322,7 @@ shoonya_api = function () {
                 </tr>`);
 
                 let token = item.exch + "|" + item.token
-                subscribe_tokens([token])
+                subscribe_token(token)
             }
         },
 
@@ -521,7 +535,7 @@ shoonya_api = function () {
         },
 
         add_row_to_watch : function(sym, lot_size, exch, token, tsym, put_option) {
-            subscribe_tokens( [exch + '|' + token])
+            subscribe_token( exch + '|' + token)
             class_name = ''
             if(put_option) {
                 class_name = 'table-danger'
@@ -588,6 +602,7 @@ shoonya_api = function () {
                 let urmtm = (mtm_ur<0) ? `<span class='neg-mtm'>${mtm_ur}</span>`: `<span class='pos-mtm'>${mtm_ur}</span>`;
                 let pnl_r = parseFloat(item.rpnl);
                 let rpnl = (pnl_r<0) ?  `<span class='neg-mtm'>${pnl_r}</span>`: `<span class='pos-mtm'>${pnl_r}</span>`;
+                let id = `pos_${item.token}`
                 //<td>${item.tsym}</td>
                 $('#positions_table').append(`<tr>
                         <td class="text">${dname}</td>
@@ -597,7 +612,7 @@ shoonya_api = function () {
                         <td>${item.daysellavgprc}</td>
                         <td>${item.daybuyqty}</td>
                         <td>${item.daysellqty}</td>
-                        <td class="num">${item.lp}</td>
+                        <td id=${id} class="num ltp">${item.lp}</td>
                         <td>${prd}</td>
                         <td class="num">${item.daybuyamt}</td>
                         <td class="num">${item.daysellamt}</td>
