@@ -87,6 +87,10 @@
         text-align : right;
     }
 
+    #order_book tr, #positions tr {
+        font-size : 14px;
+    }
+
 </style>
 <body>
 
@@ -181,11 +185,11 @@
 
     <div class="row">
         <div class="custom-tab">
-            <button class="btn btn-warning" type="button"> Open Orders</button>
+            <button class="btn btn-warning" type="button" onclick="shoonya_api.orderbook.update_open_orders()"> Open Orders</button>
         </div>
     </div>
 
-    <div id="collapse_open_orders" class="collapse show" aria-labelledby="open_orders" data-parent="#openOrderDiv">
+    <div>
         <table class="table table-condensed">
             <thead>
             <tr>

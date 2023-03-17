@@ -373,8 +373,12 @@ shoonya_api = function () {
         place_order_success_cb : function(data) {
             if( data.norenordno != undefined) {
                 shoonya_api.orderbook.get_order_status(data.norenordno)
-                orderbook.get_orderbook(orderbook.update_open_order_list)
+                orderbook.update_open_orders();
             }
+        },
+
+        update_open_orders : function() {
+            orderbook.get_orderbook(orderbook.update_open_order_list)
         },
 
         get_order_params: function(elm, buy_or_sell, entry, qty) {
@@ -385,7 +389,7 @@ shoonya_api = function () {
             } else price = entry.value.toString()
             let exch = elm.attr('exch');
             /* "C" For CNC, "M" FOR NRML, "I" FOR MIS, "B" FOR BRACKET ORDER, "H" FOR COVER ORDER*/
-            if(exch == "NSE") {
+            if(exch == "NSE" || exch == "BSE") {
                 prd = "C";
             } else {
                 prd = "M";
@@ -481,7 +485,7 @@ shoonya_api = function () {
                 } else {
                     badge = '<span class="badge badge-danger">' + type + 'Sell</span>'
                 }
-                let prd = this.get_prod_name();
+                let prd = this.get_prod_name(item.prd);
 
                 let status = item.status;
                 if (item.status == "OPEN")
@@ -632,7 +636,7 @@ shoonya_api = function () {
             user_id = $('#userId').val()
             session_token = $('#sessionToken').val()
             connect()
-            orderbook.get_orderbook(orderbook.update_open_order_list)
+            setTimeout(orderbook.update_open_orders, 100);
         });
     });
 
@@ -663,6 +667,7 @@ shoonya_api = function () {
         "orderbook": orderbook,
         "trade" : trade,
         "positions" : positions,
+        "subscribed_symbols": subscribed_symbols,
     }
 
 }();
