@@ -17,6 +17,7 @@ shoonya_api = function () {
         modify_order : "https://shoonya.finvasia.com/NorenWClientWeb/ModifyOrder",
         cancel_order : "https://shoonya.finvasia.com/NorenWClientWeb/CancelOrder",
         exit_order : "https://shoonya.finvasia.com/NorenWClientWeb/ExitOrder",
+        positions : "https://shoonya.finvasia.com/NorenWClientWeb/PositionBook",
     }
 
     function connect() {
@@ -366,13 +367,20 @@ shoonya_api = function () {
             if(entry.value == '') {
                 prctyp = 'MKT'
             } else price = entry.value.toString()
+            let exch = elm.attr('exch');
+            /* "C" For CNC, "M" FOR NRML, "I" FOR MIS, "B" FOR BRACKET ORDER, "H" FOR COVER ORDER*/
+            if(exch == "NSE") {
+                prd = "C";
+            } else {
+                prd = "M";
+            }
 
             let values          =  {'ordersource':'WEB'};
             values["uid"]       = user_id;
             values["actid"]     = user_id;
             values["trantype"]  = buy_or_sell;
-            values["prd"]       = 'M' ;                 /* "C" For CNC, "M" FOR NRML, "I" FOR MIS, "B" FOR BRACKET ORDER, "H" FOR COVER ORDER*/
-            values["exch"]      = elm.attr('exch');
+            values["prd"]       = prd;
+            values["exch"]      = exch;
             values["tsym"]      = elm.attr('tsym');
             values["qty"]       = qty;
             values["dscqty"]    = qty;
@@ -436,6 +444,19 @@ shoonya_api = function () {
             })
         },
 
+        get_prod_name : function(prd_code) {
+            let prd = "";
+            switch (prd_code) {
+                case "M" : prd = "NRML"; break;
+                case "I" : prd = "MIS"; break;
+                case "C" : prd = "CNC"; break;
+                case "B" : prd = "Bracket Order"; break;
+                case "H" : prd = "Cover Order"; break;
+                default: prd = prd_code; break;
+            }
+            return prd;
+        },
+
         show_order : function(item) {
                 console.log(item.norenordno)
                 let type = item.amo == "Yes"? "AMO ": "";
@@ -445,15 +466,7 @@ shoonya_api = function () {
                 } else {
                     badge = '<span class="badge badge-danger">' + type + 'Sell</span>'
                 }
-                let prd = '';
-                switch (item.prd) {
-                    case "M" : prd = "NRML"; break;
-                    case "I" : prd = "MIS"; break;
-                    case "C" : prd = "CNC"; break;
-                    case "B" : prd = "Bracket Order"; break;
-                    case "H" : prd = "Cover Order"; break;
-                    default: prd = item.prd; break;
-                }
+                let prd = this.get_prod_name();
 
                 let status = item.status;
                 if (item.status == "OPEN")
@@ -479,7 +492,6 @@ shoonya_api = function () {
                         <td>${prd}</td>
                         <td>${item.token}</td>
                         <td>${item.exchordid === undefined?"":item.exchordid}</td>
-                        <th></th>
                 </tr>`);
         },
 
@@ -487,10 +499,6 @@ shoonya_api = function () {
     };
 
     const trade = {
-        show_positions : function() {
-            hide_other_tabs('#positions')
-        },
-
         show_active_trades : function() {
             hide_other_tabs('#active_trades')
         },
@@ -506,7 +514,7 @@ shoonya_api = function () {
             tsym = $('input.watch_item').attr('tsym')
             optt = $('input.watch_item').attr('optt')
             put_option = false
-            if (optt == "PE") {
+            if (optt == "PE" && exch == "NFO") {
                 put_option = true
             }
             this.add_row_to_watch(sym, lot_size, exch, token, tsym, put_option)
@@ -519,7 +527,7 @@ shoonya_api = function () {
                 class_name = 'table-danger'
             }
 
-            $('#watch_list_tbody').append(`<tr class="${class_name}" exch="${exch}" tsym="${tsym}" lot_size="${lot_size}">
+            $('#watch_list_body').append(`<tr class="${class_name}" exch="${exch}" tsym="${tsym}" lot_size="${lot_size}">
     
                 <td>${sym}</td>
                 <th id="${token}"></th>
@@ -534,6 +542,72 @@ shoonya_api = function () {
                     </svg>
                 </th>
                </tr>`);
+        }
+    };
+
+    const positions = {
+        get_positions : function (success_cb) {
+
+            let values          = {};
+            values["uid"]       = user_id   ;
+            values["actid"]     = user_id   ;
+
+            let payload = get_payload(values)
+            $.ajax({
+                url: url.positions,
+                type: "POST",
+                dataType: "json",
+                data: payload,
+                success: function (data, textStatus, jqXHR) {
+                    console.log("Ajax success")
+                    success_cb(data)
+                },
+                error: function (jqXHR, textStatus, errorThrown) {
+                    console.error("Ajax error")
+                }
+            });
+        },
+
+        show_positions : function() {
+            $('#positions_table').html("")
+            hide_other_tabs('#positions')
+            this.get_positions(function(positions) {
+                positions.forEach((position)=> shoonya_api.positions.show_position(position))
+            })
+        },
+
+        show_position : function(item) {
+
+            if (item.stat != "Ok") {
+                $('#positions_table').append(`<tr colspan="8"> ${item.emsg} </tr>`);
+            } else {
+
+                let prd = orderbook.get_prod_name(item.prd);
+                let dname = (item.dname != undefined) ? item.dname : item.tsym;
+                let mtm_ur = parseFloat(item.urmtom);
+                let urmtm = (mtm_ur<0) ? `<span class='neg-mtm'>${mtm_ur}</span>`: `<span class='pos-mtm'>${mtm_ur}</span>`;
+                let pnl_r = parseFloat(item.rpnl);
+                let rpnl = (pnl_r<0) ?  `<span class='neg-mtm'>${pnl_r}</span>`: `<span class='pos-mtm'>${pnl_r}</span>`;
+                //<td>${item.tsym}</td>
+                $('#positions_table').append(`<tr>
+                        <td class="text">${dname}</td>
+                        <td class="num">${urmtm}</td>
+                        <td class="num">${rpnl}</td>
+                        <td>${item.daybuyavgprc}</td>
+                        <td>${item.daysellavgprc}</td>
+                        <td>${item.daybuyqty}</td>
+                        <td>${item.daysellqty}</td>
+                        <td class="num">${item.lp}</td>
+                        <td>${prd}</td>
+                        <td class="num">${item.daybuyamt}</td>
+                        <td class="num">${item.daysellamt}</td>
+                        <td class="num">${item.dayavgprc}</td>
+                        <td class="num">${item.netqty}</td>
+                        <td class="num">${item.netavgprc}</td>
+                        <td>${item.exch}</td>
+                        <td class="num">${item.bep}</td>
+                </tr>`);
+            }
         }
     }
 
@@ -573,6 +647,7 @@ shoonya_api = function () {
         "watch_list": watch_list,
         "orderbook": orderbook,
         "trade" : trade,
+        "positions" : positions,
     }
 
 }();
