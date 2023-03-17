@@ -11,6 +11,7 @@ shoonya_api = function () {
 
     let subscribed_symbols = [];
     let pending_to_subscribe_tokens = new Set();
+    let logged_in = false;
 
     const url = {
         websocket : "wss://shoonya.finvasia.com/NorenWSWeb/",
@@ -45,6 +46,7 @@ shoonya_api = function () {
                  // trigger("open", [result]);
                 if (result.s == 'OK') {
                     console.log('Login successful')
+                    logged_in = true;
                     def_tokens.forEach(subscribe_token)
                 }
             }
@@ -127,7 +129,7 @@ shoonya_api = function () {
         for(token of pending_to_subscribe_tokens.keys()) {
             let symtoken = {"t": "t", "k": token.concat('#')}
             console.log(symtoken)
-            if (ws.readyState != WebSocket.OPEN) {
+            if (ws.readyState != WebSocket.OPEN || !logged_in) {
                 console.log("Web socket not ready yet..")
                 setTimeout(function () {
                     subscribe_token(token)
@@ -292,7 +294,6 @@ shoonya_api = function () {
 
         add_open_order : function(item) {
             if (item.status == "OPEN") {
-                console.log(item.norenordno)
                 let type = item.amo == "Yes"? "AMO ": "";
                 let buy_sell = '';
                 if (item.trantype == "B") {
@@ -372,6 +373,7 @@ shoonya_api = function () {
         place_order_success_cb : function(data) {
             if( data.norenordno != undefined) {
                 shoonya_api.orderbook.get_order_status(data.norenordno)
+                orderbook.get_orderbook(orderbook.update_open_order_list)
             }
         },
 
@@ -417,7 +419,7 @@ shoonya_api = function () {
             console.log('Cancel order reply = ', reply)
 
             //TODO - Temp code added.. Fix later
-            setTimeout(shoonya_api.orderbook.get_orderbook, 10)
+            setTimeout(shoonya_api.orderbook.get_orderbook(shoonya_api.orderbook.place_order_success_cb), 10)
             return reply;
         },
 
@@ -446,7 +448,7 @@ shoonya_api = function () {
             let reply = post_request(url.modify_order, values);
 
             //TODO - Temp code added.. Fix later
-            setTimeout(shoonya_api.orderbook.get_orderbook, 10)
+            setTimeout(shoonya_api.orderbook.get_orderbook(shoonya_api.orderbook.place_order_success_cb), 10)
             return reply;
         },
 
@@ -472,7 +474,6 @@ shoonya_api = function () {
         },
 
         show_order : function(item) {
-                console.log(item.norenordno)
                 let type = item.amo == "Yes"? "AMO ": "";
                 let badge = '';
                 if (item.trantype == "B") {
@@ -620,7 +621,6 @@ shoonya_api = function () {
                         <td class="num">${item.netqty}</td>
                         <td class="num">${item.netavgprc}</td>
                         <td>${item.exch}</td>
-                        <td class="num">${item.bep}</td>
                 </tr>`);
             }
         }
