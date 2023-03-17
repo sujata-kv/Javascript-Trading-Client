@@ -234,7 +234,7 @@
         </div>
     </div>
 
-    <div id="active_trades" class="collapse show" aria-labelledby="active_trades" data-parent="">
+    <div id="active_trades">
         <table class="table table-condensed">
             <thead>
             <tr>
@@ -251,21 +251,7 @@
                 <th scope="col">Exit</th>
             </tr>
             </thead>
-            <tbody>
-            <tr>
-                <td><span class="badge badge-success">Buy</span></td>
-                <td>NIFTY FUT GIT</td>
-                <th class="entry">231.9</th>
-                <th class="ltp">250</th>
-                <th class="pnl">1000</th>
-                <td><input type="text" class="form-control target" placeholder="" aria-label="strike" aria-describedby="basic-addon1"></td>
-                <td><input type="text" class="form-control sl" placeholder="" aria-label="strike" aria-describedby="basic-addon1"></td>
-                <td><input type="text" class="form-control exit-limit" placeholder="" aria-label="strike" aria-describedby="basic-addon1"></td>
-                <td><input type="text" class="form-control qty" placeholder="" aria-label="strike" aria-describedby="basic-addon1"></td>
-                <td><button type="button" class="btn btn-success" onclick="shoonya_api.trade.modify(this)">Modify</button></td>
-                <td><button type="button" class="btn btn-danger" onclick="shoonya_api.trade.exit(this)">Exit</button></td>
-            </tr>
-
+            <tbody id="active_trades_table">
             </tbody>
         </table>
     </div>

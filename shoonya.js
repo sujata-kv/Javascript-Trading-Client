@@ -236,12 +236,15 @@ shoonya_api = function () {
 
     const orderbook = {
 
-        get_order_status : function(orderno) {
+        get_order_status : function(orderno, trade_info) {
             this.get_orderbook(function(orders) {
                 let matching_order = orders.find(order => order.norenordno === orderno)
                 if(matching_order != undefined) {
                     console.log(matching_order)
-                    display_order_exec_msg(matching_order);
+                    switch (matching_order.status) {
+                        case "COMPLETE": trade.display_active_trade(matching_order); break;
+                        default: display_order_exec_msg(matching_order); break;
+                    }
                 }
             })
 
@@ -349,7 +352,6 @@ shoonya_api = function () {
                 params = orderbook.get_order_params(pelm, 'B', entry, qty)
                 let reply = post_request(url.place_order, params, this.place_order_success_cb)
                 console.log("Buy reply = ", reply)
-
                 return reply;
             }
         },
@@ -365,7 +367,6 @@ shoonya_api = function () {
                 params = orderbook.get_order_params(pelm, 'S', entry, qty)
                 let reply = post_request(url.place_order, params, this.place_order_success_cb)
                 console.log("Sell reply = ", reply)
-
                 return reply;
             }
         },
@@ -407,6 +408,8 @@ shoonya_api = function () {
             values["prctyp"]    = prctyp       /*  LMT / MKT / SL-LMT / SL-MKT / DS / 2L / 3L */
             values["prc"]       = price;
             values["ret"]       = 'DAY';
+
+            // values["amo"] = "Yes";          // AMO ORDER
 
             return values;
         },
@@ -479,11 +482,11 @@ shoonya_api = function () {
 
         show_order : function(item) {
                 let type = item.amo == "Yes"? "AMO ": "";
-                let badge = '';
+                let buy_sell = '';
                 if (item.trantype == "B") {
-                    badge = '<span class="badge badge-success">' + type + 'Buy</span>'
+                    buy_sell = '<span class="badge badge-success">' + type + 'Buy</span>'
                 } else {
-                    badge = '<span class="badge badge-danger">' + type + 'Sell</span>'
+                    buy_sell = '<span class="badge badge-danger">' + type + 'Sell</span>'
                 }
                 let prd = this.get_prod_name(item.prd);
 
@@ -495,13 +498,12 @@ shoonya_api = function () {
                 let dname = (item.dname != undefined)? item.dname : item.tsym;
                 let rej_reason = (item.rejreason != undefined)? item.rejreason : "";
 
-                //<td>${item.tsym}</td>
                 $('#order_book_table').append(`<tr>
                         <td class="order-num">${item.norenordno}</td>
                         <td>${status}</td>
                         <td>${dname}</td>
                         <td>${item.qty}</td>
-                        <td scope="row">${badge}</td>
+                        <td>${buy_sell}</td>
                         <td>${item.prc}</td>
                         <td>${item.prctyp}</td>
                         <td>${item.norentm}</td>
@@ -522,6 +524,37 @@ shoonya_api = function () {
             hide_other_tabs('#active_trades')
         },
 
+        display_active_trade : function(item) {
+            let buy_sell = '';
+            if (item.trantype == "B") {
+                buy_sell = '<span class="badge badge-success">Buy</span>'
+            } else {
+                buy_sell = '<span class="badge badge-danger">Sell</span>'
+            }
+            let dname = (item.dname != undefined)? item.dname : item.tsym;
+
+            $('#active_trades_table').append(`<tr>
+                        <td>${buy_sell}</td>
+                        <td>${dname}</td>
+                        <td class="entry">${item.prc}</td>
+                        <td id="trade_${item.token}" class="ltp"></td>
+                        <td class="pnl"></td>
+                        <td><input type="text" class="form-control target" placeholder="" aria-label="limit" aria-describedby="basic-addon1"></td>
+                        <td><input type="text" class="form-control sl" placeholder="" aria-label="limit" aria-describedby="basic-addon1"></td>
+                        <td><input type="text" class="form-control exit-limit" placeholder="" aria-label="limit" aria-describedby="basic-addon1"></td>
+                        <td><input type="text" class="form-control qty" placeholder="" aria-label="qty" aria-describedby="basic-addon1" value="${lot_size}"></td>
+                        <td><button type="button" class="btn btn-success" onclick="shoonya_api.trade.modify(this)">Modify</button></td>
+                        <td><button type="button" class="btn btn-danger" onclick="shoonya_api.trade.exit(this)">Exit</button></td>
+                </tr>`);
+        },
+
+        modify : function(elm) {
+
+        },
+
+        exit : function(elm) {
+
+        }
     };
 
     const watch_list = {
