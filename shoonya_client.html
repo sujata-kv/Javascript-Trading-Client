@@ -18,8 +18,10 @@
 
     th.del-icon {
         color: red;
-        padding-top: 1.35rem;
-        padding-left: 2.2rem;
+        /*padding-top: 1.35rem;*/
+        /*padding-left: 2.2rem;*/
+        padding-top: 1.0rem !important;
+        padding-left: 1.5rem !important;
     }
 
     .su-collapse-div-title{
@@ -137,18 +139,19 @@
 
     <div class="row">
         <div class="col-auto">
-            <input type="text" class="form-control search-instrument watch_item"  value="" placeholder="Instrument" aria-label="Instrument" aria-describedby="basic-addon1">
+            <input type="text" class="form-control search-instrument watch_item"  value="" placeholder="Instrument" >
             <div id="instr-drop-down" class="ui-front" style=""></div>
         </div>
         <div class="col-auto">
             <button class="btn btn-primary mb-3" id="add_to_watchlist" onclick="shoonya_api.watch_list.add_to_watchlist()">Add To Watchlist</button>
+            <button class="btn btn-secondary mb-3" onclick="$('input.search-instrument').val('')">Clear</button>
         </div>
 
 
-        <div class="offset-md-6">
+        <div class="offset-md-5">
             <div class="card-header  su-collapse-div-title" >
                 <h2 class="mb-0">
-                    <button class="btn btn-danger" type="button" data-toggle="collapse" data-target="" aria-expanded="true" aria-controls="collapse_active_trades">
+                    <button class="btn btn-danger" type="button">
                         Exit All Positions
                     </button>
                 </h2>
@@ -156,8 +159,8 @@
         </div>
     </div>
 
-    <table class="table table-light table-striped">
-        <thead>
+    <table class="table table-condensed table-striped table-bordered">
+        <thead class="thead-light">
         <tr>
             <th scope="col">Instrument</th>
             <th scope="col">LTP</th>
@@ -190,7 +193,7 @@
     </div>
 
     <div id="active_trades">
-        <table class="table table-condensed table-striped">
+        <table class="table table-success table-condensed table-striped table-bordered">
             <thead>
             <tr>
                 <th scope="col">Type</th>
@@ -234,7 +237,7 @@
 
 
     <div id="open_orders">
-        <table class="table table-condensed">
+        <table class="table table-condensed table-striped table-bordered">
             <thead>
             <tr>
                 <th scope="col">Type</th>
@@ -259,7 +262,7 @@
     </div>
 
 
-    <div id="order_book"  class="collapse hide" aria-labelledby="order_book" data-parent="">
+    <div id="order_book">
         <table class="table table-condensed table-bordered table-striped">
             <thead>
             <tr>
@@ -285,7 +288,7 @@
         </table>
     </div>
 
-    <div id="positions"  class="collapse hide" aria-labelledby="positions" data-parent="">
+    <div id="positions">
         <table class="table table-condensed table-bordered table-striped">
             <thead>
             <tr>
