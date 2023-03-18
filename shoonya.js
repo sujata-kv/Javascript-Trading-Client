@@ -379,6 +379,7 @@ shoonya_api = function () {
         },
 
         update_open_orders : function() {
+            hide_other_tabs('#open_orders')
             orderbook.get_orderbook(orderbook.update_open_order_list)
         },
 
@@ -521,7 +522,7 @@ shoonya_api = function () {
 
     const trade = {
         show_active_trades : function() {
-            hide_other_tabs('#active_trades')
+            console.log("Yet to be implemented.. show_active_trades()")
         },
 
         display_active_trade : function(item) {
@@ -533,7 +534,7 @@ shoonya_api = function () {
             }
             let dname = (item.dname != undefined)? item.dname : item.tsym;
 
-            $('#active_trades_table').append(`<tr>
+            $('#active_trades_table').append(`<tr  exch="${item.exch}" tsym="${item.tsym}" lot_size="${item.ls}">
                         <td>${buy_sell}</td>
                         <td>${dname}</td>
                         <td class="entry">${item.prc}</td>
@@ -642,7 +643,7 @@ shoonya_api = function () {
                 let rpnl = (pnl_r<0) ?  `<span class='neg-mtm'>${pnl_r}</span>`: `<span class='pos-mtm'>${pnl_r}</span>`;
                 let id = `pos_${item.token}`
                 //<td>${item.tsym}</td>
-                $('#positions_table').append(`<tr>
+                $('#positions_table').append(`<tr exch="${item.exch}" tsym="${item.tsym}" lot_size="${item.ls}">
                         <td class="text">${dname}</td>
                         <td class="num">${urmtm}</td>
                         <td class="num">${rpnl}</td>
@@ -676,9 +677,9 @@ shoonya_api = function () {
     function hide_other_tabs(cur_tab) {
         let other_tabs = []
         switch(cur_tab) {
-            case '#active_trades' : other_tabs = ['#order_book', '#positions']; break;
-            case '#order_book' : other_tabs = ['#active_trades', '#positions']; break;
-            case '#positions' : other_tabs = ['#active_trades', '#order_book']; break;
+            case '#open_orders' : other_tabs = ['#order_book', '#positions']; break;
+            case '#order_book' : other_tabs = ['#open_orders', '#positions']; break;
+            case '#positions' : other_tabs = ['#open_orders', '#order_book']; break;
         }
         $(cur_tab).show();
         other_tabs.forEach((tab) => {
