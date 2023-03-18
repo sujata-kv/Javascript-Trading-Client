@@ -12,6 +12,7 @@ shoonya_api = function () {
     let subscribed_symbols = [];
     let pending_to_subscribe_tokens = new Set();
     let logged_in = false;
+    let live_data = {};
 
     const url = {
         websocket : "wss://shoonya.finvasia.com/NorenWSWeb/",
@@ -52,28 +53,35 @@ shoonya_api = function () {
             }
             if( result.t == 'tk' || result.t == 'tf') {
                  // trigger("quote", [result]);
+                live_data[result.tk] = result.lp
                 switch (result.tk) {
                     case vix_tk:
                         $('#vix').html(result.lp)
                         break;
                     case nifty_tk:
+                        trade.trigger('nifty', result.lp)
                         $('#nifty').html(result.lp)
                         break;
                     case bank_nifty_tk:
+                        trade.trigger('bank_nifty', result.lp)
                         $('#bank_nifty').html(result.lp)
                         break;
                     default:
+                        trade.trigger(result.tk, result.lp)
                         let elm = document.getElementById(result.tk)
                         $(elm).html(result.lp)
-                        elm = document.getElementById("open_order_" + result.tk)  // In Active Trades table
+                        elm = document.getElementById("open_order_" + result.tk)  // In Open Order table
                         $(elm).html(result.lp)
-                        elm = document.getElementById("pos_" + result.tk)  // In Active Trades table
+                        elm = document.getElementById("trade_" + result.tk)  // In Active Trades table
                         $(elm).html(result.lp)
+                        // elm = document.getElementById("pos_" + result.tk)  // In Positions table
+                        // $(elm).html(result.lp)
                         break;
                 }
             }
             if( result.t == 'dk' || result.t == 'df') {
-                 // trigger("quote", [result]);
+                console.log("..................  Another quote ...................")
+                trigger("quote", [result]);
             }
             if(result.t == 'om') {
                 console.log("..................  OM ...................")
@@ -206,16 +214,17 @@ shoonya_api = function () {
             }
     });
 
+    let open_ord_row_id = 0;
     const orderbook = {
 
-        get_order_status : function(orderno, trade_info) {
+        get_order_status : function(orderno) {
             this.get_orderbook(function(orders) {
                 let matching_order = orders.find(order => order.norenordno === orderno)
                 if(matching_order != undefined) {
                     console.log(matching_order)
                     switch (matching_order.status) {
                         // case "COMPLETE": trade.display_active_trade(matching_order); break;  //TODO AMO ORDER
-                        case "OPEN": trade.display_active_trade(matching_order); break;  //TODO AMO ORDER
+                        case "OPEN": trade.display_active_trade(matching_order); break;
                         default: display_order_exec_msg(matching_order); break;
                     }
                 }
@@ -277,10 +286,10 @@ shoonya_api = function () {
                 } else {
                     buy_sell = '<span class="badge badge-danger">' + type + 'Sell</span>'
                 }
-
+                let ttype = orderbook.know_bull_or_bear(item)
 
                 let dname = (item.dname != undefined)? item.dname : item.tsym;
-                $('#open_order_list').append(`<tr ordid="${item.norenordno}" exch="${item.exch}" tsym="${item.tsym}" qty="${item.qty}" token="${item.token}">
+                $('#open_order_list').append(`<tr id="row_id_${++open_ord_row_id}" ordid="${item.norenordno}" exch="${item.exch}" tsym="${item.tsym}" qty="${item.qty}" token="${item.token}" ttype="${ttype}" trtype="${buy_sell}"">
                         <td scope="row">${buy_sell}</td>
                         <td class="order-num">${item.norenordno}</td>
                         <td>${dname}</td>
@@ -294,38 +303,75 @@ shoonya_api = function () {
                         <td><button type="button" class="btn btn-danger" onclick="shoonya_api.orderbook.cancel_order(this)">Cancel</button></td>
                 </tr>`);
 
+
+
                 let token = item.exch + "|" + item.token
                 subscribe_token(token)
             }
         },
 
         get_value_object : function(entry) {
-            spot_based_entry = false;
+            let spot_based_entry = false;
+            let instrument = 'limit';
 
             if(entry != undefined && entry != '' && (entry.includes('N') || entry.includes('B'))) {
                 spot_based_entry = true
+                instrument = (entry).includes('N')? 'nifty' : 'bank_nifty'
             }
 
-            return {spot_based_entry : spot_based_entry, value : entry.replace(/N|B/g, '').trim()}
+            return {spot_based_entry : spot_based_entry, value : entry.replace(/N|B/g, '').trim(), instrument : instrument}
         },
 
         place_order : function(elm, buy_sell) {
             pelm = $(elm).parent().parent();
-            entry_val = pelm.find('.entry').val()
-            entry = orderbook.get_value_object(entry_val);
+            entry_val = pelm.find('.entry').val().trim()
+            entry_obj = orderbook.get_value_object(entry_val);
             qty = pelm.find('.qty').val()
 
-            if (entry.spot_based_entry) {
-                console.log('Place waiting order')
+            params = this.get_order_params(pelm, buy_sell, entry_obj, qty)
+            if (entry_obj.spot_based_entry) {
+                this.add_to_spot_order_list(params, entry_val)
             } else {
-                params = orderbook.get_order_params(pelm, buy_sell, entry, qty)
                 let reply = post_request(url.place_order, params, this.place_order_success_cb)
-                console.log("Buy reply = ", reply)
                 return reply;
             }
         },
 
+        add_to_spot_order_list : function(item, entry_val) {
+            let buy_sell = '';
+            if (item.trantype === "B") {
+                buy_sell = '<span class="badge badge-success">Buy</span>'
+            } else {
+                buy_sell = '<span class="badge badge-danger">Sell</span>'
+            }
+
+            let ttype = this.know_bull_or_bear(item)
+
+            let dname = (item.dname != undefined)? item.dname : item.tsym;
+            let row_id = ++open_ord_row_id;
+            $('#open_order_list').append(`<tr id="row_id_${row_id}" ordid="${item.norenordno}" exch="${item.exch}" tsym="${item.tsym}" qty="${item.qty}" token="${item.token}" ttype="${ttype}" trtype="${buy_sell}">
+                    <td>${buy_sell}</td>
+                    <td class="order-num">Spot Based Entry</td>
+                    <td>${dname}</td>
+                    <th id="open_order_${item.token}" class="ltp"></th>
+                    <td><input type="text" class="form-control entry" placeholder=""  value="${entry_val}"></td>
+                    <td><input type="text" class="form-control target" placeholder=""  value=""></td>
+                    <td><input type="text" class="form-control sl" placeholder=""  value=""></td>
+                    <td><input type="text" class="form-control qty" placeholder=""  value="${item.qty}"></td>
+
+                    <td><button type="button" class="btn btn-success" onclick="shoonya_api.orderbook.modify_order(this)">Modify</button></td>
+                    <td><button type="button" class="btn btn-danger" onclick="shoonya_api.orderbook.cancel_order(this)">Cancel</button></td>
+            </tr>`);
+
+            let entry_obj = this.get_value_object(entry_val)
+            if(entry_obj.instrument == "nifty")
+                trade.nifty_spot_entries[parseFloat(entry_obj.value)] = {'row_id': row_id, 'ttype': ttype};
+            else
+                trade.bank_nifty_spot_entries[parseFloat(entry_obj.value)] = {'row_id': row_id, 'ttype': ttype};;
+        },
+
         place_order_success_cb : function(data) {
+            console.log("Place order success cb : ", data.norenordno)
             if( data.norenordno != undefined) {
                 shoonya_api.orderbook.get_order_status(data.norenordno)
                 orderbook.update_open_orders();
@@ -388,32 +434,42 @@ shoonya_api = function () {
         modify_order : function(td_elm) {
             let relm = $(td_elm).parent().parent();
             let orderno = relm.find('.order-num').html()
-            let limit_value = relm.find('.entry').val()
+            let entry_value = relm.find('.entry').val()
 
-            let prctyp = 'LMT', price = "0.0";
-            if(limit_value == '') {
-                prctyp = 'MKT'
-            } else price = limit_value.toString()
+            if(orderno.includes('Spot')) {  // Spot based entry
+                let entry_obj = this.get_value_object(entry_value)
+                let row_id = relm.attr('row_id')
+                let ttype = relm.attr('ttype')
+                trade.nifty_spot_entries[entry_obj.value] = {'row_id': row_id, 'ttype': ttype};;
+                trade.bank_nifty_spot_entries[entry_obj.value] = {'row_id': row_id, 'ttype': ttype};;
 
-            let qty = relm.find('.qty').val()
+            } else {
 
-            let values                  = {'ordersource':'WEB'};
-            values["uid"]           = user_id;
-            values["actid"]         = user_id;
-            values["norenordno"]    = orderno;
-            values["exch"]          = relm.attr('exch');
-            values["tsym"]          = relm.attr('tsym');
-            values["qty"]           = qty;
-            values["prctyp"]        = prctyp;
-            values["prc"]           = price;
+                let prctyp = 'LMT', price = "0.0";
+                if (limit_value == '') {
+                    prctyp = 'MKT'
+                } else price = entry_obj.value.toString()
 
-            let reply = post_request(url.modify_order, values);
+                let qty = relm.find('.qty').val()
 
-            trade.modify(td_elm)
+                let values = {'ordersource': 'WEB'};
+                values["uid"] = user_id;
+                values["actid"] = user_id;
+                values["norenordno"] = orderno;
+                values["exch"] = relm.attr('exch');
+                values["tsym"] = relm.attr('tsym');
+                values["qty"] = qty;
+                values["prctyp"] = prctyp;
+                values["prc"] = price;
 
-            //TODO - Temp code added.. Fix later
-            setTimeout(function() {shoonya_api.orderbook.get_orderbook(shoonya_api.orderbook.place_order_success_cb)}, 10)
-            return reply;
+                let reply = post_request(url.modify_order, values);
+
+                //TODO - Temp code added.. Fix later
+                setTimeout(function () {
+                    shoonya_api.orderbook.get_orderbook(shoonya_api.orderbook.place_order_success_cb)
+                }, 10)
+                return reply;
+            }
         },
 
         //TODO - Partial quantity exit should be done
@@ -423,12 +479,12 @@ shoonya_api = function () {
             let limit_value = relm.find('.exit-limit').val()
 
             let buy_sell=''
-            trade_ord = trade.ongoing_trades[orderno]
-            if(trade_ord!=undefined)
-                buy_sell = (trade_ord['trantype'] == 'B') ? 'S' : 'B';  // Do the opposite
+            let trade_info = trade.ongoing_trades[orderno]
+            if(trade_info!=undefined)
+                buy_sell = (trade_info['trantype'] == 'B') ? 'S' : 'B';  // Do the opposite
 
-            exit_limit = orderbook.get_value_object(limit_value);
-            values = orderbook.get_order_params(relm, buy_sell, exit_limit, qty)
+            let exit_limit = orderbook.get_value_object(limit_value);
+            let values = orderbook.get_order_params(relm, buy_sell, exit_limit, qty)
             let reply = post_request(url.place_order, values);
 
             //TODO - Temp code added.. Fix later
@@ -491,15 +547,72 @@ shoonya_api = function () {
                         <td>${item.exchordid === undefined?"":item.exchordid}</td>
                 </tr>`);
         },
+
+        know_bull_or_bear: function(order) {
+            let bear_trade = false
+            if(order.exch === "NFO") {
+                if (order.optt === "PE" && order.trantype === "B") {
+                    bear_trade = true
+                } else if(order.optt === "CE" && order.trantype === "S") {
+                    bear_trade = true
+                } else if (order.trantype === "S") {
+                    bear_trade = true
+                }
+            } else if(order.exch === "NSE" || order.exch === "BSE") {
+                if (order.trantype === "S") {
+                    bear_trade = true
+                }
+            }
+
+            return bear_trade? "bear":"bull" ;
+        },
     };
 
     const trade = {
         ongoing_trades : {},
+        nifty_spot_entries : {},
+        bank_nifty_spot_entries : {},
+
+        trigger: function(instr, cur_spot_value) {
+            function check_entry_trigger(values, spot) {
+                if (values.ttype === 'bull') {
+                    if (cur_spot_value <= spot) {
+                        console.log("Entry triggered for ", values.row_id)
+                        let tr_elm = $(`#row_id_${values.row_id}`)
+                        let buy_button = tr_elm.find('button')[0]
+                        orderbook.place_order(buy_button, tr_elm.attr('trtype'))
+                    }
+                } else if (values.ttype === 'bear') {
+                    if (cur_spot_value >= spot) {
+                        console.log("Entry triggered for ", values.row_id)
+                    }
+                }
+            }
+
+            switch(instr) {
+                case 'nifty' :
+                    for(const [spot, values] in Object.entries(this.nifty_spot_entries)) {
+                        check_entry_trigger(values, spot);
+                    }
+                    break;
+                case 'bank_nifty' :
+                    for(const [spot, values] in Object.entries(this.bank_nifty_spot_entries)) {
+                        check_entry_trigger(values, spot)
+                    }
+                    break;
+                default :
+                    break;
+            }
+        },
+
         show_active_trades : function() {
             console.log("Yet to be implemented.. show_active_trades()")
         },
 
+
         display_active_trade : function(order) {
+            let bull_bear = orderbook.know_bull_or_bear(order)
+            order['bull_bear'] = bull_bear
             trade.ongoing_trades[order.norenordno] = order;
 
             let buy_sell = '';
@@ -516,26 +629,37 @@ shoonya_api = function () {
                         <td class="entry">${order.prc}</td>
                         <td id="trade_${order.token}" class="ltp"></td>
                         <td class="pnl"></td>
-                        <td><input type="text" class="form-control target" placeholder="" ></td>
-                        <td><input type="text" class="form-control sl" placeholder="" ></td>
+                        <td><input type="text" disabled class="form-control target" placeholder="" ></td>
+                        <td><input type="text" disabled class="form-control sl" placeholder="" ></td>
                         <td><input type="text" class="form-control exit-limit" placeholder="" ></td>
                         <td><input type="text" class="form-control qty" placeholder=""  value="${lot_size}"></td>
-                        <td><button type="button" class="btn btn-success" onclick="shoonya_api.trade.modify(this)">Modify</button></td>
+                        <td><button type="button" class="btn btn-success" onclick="shoonya_api.trade.modify(this, $(this).text())">Edit</button></td>
                         <td><button type="button" class="btn btn-danger" onclick="shoonya_api.trade.exit(this)">Exit</button></td>
                 </tr>`);
         },
 
-        modify : function(elm) {
+        modify : function(elm, button_text) {
             tr_elm = $(elm).parent().parent();
-            ordid = tr_elm.attr('ordid');
-            trade_ord = trade.ongoing_trades[ordid];
-            trade_ord['target'] = tr_elm.find('.target').val();
-            trade_ord['sl'] = tr_elm.find('.sl').val();
-            exit_lm = tr_elm.find('.exit-limit')
-            if (exit_lm != undefined)
-                trade_ord['exit_limit'] = exit_lm.val();
-            trade_ord['qty'] = tr_elm.find('.qty').val();
-            trade.ongoing_trades[ordid] = trade_ord;
+
+            if(button_text === 'Edit') {
+                tr_elm.find('.target').removeAttr('disabled')
+                tr_elm.find('.sl').removeAttr('disabled')
+                $(elm).text('Done')
+            } else {
+                tr_elm.find('.target').attr('disabled', 'disabled')
+                tr_elm.find('.sl').attr('disabled', 'disabled')
+                $(elm).text('Edit')
+
+                ordid = tr_elm.attr('ordid');
+                trade_info = trade.ongoing_trades[ordid];
+                trade_info['target'] = tr_elm.find('.target').val();
+                trade_info['sl'] = tr_elm.find('.sl').val();
+                exit_lm = tr_elm.find('.exit-limit')
+                if (exit_lm != undefined)
+                    trade_info['exit_limit'] = exit_lm.val();
+                trade_info['qty'] = tr_elm.find('.qty').val();
+                trade.ongoing_trades[ordid] = trade_info;
+            }
         },
 
         exit : function(elm) {
@@ -559,6 +683,7 @@ shoonya_api = function () {
         },
 
         add_row_to_watch : function(sym, lot_size, exch, token, tsym, put_option) {
+            console.log("Add row to watch .. ", token)
             subscribe_token( exch + '|' + token)
             class_name = ''
             if(put_option) {
@@ -651,6 +776,7 @@ shoonya_api = function () {
 
     /*Attach functions to connect, add to watch list button, etc*/
     $(document).ready(function() {
+        hide_other_tabs('#open_orders')
         $('#connect_to_server').click(function () {
             user_id = $('#userId').val()
             session_token = $('#sessionToken').val()
@@ -687,6 +813,7 @@ shoonya_api = function () {
         "trade" : trade,
         "positions" : positions,
         "subscribed_symbols": subscribed_symbols,
+        "live_data": live_data,
     }
 
 }();
