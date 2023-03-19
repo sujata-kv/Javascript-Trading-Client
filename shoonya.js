@@ -68,12 +68,17 @@ shoonya_api = function () {
                         break;
                     default:
                         trade.trigger(result.tk, result.lp)
-                        let elm = document.getElementById(result.tk)
+                        let elm = document.getElementById("watch_" + result.tk)    //Update in the watch list
                         $(elm).html(result.lp)
+
                         elm = document.getElementById("open_order_" + result.tk)  // In Open Order table
-                        $(elm).html(result.lp)
+                        if(elm != undefined)
+                            $(elm).html(result.lp)
                         elm = document.getElementById("trade_" + result.tk)  // In Active Trades table
-                        $(elm).html(result.lp)
+                        if(elm != undefined) {
+                            $(elm).html(result.lp)
+                            trade.update_pnl(elm)
+                        }
                         // elm = document.getElementById("pos_" + result.tk)  // In Positions table
                         // $(elm).html(result.lp)
                         break;
@@ -247,8 +252,15 @@ shoonya_api = function () {
                         $('#order_error_alert').removeClass('d-none');
                         setTimeout(function(){$('#order_error_alert').addClass('d-none')}, alert_msg_disappear_after);
                         break;
+                    case "CANCELED":
+                        $('#order_success_msg').html("Order " + orderno + " cancelled successfully. Symbol: " + order.tsym + " Qty: " + order.qty );
+                        $('#order_success_alert').removeClass('d-none');
+                        setTimeout(function(){$('#order_error_alert').addClass('d-none')}, alert_msg_disappear_after);
+                        break;
+                        break;
                     default:
-                        alert("Default order status" + JSON.stringify(order))
+                        console.log('Default order status : ')
+                        console.log(JSON.stringify(order))
                         break;
                 }
             }
@@ -311,7 +323,6 @@ shoonya_api = function () {
             }
         },
 
-
         place_order : function(tr_elm, buy_sell) {
             let entry_val = tr_elm.find('.entry').val().trim()
             let entry_obj = milestone_manager.get_value_object(entry_val);
@@ -364,6 +375,9 @@ shoonya_api = function () {
             if( data.norenordno != undefined) {
                 shoonya_api.orderbook.get_order_status(data.norenordno)
                 orderbook.update_open_orders();
+            }else if ( data.result != undefined) {
+                shoonya_api.orderbook.get_order_status(data.result)  //For cancel order order id is contained in result variable
+                orderbook.update_open_orders();
             }
         },
 
@@ -375,6 +389,8 @@ shoonya_api = function () {
         get_order_params: function(elm, buy_or_sell, entry, qty) {
 
             let prctyp = 'LMT', price = "0.0";
+            let remarks = "";
+            let tsym = elm.attr('tsym');
             if(entry.value == '') {
                 prctyp = 'MKT'
             } else price = entry.value.toString()
@@ -384,6 +400,10 @@ shoonya_api = function () {
                 prd = "C";
             } else {
                 prd = "M";
+                if (tsym.startsWith("NIFTY"))
+                    remarks = "N-" + Math.round(live_data[nifty_tk])
+                else if(tsym.startsWith("BANKNIFTY"))
+                    remarks = "B-" + Math.round(live_data[bank_nifty_tk])
             }
 
             let values          =  {'ordersource':'WEB'};
@@ -392,12 +412,13 @@ shoonya_api = function () {
             values["trantype"]  = buy_or_sell;
             values["prd"]       = prd;
             values["exch"]      = exch;
-            values["tsym"]      = elm.attr('tsym');
+            values["tsym"]      = tsym;
             values["qty"]       = qty;
             values["dscqty"]    = qty;
             values["prctyp"]    = prctyp       /*  LMT / MKT / SL-LMT / SL-MKT / DS / 2L / 3L */
             values["prc"]       = price;
             values["ret"]       = 'DAY';
+            values["remarks"]   = remarks;
 
             values["amo"] = "Yes";          // TODO - AMO ORDER
 
@@ -412,11 +433,7 @@ shoonya_api = function () {
             values["uid"]         = user_id;
             values["norenordno"]  = orderno;
 
-            let reply = post_request(url.cancel_order, values, function() {relm.remove()});
-            console.log('Cancel order reply = ', reply)
-
-            //TODO - Temp code added.. Fix later
-            setTimeout(function() {shoonya_api.orderbook.get_orderbook(shoonya_api.orderbook.place_order_success_cb)}, 10)
+            let reply = post_request(url.cancel_order, values, function(data) {relm.remove(); shoonya_api.orderbook.place_order_success_cb(data)});
             return reply;
         },
 
@@ -450,12 +467,7 @@ shoonya_api = function () {
                 values["prctyp"] = prctyp;
                 values["prc"] = price;
 
-                let reply = post_request(url.modify_order, values);
-
-                //TODO - Temp code added.. Fix later
-                setTimeout(function () {
-                    shoonya_api.orderbook.get_orderbook(shoonya_api.orderbook.place_order_success_cb)
-                }, 10)
+                let reply = post_request(url.modify_order, values, this.place_order_success_cb);
                 return reply;
             }
 
@@ -476,7 +488,6 @@ shoonya_api = function () {
             } else {
                 milestone_manager.remove_sl(row_id);
             }
-
         },
 
         //TODO - Partial quantity exit should be done
@@ -484,18 +495,16 @@ shoonya_api = function () {
             let relm = $(td_elm).parent().parent();
             let orderno = relm.attr('ordid')
             let limit_value = relm.find('.exit-limit').val()
+            let qty = relm.find('.qty').val()
 
             let buy_sell=''
             let trade_info = trade.active_trades[orderno]
             if(trade_info!=undefined)
                 buy_sell = (trade_info['trantype'] == 'B') ? 'S' : 'B';  // Do the opposite
 
-            let exit_limit = MileStoneManager.get_value_object(limit_value);
+            let exit_limit = milestone_manager.get_value_object(limit_value);
             let values = orderbook.get_order_params(relm, buy_sell, exit_limit, qty)
-            let reply = post_request(url.place_order, values);
-
-            //TODO - Temp code added.. Fix later
-            setTimeout(function() {shoonya_api.orderbook.get_orderbook(shoonya_api.orderbook.place_order_success_cb)}, 10)
+            let reply = post_request(url.place_order, values, this.place_order_success_cb);
             return reply;
         },
 
@@ -547,6 +556,7 @@ shoonya_api = function () {
                         <td>${item.prctyp}</td>
                         <td>${item.norentm}</td>
                         <td>${rej_reason}</td>
+                        <td>${item.remarks}</td>
                         <td>${item.exch_tm === undefined? "": item.exch_tm}</td>
                         <td>${item.exch}</td>
                         <td>${prd}</td>
@@ -719,6 +729,29 @@ shoonya_api = function () {
     const trade = {
         active_trades : {},
 
+        update_pnl : function(ltp_elm){
+            let tr_elm = $(ltp_elm).parent();
+            let ttype = tr_elm.attr('ttype');
+            let ltp = parseFloat($(ltp_elm).html());
+            let entry = parseFloat(tr_elm.find('entry').find('price').html());
+
+            let pnl = 0.0;
+            if(ttype === "bull") {
+                pnl = ltp - entry;
+            } else {
+                pnl = entry - ltp;
+            }
+
+            let pnl_elm = tr_elm.find('.pnl');
+            pnl_elm.html(pnl)
+            pnl_elm.css('font-weight','bold')
+            if (pnl < 0) {
+                pnl_elm.css('color', 'red')
+            } else {
+                pnl_elm.css('color', 'green')
+            }
+        },
+
         trigger: function() {
             ms_list = milestone_manager.get_milestones();
 
@@ -852,10 +885,14 @@ shoonya_api = function () {
             }
             let dname = (order.dname != undefined)? order.dname : order.tsym;
 
-            $('#active_trades_table').append(`<tr ordid="${order.norenordno}" exch="${order.exch}" token="${order.token}" tsym="${order.tsym}" lot_size="${order.ls}" ttype="${ttype}" trtype="${order.trantype}">
+            $('#active_trades_table').append(`<tr ordid="${order.norenordno}" exch="${order.exch}" token="${order.token}" tsym="${order.tsym}" ttype="${ttype}" trtype="${order.trantype}">
                         <td>${buy_sell}</td>
                         <td>${dname}</td>
-                        <td class="entry">${order.prc}</td>
+                        <td class="entry">
+                            <span class="badge badge-pill badge-dark">${order.norentm.split(" ")[0]}</span>
+                            </br><span class="price">${order.prc}</span></br>
+                            <span class="badge badge-primary">${order.remarks}</span>
+                        </td>
                         <td id="trade_${order.token}" class="ltp"></td>
                         <td class="pnl"></td>
                         <td><input type="text" disabled class="form-control target" placeholder="" ></td>
@@ -931,7 +968,7 @@ shoonya_api = function () {
             $('#watch_list_body').append(`<tr class="${class_name}" exch="${exch}" token="${token}" tsym="${tsym}" lot_size="${lot_size}">
     
                 <td>${sym}</td>
-                <th id="${token}"></th>
+                <th id="watch_${token}"></th>
                 <td><input type="text" class="form-control entry" placeholder="" ></td>
                 <td><input type="text" class="form-control qty" placeholder="" value="${lot_size}"></td>
                 <td><button type="button" class="btn btn-success" onclick="shoonya_api.orderbook.place_order($(this).parent().parent(), 'B')">BUY</button></td>
