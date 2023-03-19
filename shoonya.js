@@ -70,15 +70,12 @@ shoonya_api = function () {
                         $('#vix').html(result.lp)
                         break;
                     case nifty_tk:
-                        trade.trigger('nifty', result.lp)
                         $('#nifty').html(result.lp)
                         break;
                     case bank_nifty_tk:
-                        trade.trigger('bank_nifty', result.lp)
                         $('#bank_nifty').html(result.lp)
                         break;
                     default:
-                        trade.trigger(result.tk, result.lp)
                         update_ltp('.watch_' + result.tk);
                         update_ltp(".open_order_" + result.tk)  // In Open Order table
                         update_ltp(".trade_" + result.tk)  // In Active Trades table
@@ -87,7 +84,7 @@ shoonya_api = function () {
             }
             if( result.t == 'dk' || result.t == 'df') {
                 console.log("..................  Another quote ...................")
-                trigger("quote", [result]);
+                // trigger("quote", [result]);
             }
             if(result.t == 'om') {
                 console.log("..................  OM ...................")
@@ -229,8 +226,7 @@ shoonya_api = function () {
                 if(matching_order != undefined) {
                     console.log(matching_order)
                     switch (matching_order.status) {
-                        // case "COMPLETE": trade.display_active_trade(matching_order); break;  //TODO AMO ORDER
-                        case "OPEN": trade.display_active_trade(matching_order); break;
+                        case "COMPLETE": trade.display_active_trade(matching_order); break;  //TODO AMO ORDER
                         default: display_order_exec_msg(matching_order); break;
                     }
                 }
@@ -242,28 +238,28 @@ shoonya_api = function () {
                         $('#order_success_msg').html("Order is open. Order number: " + orderno + "  Symbol: " + order.tsym + " Qty: " + order.qty);
                         $('#order_success_alert').removeClass('d-none');
                         setTimeout(function(){
-                            $('#order_success_msg').html("");
+                            // $('#order_success_msg').html("");
                             $('#order_success_alert').addClass('d-none')}, alert_msg_disappear_after);
                         break;
                     case "COMPLETE" :
                         $('#order_success_msg').html("Order completed. Order number: " + orderno + "  Symbol: " + order.tsym + " Qty: " + order.qty);
                         $('#order_success_alert').removeClass('d-none');
                         setTimeout(function(){
-                            $('#order_success_msg').html("");
+                            // $('#order_success_msg').html("");
                             $('#order_success_alert').addClass('d-none')}, alert_msg_disappear_after);
                         break;
                     case "REJECTED" :
                         $('#order_error_msg').html("Order " + orderno + " rejected. Reason : " + order.rejreason  + "   Symbol: " + order.tsym + " Qty: " + order.qty );
                         $('#order_error_alert').removeClass('d-none');
                         setTimeout(function(){
-                            $('#order_error_msg').html("");
+                            // $('#order_error_msg').html("");
                             $('#order_error_alert').addClass('d-none')}, alert_msg_disappear_after);
                         break;
                     case "CANCELED":
                         $('#order_success_msg').html("Order " + orderno + " cancelled successfully. Symbol: " + order.tsym + " Qty: " + order.qty );
                         $('#order_success_alert').removeClass('d-none');
                         setTimeout(function(){
-                            $('#order_success_msg').html("");
+                            // $('#order_success_msg').html("");
                             $('#order_error_alert').addClass('d-none')}, alert_msg_disappear_after);
                         break;
                     default:
@@ -332,7 +328,7 @@ shoonya_api = function () {
         },
 
         place_order : function(tr_elm, buy_sell) {
-            let entry_val = tr_elm.find('.entry').val().trim()
+            let entry_val = tr_elm.find('.entry').val()
             let entry_obj = milestone_manager.get_value_object(entry_val);
             let qty = tr_elm.find('.qty').val()
 
@@ -372,10 +368,8 @@ shoonya_api = function () {
             </tr>`);
 
             let entry_obj = milestone_manager.get_value_object(entry_val)
-            if(entry_obj.instrument == "nifty")
-                trade.mile_stones.nifty.entries[parseFloat(entry_obj.value)] = {'row_id': row_id, 'ttype': ttype};
-            else // Spot value only. Should be bank-nifty if not nifty
-                trade.mile_stones.bank_nifty.entries[parseFloat(entry_obj.value)] = {'row_id': row_id, 'ttype': ttype};
+            if(entry_obj.spot_based)
+                milestone_manager.add_entry(row_id, item.token, ttype, entry_obj);
         },
 
         place_order_success_cb : function(data) {
@@ -399,6 +393,7 @@ shoonya_api = function () {
             let prctyp = 'LMT', price = "0.0";
             let remarks = "";
             let tsym = elm.attr('tsym');
+            let token = elm.attr('token');
             if(entry.value == '') {
                 prctyp = 'MKT'
             } else price = entry.value.toString()
@@ -421,6 +416,7 @@ shoonya_api = function () {
             values["prd"]       = prd;
             values["exch"]      = exch;
             values["tsym"]      = tsym;
+            values["token"]      = token;
             values["qty"]       = qty;
             values["dscqty"]    = qty;
             values["prctyp"]    = prctyp       /*  LMT / MKT / SL-LMT / SL-MKT / DS / 2L / 3L */
@@ -428,7 +424,7 @@ shoonya_api = function () {
             values["ret"]       = 'DAY';
             values["remarks"]   = remarks;
 
-            values["amo"] = "Yes";          // TODO - AMO ORDER
+            // values["amo"] = "Yes";          // TODO - AMO ORDER
 
             return values;
         },
@@ -451,10 +447,11 @@ shoonya_api = function () {
             let entry_value = relm.find('.entry').val()
             let row_id = relm.attr('row_id')
             let ttype = relm.attr('ttype')
+            let token = relm.attr('token')
 
             if(orderno.includes('Spot')) {  // Spot based entry
                 let entry_obj = milestone_manager.get_value_object(entry_value)
-                milestone_manager.add_entry(row_id, ttype, entry_obj)
+                milestone_manager.add_entry(row_id, token, ttype, entry_obj)
 
             } else {
 
@@ -483,7 +480,7 @@ shoonya_api = function () {
 
             if(target_value != undefined || target_value != '') {  // Target has some value
                 let target_obj = milestone_manager.get_value_object(target_value)
-                milestone_manager.add_target(row_id, ttype, target_obj);
+                milestone_manager.add_target(row_id, token, ttype, target_obj);
             } else {
                 milestone_manager.remove_target(row_id);
             }
@@ -492,7 +489,7 @@ shoonya_api = function () {
 
             if(sl_value != undefined || sl_value != '') {  // SL has some value
                 let sl_obj = milestone_manager.get_value_object(sl_value)
-                milestone_manager.add_sl(row_id, ttype, sl_obj);
+                milestone_manager.add_sl(row_id, token, ttype, sl_obj);
             } else {
                 milestone_manager.remove_sl(row_id);
             }
@@ -658,14 +655,14 @@ shoonya_api = function () {
                 instrument = (entry).includes('N')? 'nifty' : 'bank_nifty'
             }
 
-            return {spot_based : spot_based, value : entry.replace(/N|B/g, '').trim(), instrument : instrument}
+            return {spot_based : spot_based, value : entry.replace(/N|B/i, '').trim(), instrument : instrument}
         }
 
-        add_entry(row_id, trtype, value_obj) {
+        add_entry(row_id, token, ttype, value_obj) {
             let old_ms = this.milestones[row_id]
 
             if(old_ms == undefined) {
-                let ms = new MileStone(trtype);
+                let ms = new MileStone(ttype, token);
                 ms.set_entry(value_obj);
                 this.milestones[row_id] = ms
             } else {
@@ -673,11 +670,11 @@ shoonya_api = function () {
             }
         }
 
-        add_target(row_id, trtype, value_obj) {
+        add_target(row_id, token, ttype, value_obj) {
             let old_ms = this.milestones[row_id]
 
             if(old_ms == undefined) {
-                let ms = new MileStone(trtype);
+                let ms = new MileStone(ttype, token);
                 ms.set_target(value_obj);
                 this.milestones[row_id] = ms
             } else {
@@ -685,11 +682,11 @@ shoonya_api = function () {
             }
         }
 
-        add_sl(row_id, trtype, value_obj) {
+        add_sl(row_id, token, ttype, value_obj) {
             let old_ms = this.milestones[row_id]
 
             if(old_ms == undefined) {
-                let ms = new MileStone(trtype);
+                let ms = new MileStone(ttype, token);
                 ms.set_sl(value_obj);
                 this.milestones[row_id] = ms
             } else {
@@ -761,21 +758,24 @@ shoonya_api = function () {
         },
 
         trigger: function() {
-            ms_list = milestone_manager.get_milestones();
+            let ms_list = milestone_manager.get_milestones();
 
-            for(const [row_id, mile_stone] in Object.entries(ms_list)) {
-                if(mile_stone.entry != undefined) {// If it has entry object
+            for( const [row_id, mile_stone] of Object.entries(ms_list)) {
+                if(mile_stone.get_entry() != undefined) {// If it has entry object
+                    console.log('checking entry trigger')
                     check_entry_trigger(row_id, mile_stone)
                 }
 
-                if(mile_stone.target != undefined) {// If it has target object
+                if(mile_stone.get_target() != undefined) {// If it has target object
                     check_target_trigger(row_id, mile_stone)
                 }
 
-                if(mile_stone.sl != undefined) {// If it has sl object
+                if(mile_stone.get_sl() != undefined) {// If it has sl object
                     check_sl_trigger(row_id, mile_stone)
                 }
             }
+
+            // setTimeout(trade.trigger, 1000)
 
             function check_entry_trigger(row_id, mile_stone) {
                 let cur_spot_value = 0;
@@ -935,12 +935,13 @@ shoonya_api = function () {
                 trade.active_trades[ordid] = trade_info;
 
                 let row_id = tr_elm.attr('row_id')
+                let token = tr_elm.attr('token')
                 let trtype = tr_elm.attr('trtype')
                 if(target != undefined && target != '' ) {
-                    milestone_manager.add_target(row_id, trtype, milestone_manager.get_value_object(target))
+                    milestone_manager.add_target(row_id, token, trtype, milestone_manager.get_value_object(target))
                 }
                 if(sl != undefined && sl != '' ) {
-                    milestone_manager.add_target(row_id, trtype, milestone_manager.get_value_object(sl))
+                    milestone_manager.add_target(row_id, token, trtype, milestone_manager.get_value_object(sl))
                 }
             }
         },
@@ -1065,6 +1066,7 @@ shoonya_api = function () {
             session_token = $('#sessionToken').val()
             connect()
             setTimeout(orderbook.update_open_orders, 100);
+            setTimeout(trade.trigger, 1000);
         });
     });
 
@@ -1097,6 +1099,7 @@ shoonya_api = function () {
         "positions" : positions,
         "subscribed_symbols": subscribed_symbols,
         "live_data": live_data,
+        "mgr": milestone_manager,
     }
 
 }();
