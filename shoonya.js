@@ -289,8 +289,9 @@ shoonya_api = function () {
                 let ttype = orderbook.know_bull_or_bear(item)
 
                 let dname = (item.dname != undefined)? item.dname : item.tsym;
-                $('#open_order_list').append(`<tr id="row_id_${++open_ord_row_id}" ordid="${item.norenordno}" exch="${item.exch}" tsym="${item.tsym}" qty="${item.qty}" token="${item.token}" ttype="${ttype}" trtype="${buy_sell}"">
-                        <td scope="row">${buy_sell}</td>
+                $('#open_order_list').append(`<tr id="row_id_${++open_ord_row_id}" ordid="${item.norenordno}" exch="${item.exch}" tsym="${item.tsym}" 
+                                    qty="${item.qty}" token="${item.token}" ttype="${ttype}" trtype="${item.trantype}"">
+                        <td>${buy_sell}</td>
                         <td class="order-num">${item.norenordno}</td>
                         <td>${dname}</td>
                         <th id="open_order_${item.token}" class="ltp"></th>
@@ -310,26 +311,14 @@ shoonya_api = function () {
             }
         },
 
-        get_value_object : function(entry) {
-            let spot_based_entry = false;
-            let instrument = 'limit';
 
-            if(entry != undefined && entry != '' && (entry.includes('N') || entry.includes('B'))) {
-                spot_based_entry = true
-                instrument = (entry).includes('N')? 'nifty' : 'bank_nifty'
-            }
+        place_order : function(tr_elm, buy_sell) {
+            let entry_val = tr_elm.find('.entry').val().trim()
+            let entry_obj = milestone_manager.get_value_object(entry_val);
+            let qty = tr_elm.find('.qty').val()
 
-            return {spot_based_entry : spot_based_entry, value : entry.replace(/N|B/g, '').trim(), instrument : instrument}
-        },
-
-        place_order : function(elm, buy_sell) {
-            pelm = $(elm).parent().parent();
-            entry_val = pelm.find('.entry').val().trim()
-            entry_obj = orderbook.get_value_object(entry_val);
-            qty = pelm.find('.qty').val()
-
-            params = this.get_order_params(pelm, buy_sell, entry_obj, qty)
-            if (entry_obj.spot_based_entry) {
+            let params = this.get_order_params(tr_elm, buy_sell, entry_obj, qty)
+            if (entry_obj.spot_based) {
                 this.add_to_spot_order_list(params, entry_val)
             } else {
                 let reply = post_request(url.place_order, params, this.place_order_success_cb)
@@ -349,7 +338,7 @@ shoonya_api = function () {
 
             let dname = (item.dname != undefined)? item.dname : item.tsym;
             let row_id = ++open_ord_row_id;
-            $('#open_order_list').append(`<tr id="row_id_${row_id}" ordid="${item.norenordno}" exch="${item.exch}" tsym="${item.tsym}" qty="${item.qty}" token="${item.token}" ttype="${ttype}" trtype="${buy_sell}">
+            $('#open_order_list').append(`<tr id="row_id_${row_id}" ordid="${item.norenordno}" exch="${item.exch}" tsym="${item.tsym}" qty="${item.qty}" token="${item.token}" ttype="${ttype}" trtype="${item.trantype}">
                     <td>${buy_sell}</td>
                     <td class="order-num">Spot Based Entry</td>
                     <td>${dname}</td>
@@ -363,11 +352,11 @@ shoonya_api = function () {
                     <td><button type="button" class="btn btn-danger" onclick="shoonya_api.orderbook.cancel_order(this)">Cancel</button></td>
             </tr>`);
 
-            let entry_obj = this.get_value_object(entry_val)
+            let entry_obj = milestone_manager.get_value_object(entry_val)
             if(entry_obj.instrument == "nifty")
-                trade.nifty_spot_entries[parseFloat(entry_obj.value)] = {'row_id': row_id, 'ttype': ttype};
-            else
-                trade.bank_nifty_spot_entries[parseFloat(entry_obj.value)] = {'row_id': row_id, 'ttype': ttype};;
+                trade.mile_stones.nifty.entries[parseFloat(entry_obj.value)] = {'row_id': row_id, 'ttype': ttype};
+            else // Spot value only. Should be bank-nifty if not nifty
+                trade.mile_stones.bank_nifty.entries[parseFloat(entry_obj.value)] = {'row_id': row_id, 'ttype': ttype};
         },
 
         place_order_success_cb : function(data) {
@@ -427,7 +416,7 @@ shoonya_api = function () {
             console.log('Cancel order reply = ', reply)
 
             //TODO - Temp code added.. Fix later
-            setTimeout(shoonya_api.orderbook.get_orderbook(shoonya_api.orderbook.place_order_success_cb), 10)
+            setTimeout(function() {shoonya_api.orderbook.get_orderbook(shoonya_api.orderbook.place_order_success_cb)}, 10)
             return reply;
         },
 
@@ -435,20 +424,19 @@ shoonya_api = function () {
             let relm = $(td_elm).parent().parent();
             let orderno = relm.find('.order-num').html()
             let entry_value = relm.find('.entry').val()
+            let row_id = relm.attr('row_id')
+            let ttype = relm.attr('ttype')
 
             if(orderno.includes('Spot')) {  // Spot based entry
-                let entry_obj = this.get_value_object(entry_value)
-                let row_id = relm.attr('row_id')
-                let ttype = relm.attr('ttype')
-                trade.nifty_spot_entries[entry_obj.value] = {'row_id': row_id, 'ttype': ttype};;
-                trade.bank_nifty_spot_entries[entry_obj.value] = {'row_id': row_id, 'ttype': ttype};;
+                let entry_obj = milestone_manager.get_value_object(entry_value)
+                milestone_manager.add_entry(row_id, ttype, entry_obj)
 
             } else {
 
                 let prctyp = 'LMT', price = "0.0";
-                if (limit_value == '') {
+                if (entry_value == '') {
                     prctyp = 'MKT'
-                } else price = entry_obj.value.toString()
+                } else price = entry_value.toString()
 
                 let qty = relm.find('.qty').val()
 
@@ -470,6 +458,25 @@ shoonya_api = function () {
                 }, 10)
                 return reply;
             }
+
+            let target_value = relm.find('.target').val()
+
+            if(target_value != undefined || target_value != '') {  // Target has some value
+                let target_obj = milestone_manager.get_value_object(target_value)
+                milestone_manager.add_target(row_id, ttype, target_obj);
+            } else {
+                milestone_manager.remove_target(row_id);
+            }
+
+            let sl_value = relm.find('.sl').val()
+
+            if(sl_value != undefined || sl_value != '') {  // SL has some value
+                let sl_obj = milestone_manager.get_value_object(sl_value)
+                milestone_manager.add_sl(row_id, ttype, sl_obj);
+            } else {
+                milestone_manager.remove_sl(row_id);
+            }
+
         },
 
         //TODO - Partial quantity exit should be done
@@ -479,11 +486,11 @@ shoonya_api = function () {
             let limit_value = relm.find('.exit-limit').val()
 
             let buy_sell=''
-            let trade_info = trade.ongoing_trades[orderno]
+            let trade_info = trade.active_trades[orderno]
             if(trade_info!=undefined)
                 buy_sell = (trade_info['trantype'] == 'B') ? 'S' : 'B';  // Do the opposite
 
-            let exit_limit = orderbook.get_value_object(limit_value);
+            let exit_limit = MileStoneManager.get_value_object(limit_value);
             let values = orderbook.get_order_params(relm, buy_sell, exit_limit, qty)
             let reply = post_request(url.place_order, values);
 
@@ -549,59 +556,282 @@ shoonya_api = function () {
         },
 
         know_bull_or_bear: function(order) {
-            let bear_trade = false
+            let trade_type = "bull"
             if(order.exch === "NFO") {
                 if (order.optt === "PE" && order.trantype === "B") {
-                    bear_trade = true
+                    trade_type = "bear"
                 } else if(order.optt === "CE" && order.trantype === "S") {
-                    bear_trade = true
+                    trade_type = "bear"
                 } else if (order.trantype === "S") {
-                    bear_trade = true
+                    trade_type = "bear"
                 }
             } else if(order.exch === "NSE" || order.exch === "BSE") {
                 if (order.trantype === "S") {
-                    bear_trade = true
+                    trade_type = "bear"
                 }
             }
 
-            return bear_trade? "bear":"bull" ;
+            return trade_type;
         },
     };
 
-    const trade = {
-        ongoing_trades : {},
-        nifty_spot_entries : {},
-        bank_nifty_spot_entries : {},
+    class MileStone {
+        constructor(ttype, token) {
+            this.ttype = ttype ; //bull or bear trade
+            this.token = token;
+        }
 
-        trigger: function(instr, cur_spot_value) {
-            function check_entry_trigger(values, spot) {
-                if (values.ttype === 'bull') {
-                    if (cur_spot_value <= spot) {
-                        console.log("Entry triggered for ", values.row_id)
-                        let tr_elm = $(`#row_id_${values.row_id}`)
-                        let buy_button = tr_elm.find('button')[0]
-                        orderbook.place_order(buy_button, tr_elm.attr('trtype'))
-                    }
-                } else if (values.ttype === 'bear') {
-                    if (cur_spot_value >= spot) {
-                        console.log("Entry triggered for ", values.row_id)
-                    }
+        get_token() {
+            return this.token;
+        }
+
+        set_entry(entry) {
+            this.entry = entry;
+        }
+
+        get_entry() {
+            return this.entry;
+        }
+
+        set_target(target) {
+            this.target = target;
+        }
+
+        get_target() {
+            return this.target;
+        }
+
+        set_sl(sl) {
+            this.sl = sl;
+        }
+
+        get_sl() {
+            return this.sl;
+        }
+
+        del_entry() {
+            delete this.entry
+        }
+
+        del_target() {
+            delete this.target
+        }
+
+        del_sl() {
+            delete this.sl
+        }
+    }
+
+    class MileStoneManager {
+        constructor() {
+            this.milestones = {}
+        }
+
+        get_milestones() {
+            return this.milestones;
+        }
+
+        get_value_object(entry) {
+            let spot_based = false;
+            let instrument = 'price';
+
+            if(entry != undefined && entry != '' && (entry.includes('N') || entry.includes('B'))) {
+                spot_based = true
+                instrument = (entry).includes('N')? 'nifty' : 'bank_nifty'
+            }
+
+            return {spot_based : spot_based, value : entry.replace(/N|B/g, '').trim(), instrument : instrument}
+        }
+
+        add_entry(row_id, trtype, value_obj) {
+            let old_ms = this.milestones[row_id]
+
+            if(old_ms == undefined) {
+                let ms = new MileStone(trtype);
+                ms.set_entry(value_obj);
+                this.milestones[row_id] = ms
+            } else {
+                old_ms.set_entry(value_obj)
+            }
+        }
+
+        add_target(row_id, trtype, value_obj) {
+            let old_ms = this.milestones[row_id]
+
+            if(old_ms == undefined) {
+                let ms = new MileStone(trtype);
+                ms.set_target(value_obj);
+                this.milestones[row_id] = ms
+            } else {
+                old_ms.set_target(value_obj)
+            }
+        }
+
+        add_sl(row_id, trtype, value_obj) {
+            let old_ms = this.milestones[row_id]
+
+            if(old_ms == undefined) {
+                let ms = new MileStone(trtype);
+                ms.set_sl(value_obj);
+                this.milestones[row_id] = ms
+            } else {
+                old_ms.set_sl(value_obj)
+            }
+        }
+
+        remove_entry(row_id) {
+            let old_ms = this.milestones[row_id]
+            if (old_ms != undefined) {
+                old_ms.del_entry()
+                if( old_ms.get_target()=='undefined' && old_ms.get_sl() == 'undefined') {
+                    delete this.milestones[row_id]
+                }
+            }
+        }
+
+        remove_target(row_id) {
+            let old_ms = this.milestones[row_id]
+            if (old_ms != undefined) {
+                old_ms.del_target()
+                if( old_ms.get_entry()=='undefined' && old_ms.get_sl() == 'undefined') {
+                    delete this.milestones[row_id]
+                }
+            }
+        }
+
+        remove_sl(row_id) {
+            let old_ms = this.milestones[row_id]
+            if (old_ms != undefined) {
+                old_ms.del_sl()
+                if( old_ms.get_entry()=='undefined' && old_ms.get_target() == 'undefined') {
+                    delete this.milestones[row_id]
+                }
+            }
+        }
+
+        remove_milestone(row_id) {
+            delete this.milestones[row_id]
+        }
+    }
+
+    const milestone_manager = new MileStoneManager();
+
+    const trade = {
+        active_trades : {},
+
+        trigger: function() {
+            ms_list = milestone_manager.get_milestones();
+
+            for(const [row_id, mile_stone] in Object.entries(ms_list)) {
+                if(mile_stone.entry != undefined) {// If it has entry object
+                    check_entry_trigger(row_id, mile_stone)
+                }
+
+                if(mile_stone.target != undefined) {// If it has target object
+                    check_target_trigger(row_id, mile_stone)
+                }
+
+                if(mile_stone.sl != undefined) {// If it has sl object
+                    check_sl_trigger(row_id, mile_stone)
                 }
             }
 
-            switch(instr) {
-                case 'nifty' :
-                    for(const [spot, values] in Object.entries(this.nifty_spot_entries)) {
-                        check_entry_trigger(values, spot);
+            function check_entry_trigger(row_id, mile_stone) {
+                let cur_spot_value = 0;
+                let entry_obj = mile_stone.get_entry();
+                let trig_value = entry_obj.value;
+                let ttype = mile_stone.ttype;
+                if (entry_obj.spot_based) {
+                    switch(entry_obj.instrument) {
+                        case "nifty" : cur_spot_value = live_data[nifty_tk]; break;
+                        case "bank_nifty" : cur_spot_value = live_data[bank_nifty_tk]; break;
+                        case "price" : cur_spot_value = live_data[mile_stone.token]; break;
                     }
-                    break;
-                case 'bank_nifty' :
-                    for(const [spot, values] in Object.entries(this.bank_nifty_spot_entries)) {
-                        check_entry_trigger(values, spot)
+                }
+                if (ttype === 'bull') {
+                    if (cur_spot_value <= trig_value) {
+                        entry_triggered()
                     }
-                    break;
-                default :
-                    break;
+                } else if (ttype === 'bear') {
+                    if (cur_spot_value >= trig_value) {
+                        entry_triggered()
+                    }
+                }
+
+                function entry_triggered() {
+                    console.log("Entry triggered for row_id : ", row_id)
+                    let tr_elm = $(`#row_id_${row_id}`)
+                    tr_elm.find('.entry').val('') // Set entry value to '' in order to place market order
+                    orderbook.place_order(tr_elm, tr_elm.attr('trtype'))
+                    milestone_manager.remove_entry(row_id)
+                    tr_elm.remove()
+                }
+            }
+
+            function check_target_trigger(row_id, mile_stone) {
+                let cur_spot_value = 0;
+                let target_obj = mile_stone.get_target();
+                let trig_value = target_obj.value;
+                let ttype = mile_stone.ttype;
+                if (target_obj.spot_based) {
+                    switch(target_obj.instrument) {
+                        case "nifty" : cur_spot_value = live_data[nifty_tk]; break;
+                        case "bank_nifty" : cur_spot_value = live_data[bank_nifty_tk]; break;
+                        case "price" : cur_spot_value = live_data[mile_stone.token]; break;
+                    }
+                }
+                if (ttype === 'bull') {
+                    if (cur_spot_value >= trig_value) {
+                        target_triggered()
+                    }
+                } else if (ttype === 'bear') {
+                    if (cur_spot_value <= trig_value) {
+                        target_triggered()
+                    }
+                }
+
+                function target_triggered() {
+                    console.log("Target triggered for row_id : ", row_id)
+                    let tr_elm = $(`#row_id_${row_id}`)
+                    tr_elm.find('.entry').val('') // Set entry value to '' in order to place market order
+                    let trtype = tr_elm.attr('trtype') ==='B'? 'S' : 'B'    //Do the opposite to close position
+                    orderbook.place_order(tr_elm, trtype)
+                    tr_elm.remove()
+                    milestone_manager.remove_milestone(row_id)
+                }
+            }
+
+            function check_sl_trigger(row_id, mile_stone) {
+                let cur_spot_value = 0;
+                let sl_obj = mile_stone.get_sl();
+                let trig_value = sl_obj.value;
+                let ttype = mile_stone.ttype;
+                if (sl_obj.spot_based) {
+                    switch(sl_obj.instrument) {
+                        case "nifty" : cur_spot_value = live_data[nifty_tk]; break;
+                        case "bank_nifty" : cur_spot_value = live_data[bank_nifty_tk]; break;
+                        case "price" : cur_spot_value = live_data[mile_stone.token]; break;
+                    }
+                }
+                if (ttype === 'bull') {
+                    if (cur_spot_value <= trig_value) {
+                        sl_triggered()
+                    }
+                } else if (ttype === 'bear') {
+                    if (cur_spot_value >= trig_value) {
+                        sl_triggered()
+                    }
+                }
+
+                function sl_triggered() {
+                    console.log("SL triggered for row_id : ", row_id)
+                    let tr_elm = $(`#row_id_${row_id}`)
+                    tr_elm.find('.entry').val('') // Set entry value to '' in order to place market order
+                    let trtype = tr_elm.attr('trtype') ==='B'? 'S' : 'B'    //Do the opposite to close position
+                    orderbook.place_order(tr_elm, trtype)
+                    tr_elm.remove()
+                    milestone_manager.remove_milestone(row_id)
+                }
             }
         },
 
@@ -611,9 +841,8 @@ shoonya_api = function () {
 
 
         display_active_trade : function(order) {
-            let bull_bear = orderbook.know_bull_or_bear(order)
-            order['bull_bear'] = bull_bear
-            trade.ongoing_trades[order.norenordno] = order;
+            let ttype = orderbook.know_bull_or_bear(order)
+            trade.active_trades[order.norenordno] = order;
 
             let buy_sell = '';
             if (order.trantype == "B") {
@@ -623,7 +852,7 @@ shoonya_api = function () {
             }
             let dname = (order.dname != undefined)? order.dname : order.tsym;
 
-            $('#active_trades_table').append(`<tr ordid="${order.norenordno}" exch="${order.exch}" token="${order.token}" tsym="${order.tsym}" lot_size="${order.ls}">
+            $('#active_trades_table').append(`<tr ordid="${order.norenordno}" exch="${order.exch}" token="${order.token}" tsym="${order.tsym}" lot_size="${order.ls}" ttype="${ttype}" trtype="${order.trantype}">
                         <td>${buy_sell}</td>
                         <td>${dname}</td>
                         <td class="entry">${order.prc}</td>
@@ -639,7 +868,7 @@ shoonya_api = function () {
         },
 
         modify : function(elm, button_text) {
-            tr_elm = $(elm).parent().parent();
+            let tr_elm = $(elm).parent().parent();
 
             if(button_text === 'Edit') {
                 tr_elm.find('.target').removeAttr('disabled')
@@ -650,15 +879,24 @@ shoonya_api = function () {
                 tr_elm.find('.sl').attr('disabled', 'disabled')
                 $(elm).text('Edit')
 
-                ordid = tr_elm.attr('ordid');
-                trade_info = trade.ongoing_trades[ordid];
-                trade_info['target'] = tr_elm.find('.target').val();
-                trade_info['sl'] = tr_elm.find('.sl').val();
-                exit_lm = tr_elm.find('.exit-limit')
+                let ordid = tr_elm.attr('ordid');
+                let trade_info = trade.active_trades[ordid];
+                let target = trade_info['target'] = tr_elm.find('.target').val();
+                let sl = trade_info['sl'] = tr_elm.find('.sl').val();
+                let exit_lm = tr_elm.find('.exit-limit')
                 if (exit_lm != undefined)
                     trade_info['exit_limit'] = exit_lm.val();
                 trade_info['qty'] = tr_elm.find('.qty').val();
-                trade.ongoing_trades[ordid] = trade_info;
+                trade.active_trades[ordid] = trade_info;
+
+                let row_id = tr_elm.attr('row_id')
+                let trtype = tr_elm.attr('trtype')
+                if(target != undefined && target != '' ) {
+                    milestone_manager.add_target(row_id, trtype, milestone_manager.get_value_object(target))
+                }
+                if(sl != undefined && sl != '' ) {
+                    milestone_manager.add_target(row_id, trtype, milestone_manager.get_value_object(sl))
+                }
             }
         },
 
@@ -696,8 +934,8 @@ shoonya_api = function () {
                 <th id="${token}"></th>
                 <td><input type="text" class="form-control entry" placeholder="" ></td>
                 <td><input type="text" class="form-control qty" placeholder="" value="${lot_size}"></td>
-                <td><button type="button" class="btn btn-success" onclick="shoonya_api.orderbook.place_order(this, 'B')">BUY</button></td>
-                <td><button type="button" class="btn btn-danger" onclick="shoonya_api.orderbook.place_order(this, 'S')">SELL</button></td>
+                <td><button type="button" class="btn btn-success" onclick="shoonya_api.orderbook.place_order($(this).parent().parent(), 'B')">BUY</button></td>
+                <td><button type="button" class="btn btn-danger" onclick="shoonya_api.orderbook.place_order($(this).parent().parent(), 'S')">SELL</button></td>
                 <th class="del-icon" onclick="shoonya_api.delete_row(this)">
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-trash" viewBox="0 0 16 16">
                         <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/>
