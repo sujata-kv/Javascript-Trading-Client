@@ -2,7 +2,7 @@
 shoonya_api = window.shoonya_api || {};
 
 shoonya_api = function () {
-    let alert_msg_disappear_after = 6000; // Unit milliseconds
+    let alert_msg_disappear_after = 3000; // Unit milliseconds
 
     //TODO - Remove these hardcoded values
     let vix_tk = '26017', nifty_tk = '26000', bank_nifty_tk = '26009'
@@ -52,7 +52,18 @@ shoonya_api = function () {
                 }
             }
             if( result.t == 'tk' || result.t == 'tf') {
-                 // trigger("quote", [result]);
+
+                function update_ltp(selector) {
+                    $(selector).each(function(i, obj) {
+                        $(obj).text(result.lp)
+
+                        if(selector.startsWith('.trade')) {
+                            $(obj).text(result.lp)
+                            trade.update_pnl(obj)
+                        }
+                    });
+                }
+
                 live_data[result.tk] = result.lp
                 switch (result.tk) {
                     case vix_tk:
@@ -68,19 +79,9 @@ shoonya_api = function () {
                         break;
                     default:
                         trade.trigger(result.tk, result.lp)
-                        let elm = document.getElementById("watch_" + result.tk)    //Update in the watch list
-                        $(elm).html(result.lp)
-
-                        elm = document.getElementById("open_order_" + result.tk)  // In Open Order table
-                        if(elm != undefined)
-                            $(elm).html(result.lp)
-                        elm = document.getElementById("trade_" + result.tk)  // In Active Trades table
-                        if(elm != undefined) {
-                            $(elm).html(result.lp)
-                            trade.update_pnl(elm)
-                        }
-                        // elm = document.getElementById("pos_" + result.tk)  // In Positions table
-                        // $(elm).html(result.lp)
+                        update_ltp('.watch_' + result.tk);
+                        update_ltp(".open_order_" + result.tk)  // In Open Order table
+                        update_ltp(".trade_" + result.tk)  // In Active Trades table
                         break;
                 }
             }
@@ -240,23 +241,30 @@ shoonya_api = function () {
                     case "OPEN" :
                         $('#order_success_msg').html("Order is open. Order number: " + orderno + "  Symbol: " + order.tsym + " Qty: " + order.qty);
                         $('#order_success_alert').removeClass('d-none');
-                        setTimeout(function(){$('#order_success_alert').addClass('d-none')}, alert_msg_disappear_after);
+                        setTimeout(function(){
+                            $('#order_success_msg').html("");
+                            $('#order_success_alert').addClass('d-none')}, alert_msg_disappear_after);
                         break;
                     case "COMPLETE" :
                         $('#order_success_msg').html("Order completed. Order number: " + orderno + "  Symbol: " + order.tsym + " Qty: " + order.qty);
                         $('#order_success_alert').removeClass('d-none');
-                        setTimeout(function(){$('#order_success_alert').addClass('d-none')}, alert_msg_disappear_after);
+                        setTimeout(function(){
+                            $('#order_success_msg').html("");
+                            $('#order_success_alert').addClass('d-none')}, alert_msg_disappear_after);
                         break;
                     case "REJECTED" :
                         $('#order_error_msg').html("Order " + orderno + " rejected. Reason : " + order.rejreason  + "   Symbol: " + order.tsym + " Qty: " + order.qty );
                         $('#order_error_alert').removeClass('d-none');
-                        setTimeout(function(){$('#order_error_alert').addClass('d-none')}, alert_msg_disappear_after);
+                        setTimeout(function(){
+                            $('#order_error_msg').html("");
+                            $('#order_error_alert').addClass('d-none')}, alert_msg_disappear_after);
                         break;
                     case "CANCELED":
                         $('#order_success_msg').html("Order " + orderno + " cancelled successfully. Symbol: " + order.tsym + " Qty: " + order.qty );
                         $('#order_success_alert').removeClass('d-none');
-                        setTimeout(function(){$('#order_error_alert').addClass('d-none')}, alert_msg_disappear_after);
-                        break;
+                        setTimeout(function(){
+                            $('#order_success_msg').html("");
+                            $('#order_error_alert').addClass('d-none')}, alert_msg_disappear_after);
                         break;
                     default:
                         console.log('Default order status : ')
@@ -306,7 +314,7 @@ shoonya_api = function () {
                         <td>${buy_sell}</td>
                         <td class="order-num">${item.norenordno}</td>
                         <td>${dname}</td>
-                        <th id="open_order_${item.token}" class="ltp"></th>
+                        <th class="open_order_${item.token} ltp"></th>
                         <td><input type="text" class="form-control entry" placeholder=""  value="${item.prc}"></td>
                         <td><input type="text" class="form-control target" placeholder=""  value=""></td>
                         <td><input type="text" class="form-control sl" placeholder=""  value=""></td>
@@ -353,7 +361,7 @@ shoonya_api = function () {
                     <td>${buy_sell}</td>
                     <td class="order-num">Spot Based Entry</td>
                     <td>${dname}</td>
-                    <th id="open_order_${item.token}" class="ltp"></th>
+                    <th class="open_order_${item.token} ltp"></th>
                     <td><input type="text" class="form-control entry" placeholder=""  value="${entry_val}"></td>
                     <td><input type="text" class="form-control target" placeholder=""  value=""></td>
                     <td><input type="text" class="form-control sl" placeholder=""  value=""></td>
@@ -732,8 +740,8 @@ shoonya_api = function () {
         update_pnl : function(ltp_elm){
             let tr_elm = $(ltp_elm).parent();
             let ttype = tr_elm.attr('ttype');
-            let ltp = parseFloat($(ltp_elm).html());
-            let entry = parseFloat(tr_elm.find('entry').find('price').html());
+            let ltp = parseFloat($(ltp_elm).text());
+            let entry = parseFloat(tr_elm.find('.entry').find('.price').text());
 
             let pnl = 0.0;
             if(ttype === "bull") {
@@ -743,7 +751,7 @@ shoonya_api = function () {
             }
 
             let pnl_elm = tr_elm.find('.pnl');
-            pnl_elm.html(pnl)
+            pnl_elm.text(pnl)
             pnl_elm.css('font-weight','bold')
             if (pnl < 0) {
                 pnl_elm.css('color', 'red')
@@ -893,7 +901,7 @@ shoonya_api = function () {
                             </br><span class="price">${order.prc}</span></br>
                             <span class="badge badge-primary">${order.remarks}</span>
                         </td>
-                        <td id="trade_${order.token}" class="ltp"></td>
+                        <td class="trade_${order.token} ltp"></td>
                         <td class="pnl"></td>
                         <td><input type="text" disabled class="form-control target" placeholder="" ></td>
                         <td><input type="text" disabled class="form-control sl" placeholder="" ></td>
@@ -968,7 +976,7 @@ shoonya_api = function () {
             $('#watch_list_body').append(`<tr class="${class_name}" exch="${exch}" token="${token}" tsym="${tsym}" lot_size="${lot_size}">
     
                 <td>${sym}</td>
-                <th id="watch_${token}"></th>
+                <th class="watch_${token}"></th>
                 <td><input type="text" class="form-control entry" placeholder="" ></td>
                 <td><input type="text" class="form-control qty" placeholder="" value="${lot_size}"></td>
                 <td><button type="button" class="btn btn-success" onclick="shoonya_api.orderbook.place_order($(this).parent().parent(), 'B')">BUY</button></td>
@@ -1010,7 +1018,8 @@ shoonya_api = function () {
             $('#positions_table').html("")
             hide_other_tabs('#positions')
             this.get_positions(function(positions) {
-                positions.forEach((position)=> shoonya_api.positions.show_position(position))
+                if (positions != undefined && positions.stat !== 'Not_Ok')
+                    positions.forEach((position)=> shoonya_api.positions.show_position(position))
             })
         },
 
@@ -1026,8 +1035,7 @@ shoonya_api = function () {
                 let urmtm = (mtm_ur<0) ? `<span class='neg-mtm'>${mtm_ur}</span>`: `<span class='pos-mtm'>${mtm_ur}</span>`;
                 let pnl_r = parseFloat(item.rpnl);
                 let rpnl = (pnl_r<0) ?  `<span class='neg-mtm'>${pnl_r}</span>`: `<span class='pos-mtm'>${pnl_r}</span>`;
-                let id = `pos_${item.token}`
-                //<td>${item.tsym}</td>
+
                 $('#positions_table').append(`<tr exch="${item.exch}" token-"${item.token}" tsym="${item.tsym}" lot_size="${item.ls}">
                         <td class="text">${dname}</td>
                         <td class="num">${urmtm}</td>
@@ -1036,7 +1044,7 @@ shoonya_api = function () {
                         <td>${item.daysellavgprc}</td>
                         <td>${item.daybuyqty}</td>
                         <td>${item.daysellqty}</td>
-                        <td id=${id} class="num ltp">${item.lp}</td>
+                        <td class="pos_${item.token} num ltp">${item.lp}</td>
                         <td>${prd}</td>
                         <td class="num">${item.daybuyamt}</td>
                         <td class="num">${item.daysellamt}</td>
