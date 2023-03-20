@@ -67,7 +67,7 @@
         padding-bottom: 15px;
     }
 
-    .pos-mtm {
+    .pos-mtm, .pnl {
         font-weight:bold;
         color: green;
     }
@@ -121,7 +121,7 @@
                 <input type="text"  class="form-control" id="userId" placeholder="User" value="FA90807">
             </div>
             <div class="col-auto">
-                <input type="text" class="form-control" id="sessionToken" placeholder="Session Token" value="c09b711653b80855509a337cabb4b2f9b89d4f987fe53ab7263317676de8e700">
+                <input type="text" class="form-control" id="sessionToken" placeholder="Session Token" value="a8a0c8693e7a436978dcfd0e3bcff8864351a8d426262c7c2aba46a78df69daf">
             </div>
             <div class="col-auto">
                 <button class="btn btn-primary mb-3" id="connect_to_server">Connect</button>
@@ -188,7 +188,7 @@
 
     <div class="row">
         <div class="custom-tab">
-            <button class="btn btn-success" type="button" onclick="shoonya_api.trade.show_active_trades()">Active Trades</button>
+            <button class="btn btn-success" type="button" onclick="shoonya_api.trade.load_open_positions()">Active Trades</button>
         </div>
     </div>
 
