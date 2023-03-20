@@ -521,7 +521,12 @@ shoonya_api = function () {
             let buy_sell= relm.attr('trtype') == 'B' ? 'S' : 'B'; // Do the opposite
             let exit_limit = milestone_manager.get_value_object(limit_value);
             let values = orderbook.get_order_params(relm, buy_sell, exit_limit, qty)
-            post_request(url.place_order, values, function(data){this.place_order_success_cb(data, orderno)});
+            post_request(url.place_order, values, function(data){
+                if(data.stat.toUpperCase() === "OK") {
+                    relm.remove();
+                }
+                orderbook.place_order_success_cb(data, orderno)
+            });
         },
 
         show_orderbook : function() {
@@ -793,7 +798,7 @@ shoonya_api = function () {
                 }
             }
 
-            // setTimeout(trade.trigger, 1000)
+            setTimeout(trade.trigger, 1000)
 
             function check_entry_trigger(row_id, mile_stone) {
                 let cur_spot_value = 0;
@@ -907,6 +912,8 @@ shoonya_api = function () {
             }
             let dname = (order.dname != undefined)? order.dname : order.tsym;
 
+            console.log("Active trade : " + JSON.stringify(order))
+
             $('#active_trades_table').append(`<tr id="row_id_${++unique_row_id}" ordid="${order.norenordno}"  exch="${order.exch}" token="${order.token}" tsym="${order.tsym}" ttype="${ttype}" trtype="${order.trantype}">
                         <td>${buy_sell}</td>
                         <td>${dname}</td>
@@ -922,7 +929,7 @@ shoonya_api = function () {
                         <td><input type="text" class="form-control exit-limit" placeholder="" ></td>
                         <td><input type="text" class="form-control qty" placeholder=""  value="${lot_size}"></td>
                         <td><button type="button" class="btn btn-success" onclick="shoonya_api.trade.modify(this, $(this).text())">Edit</button></td>
-                        <td><button type="button" class="btn btn-danger" onclick="shoonya_api.trade.exit(this)">Exit</button></td>
+                        <td><button type="button" class="btn btn-danger exit" onclick="shoonya_api.trade.exit(this)">Exit</button></td>
                 </tr>`);
         },
 
@@ -956,7 +963,7 @@ shoonya_api = function () {
                     milestone_manager.add_target(row_id, token, ttype, milestone_manager.get_value_object(target))
                 }
                 if(sl != undefined && sl != '' ) {
-                    milestone_manager.add_target(row_id, token, ttype, milestone_manager.get_value_object(sl))
+                    milestone_manager.add_sl(row_id, token, ttype, milestone_manager.get_value_object(sl))
                 }
             }
         },
@@ -1009,10 +1016,16 @@ shoonya_api = function () {
                             <td><input type="text" class="form-control exit-limit" placeholder="" ></td>
                             <td><input type="text" class="form-control qty" placeholder=""  value="${qty}"></td>
                             <td><button type="button" class="btn btn-success" onclick="shoonya_api.trade.modify(this, $(this).text())">Edit</button></td>
-                            <td><button type="button" class="btn btn-danger" onclick="shoonya_api.trade.exit(this)">Exit</button></td>
+                            <td><button type="button" class="btn btn-danger exit" onclick="shoonya_api.trade.exit(this)">Exit</button></td>
                     </tr>`);
                 }
             }
+        },
+
+        exit_all_positions : function() {
+            $('#active_trades_table tr').each(function(index, tr_elm) {
+                $(tr_elm).find('.exit').click()
+            })
         }
     };
 
@@ -1102,7 +1115,16 @@ shoonya_api = function () {
                 let pnl_r = parseFloat(item.rpnl);
                 let rpnl = (pnl_r<0) ?  `<span class='neg-mtm'>${pnl_r}</span>`: `<span class='pos-mtm'>${pnl_r}</span>`;
 
-                $('#positions_table').append(`<tr exch="${item.exch}" token-"${item.token}" tsym="${item.tsym}" lot_size="${item.ls}">
+                let cls='';
+                if(item.netqty != undefined && item.netqty != '') {
+                    let netqty = parseFloat(item.netqty);
+                    if (netqty > 0)
+                        cls = 'table-success'
+                    else if (netqty < 0)
+                        cls = 'table-danger'
+                }
+
+                $('#positions_table').append(`<tr class="${cls}" exch="${item.exch}" token-"${item.token}" tsym="${item.tsym}" lot_size="${item.ls}">
                         <td class="text">${dname}</td>
                         <td class="num">${urmtm}</td>
                         <td class="num">${rpnl}</td>
