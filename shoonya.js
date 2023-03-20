@@ -328,8 +328,8 @@ shoonya_api = function () {
                         <td><input type="text" class="form-control sl" placeholder=""  value=""></td>
                         <td><input type="text" class="form-control qty" placeholder=""  value="${item.qty}"></td>
     
-                        <td><button type="button" class="btn btn-success" onclick="shoonya_api.orderbook.modify_order(this)">Modify</button></td>
-                        <td><button type="button" class="btn btn-danger" onclick="shoonya_api.orderbook.cancel_order(this)">Cancel</button></td>
+                        <td><button type="button" class="btn btn-success modify" onclick="shoonya_api.orderbook.modify_order(this)">Modify</button></td>
+                        <td><button type="button" class="btn btn-danger cancel" onclick="shoonya_api.orderbook.cancel_order(this)">Cancel</button></td>
                 </tr>`);
 
                 let token = item.exch + "|" + item.token
@@ -338,6 +338,9 @@ shoonya_api = function () {
         },
 
         place_order : function(tr_elm, buy_sell) {
+            tr_elm.find('.buy').attr('disabled', 'disabled');
+            tr_elm.find('.sell').attr('disabled', 'disabled');
+
             let entry_val = tr_elm.find('.entry').val()
             if(entry_val == undefined) entry_val = 0.0;
             let entry_obj = milestone_manager.get_value_object(entry_val);
@@ -349,6 +352,9 @@ shoonya_api = function () {
             } else {
                 post_request(url.place_order, params, this.place_order_success_cb)
             }
+
+            tr_elm.find('.buy').removeAttr('disabled');
+            tr_elm.find('.sell').removeAttr('disabled');
         },
 
         add_to_spot_order_list : function(item, entry_val) {
@@ -373,8 +379,8 @@ shoonya_api = function () {
                     <td><input type="text" class="form-control sl" placeholder=""  value=""></td>
                     <td><input type="text" class="form-control qty" placeholder=""  value="${item.qty}"></td>
 
-                    <td><button type="button" class="btn btn-success" onclick="shoonya_api.orderbook.modify_order(this)">Modify</button></td>
-                    <td><button type="button" class="btn btn-danger" onclick="shoonya_api.orderbook.cancel_order(this)">Cancel</button></td>
+                    <td><button type="button" class="btn btn-success modify" onclick="shoonya_api.orderbook.modify_order(this)">Modify</button></td>
+                    <td><button type="button" class="btn btn-danger cancel" onclick="shoonya_api.orderbook.cancel_order(this)">Cancel</button></td>
             </tr>`);
 
             let entry_obj = milestone_manager.get_value_object(entry_val)
@@ -860,8 +866,9 @@ shoonya_api = function () {
                     console.log("Target triggered for row_id : ", row_id)
                     let tr_elm = $(`#${row_id}`)
                     tr_elm.find('.entry').text('') // Set entry value to '' in order to place market order
-                    let trtype = tr_elm.attr('trtype') ==='B'? 'S' : 'B'    //Do the opposite to close position
-                    orderbook.place_order(tr_elm, trtype)
+                    // let trtype = tr_elm.attr('trtype') ==='B'? 'S' : 'B'    //Do the opposite to close position
+                    // orderbook.place_order(tr_elm, trtype)
+                    orderbook.exit_order(tr_elm.find('.exit'))
                     tr_elm.remove()
                     milestone_manager.remove_milestone(row_id)
                 }
@@ -894,8 +901,9 @@ shoonya_api = function () {
                     console.log("SL triggered for row_id : ", row_id)
                     let tr_elm = $(`#${row_id}`)
                     tr_elm.find('.entry').val('') // Set entry value to '' in order to place market order
-                    let trtype = tr_elm.attr('trtype') ==='B'? 'S' : 'B'    //Do the opposite to close position
-                    orderbook.place_order(tr_elm, trtype)
+                    // let trtype = tr_elm.attr('trtype') ==='B'? 'S' : 'B'    //Do the opposite to close position
+                    // orderbook.place_order(tr_elm, trtype)
+                    orderbook.exit_order(tr_elm.find('.exit'))
                     tr_elm.remove()
                     milestone_manager.remove_milestone(row_id)
                 }
@@ -928,7 +936,7 @@ shoonya_api = function () {
                         <td><input type="text" disabled class="form-control sl" placeholder="" ></td>
                         <td><input type="text" class="form-control exit-limit" placeholder="" ></td>
                         <td><input type="text" class="form-control qty" placeholder=""  value="${lot_size}"></td>
-                        <td><button type="button" class="btn btn-success" onclick="shoonya_api.trade.modify(this, $(this).text())">Edit</button></td>
+                        <td><button type="button" class="btn btn-success modify" onclick="shoonya_api.trade.modify(this, $(this).text())">Edit</button></td>
                         <td><button type="button" class="btn btn-danger exit" onclick="shoonya_api.trade.exit(this)">Exit</button></td>
                 </tr>`);
         },
@@ -1015,7 +1023,7 @@ shoonya_api = function () {
                             <td><input type="text" disabled class="form-control sl" placeholder="" ></td>
                             <td><input type="text" class="form-control exit-limit" placeholder="" ></td>
                             <td><input type="text" class="form-control qty" placeholder=""  value="${qty}"></td>
-                            <td><button type="button" class="btn btn-success" onclick="shoonya_api.trade.modify(this, $(this).text())">Edit</button></td>
+                            <td><button type="button" class="btn btn-success modify" onclick="shoonya_api.trade.modify(this, $(this).text())">Edit</button></td>
                             <td><button type="button" class="btn btn-danger exit" onclick="shoonya_api.trade.exit(this)">Exit</button></td>
                     </tr>`);
                 }
@@ -1058,8 +1066,8 @@ shoonya_api = function () {
                 <th class="watch_${token}"></th>
                 <td><input type="text" class="form-control entry" placeholder="" ></td>
                 <td><input type="text" class="form-control qty" placeholder="" value="${lot_size}"></td>
-                <td><button type="button" class="btn btn-success" onclick="shoonya_api.orderbook.place_order($(this).parent().parent(), 'B')">BUY</button></td>
-                <td><button type="button" class="btn btn-danger" onclick="shoonya_api.orderbook.place_order($(this).parent().parent(), 'S')">SELL</button></td>
+                <td><button type="button" class="btn btn-success buy" onclick="shoonya_api.orderbook.place_order($(this).parent().parent(), 'B')">BUY</button></td>
+                <td><button type="button" class="btn btn-danger sell" onclick="shoonya_api.orderbook.place_order($(this).parent().parent(), 'S')">SELL</button></td>
                 <th class="del-icon" onclick="shoonya_api.delete_row(this)">
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-trash" viewBox="0 0 16 16">
                         <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/>
