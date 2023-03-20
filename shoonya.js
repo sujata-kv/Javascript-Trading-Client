@@ -229,9 +229,10 @@ shoonya_api = function () {
                     switch (matching_order.status) {
                         case "COMPLETE": //TODO AMO ORDER
                             console.log("Order completed.. " + orderno)
-                            if(closing_order_id == undefined)
+                            if(closing_order_id == undefined) {
+                                matching_order.prc = matching_order.avg_prc; // When order status is COMPLETE avgprc field contains the correct price
                                 trade.display_active_trade(matching_order);
-                            else {
+                            } else {
                                 console.log(closing_order_id + " exited.. with " + orderno)
                                 trade.remove_active_trade(closing_order_id)
                             }
@@ -532,6 +533,7 @@ shoonya_api = function () {
             post_request(url.place_order, values, function(data){
                 if(data.stat.toUpperCase() === "OK") {
                     relm.remove();
+                    milestone_manager.remove_milestone(tr_elm.id)  //TODO - TEST THIS
                 }
                 orderbook.place_order_success_cb(data, orderno)
             });
