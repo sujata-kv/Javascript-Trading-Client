@@ -178,7 +178,7 @@ shoonya_api = function () {
                             dataType: "json",
                             data: get_payload(params),
                             success: function (data, textStatus, jqXHR) {
-                                console.log("Ajax success")
+                                // console.log("Ajax success")
                                 response($.map(data.values, function (item) {
                                     return {
                                         label: item.dname != undefined? item.dname : item.tsym,
@@ -353,8 +353,10 @@ shoonya_api = function () {
                 post_request(url.place_order, params, this.place_order_success_cb)
             }
 
-            tr_elm.find('.buy').removeAttr('disabled');
-            tr_elm.find('.sell').removeAttr('disabled');
+            setTimeout(function() {
+                    tr_elm.find('.buy').removeAttr('disabled');
+                    tr_elm.find('.sell').removeAttr('disabled');
+            }, 500)
         },
 
         add_to_spot_order_list : function(item, entry_val) {
@@ -1105,12 +1107,30 @@ shoonya_api = function () {
             $('#positions_table').html("")
             hide_other_tabs('#positions')
             this.get_positions(function(positions) {
+                let pnl = {unrealized_pnl : 0.0, realized_pnl:0.0 };
                 if (positions != undefined && positions.stat !== 'Not_Ok')
-                    positions.forEach((position)=> shoonya_api.positions.show_position(position))
+                    positions.forEach((position)=> shoonya_api.positions.show_position(position, pnl))
+
+                $('#realized_pnl').html(pnl.realized_pnl.toFixed(2))
+                $('#unrealized_pnl').html(pnl.unrealized_pnl.toFixed(2))
+
+                color_pnl(pnl.realized_pnl, '#realized_pnl')
+                color_pnl(pnl.unrealized_pnl, '#unrealized_pnl')
+
+                function color_pnl(value, selector) {
+                    if (value < 0) {
+                        $(selector).removeClass()
+                        $(selector).addClass('neg-mtm')
+                    } else {
+                        $(selector).removeClass()
+                        $(selector).addClass('pos-mtm')
+                    }
+                }
+
             })
         },
 
-        show_position : function(item) {
+        show_position : function(item, pnl) {
 
             if (item.stat != "Ok") {
                 $('#positions_table').append(`<tr colspan="8"> ${item.emsg} </tr>`);
@@ -1121,6 +1141,8 @@ shoonya_api = function () {
                 let mtm_ur = parseFloat(item.urmtom);
                 let urmtm = (mtm_ur<0) ? `<span class='neg-mtm'>${mtm_ur}</span>`: `<span class='pos-mtm'>${mtm_ur}</span>`;
                 let pnl_r = parseFloat(item.rpnl);
+                pnl.realized_pnl += pnl_r;
+                pnl.unrealized_pnl += mtm_ur;
                 let rpnl = (pnl_r<0) ?  `<span class='neg-mtm'>${pnl_r}</span>`: `<span class='pos-mtm'>${pnl_r}</span>`;
 
                 let cls='';
