@@ -228,6 +228,7 @@ shoonya_api = function () {
                     console.log(matching_order)
                     switch (matching_order.status) {
                         case "COMPLETE": //TODO AMO ORDER
+                        // case "OPEN": //TODO AMO ORDER
                             console.log("Order completed.. " + orderno)
                             if(closing_order_id == undefined) {
                                 matching_order.prc = matching_order.avg_prc; // When order status is COMPLETE avgprc field contains the correct price
@@ -453,8 +454,8 @@ shoonya_api = function () {
         },
 
         cancel_order : function(td_elm) {
-            relm = $(td_elm).parent().parent();
-            orderno = relm.find('.order-num').html()
+            let tr_elm = $(td_elm).parent().parent();
+            let orderno = tr_elm.find('.order-num').html()
 
             let values            = {'ordersource':'WEB'};
             values["uid"]         = user_id;
@@ -462,18 +463,18 @@ shoonya_api = function () {
 
             post_request(url.cancel_order, values, function(data) {
                 if(data.stat.toUpperCase() === "OK")
-                    relm.remove();
+                    tr_elm.remove();
                 shoonya_api.orderbook.place_order_success_cb(data)
             });
         },
 
         modify_order : function(td_elm) {
-            let relm = $(td_elm).parent().parent();
-            let orderno = relm.find('.order-num').html()
-            let entry_value = relm.find('.entry').val()
-            let row_id = relm.attr('id')
-            let ttype = relm.attr('ttype')
-            let token = relm.attr('token')
+            let tr_elm = $(td_elm).parent().parent();
+            let orderno = tr_elm.find('.order-num').html()
+            let entry_value = tr_elm.find('.entry').val()
+            let row_id = tr_elm.attr('id')
+            let ttype = tr_elm.attr('ttype')
+            let token = tr_elm.attr('token')
 
             if(orderno.includes('Spot')) {  // Spot based entry
                 let entry_obj = milestone_manager.get_value_object(entry_value)
@@ -486,14 +487,14 @@ shoonya_api = function () {
                     prctyp = 'MKT'
                 } else price = entry_value.toString()
 
-                let qty = relm.find('.qty').val()
+                let qty = tr_elm.find('.qty').val()
 
                 let values = {'ordersource': 'WEB'};
                 values["uid"] = user_id;
                 values["actid"] = user_id;
                 values["norenordno"] = orderno;
-                values["exch"] = relm.attr('exch');
-                values["tsym"] = relm.attr('tsym');
+                values["exch"] = tr_elm.attr('exch');
+                values["tsym"] = tr_elm.attr('tsym');
                 values["qty"] = qty;
                 values["prctyp"] = prctyp;
                 values["prc"] = price;
@@ -501,7 +502,7 @@ shoonya_api = function () {
                 post_request(url.modify_order, values, this.place_order_success_cb);
             }
 
-            let target_value = relm.find('.target').val()
+            let target_value = tr_elm.find('.target').val()
 
             if(target_value != undefined || target_value != '') {  // Target has some value
                 let target_obj = milestone_manager.get_value_object(target_value)
@@ -510,7 +511,7 @@ shoonya_api = function () {
                 milestone_manager.remove_target(row_id);
             }
 
-            let sl_value = relm.find('.sl').val()
+            let sl_value = tr_elm.find('.sl').val()
 
             if(sl_value != undefined || sl_value != '') {  // SL has some value
                 let sl_obj = milestone_manager.get_value_object(sl_value)
@@ -522,18 +523,18 @@ shoonya_api = function () {
 
         //TODO - Partial quantity exit should be done
         exit_order : function(td_elm) {
-            let relm = $(td_elm).parent().parent();
-            let orderno = relm.attr('ordid')
-            let limit_value = relm.find('.exit-limit').val()
-            let qty = relm.find('.qty').val()
+            let tr_elm = $(td_elm).parent().parent();
+            let orderno = tr_elm.attr('ordid')
+            let limit_value = tr_elm.find('.exit-limit').val()
+            let qty = tr_elm.find('.qty').val()
 
-            let buy_sell= relm.attr('trtype') == 'B' ? 'S' : 'B'; // Do the opposite
+            let buy_sell= tr_elm.attr('trtype') == 'B' ? 'S' : 'B'; // Do the opposite
             let exit_limit = milestone_manager.get_value_object(limit_value);
-            let values = orderbook.get_order_params(relm, buy_sell, exit_limit, qty)
+            let values = orderbook.get_order_params(tr_elm, buy_sell, exit_limit, qty)
             post_request(url.place_order, values, function(data){
                 if(data.stat.toUpperCase() === "OK") {
-                    relm.remove();
-                    milestone_manager.remove_milestone(tr_elm.id)  //TODO - TEST THIS
+                    milestone_manager.remove_milestone(tr_elm.attr('id'))
+                    tr_elm.remove();
                 }
                 orderbook.place_order_success_cb(data, orderno)
             });
@@ -599,12 +600,15 @@ shoonya_api = function () {
         know_bull_or_bear: function(order) {
             let trade_type = "bull"
             if(order.exch === "NFO") {
-                if (order.optt === "PE" && order.trantype === "B") {
-                    trade_type = "bear"
-                } else if(order.optt === "CE" && order.trantype === "S") {
-                    trade_type = "bear"
-                } else if (order.trantype === "S") {
-                    trade_type = "bear"
+                if(order.dname != undefined && order.dname != '') {  //"dname":"BANKNIFTY MAR FUT", "NIFTY 23MAR23 16000 PE ", "NIFTY 23MAR23 16000 CE ",
+                    let dname = order.dname.trim()
+                    if (dname.endsWith("PE") && order.trantype === "B") {
+                        trade_type = "bear"
+                    } else if (dname.endsWith("CE") && order.trantype === "S") {
+                        trade_type = "bear"
+                    } else if (order.trantype === "S") {
+                        trade_type = "bear"
+                    }
                 }
             } else if(order.exch === "NSE" || order.exch === "BSE") {
                 if (order.trantype === "S") {
@@ -793,17 +797,17 @@ shoonya_api = function () {
 
             for( const [row_id, mile_stone] of Object.entries(ms_list)) {
                 if(mile_stone.get_entry() != undefined) {// If it has entry object
-                    console.log('checking entry trigger')
+                    // console.log('checking entry trigger')
                     check_entry_trigger(row_id, mile_stone)
                 }
 
                 if(mile_stone.get_target() != undefined) {// If it has target object
-                    console.log('checking target trigger')
+                    // console.log('checking target trigger')
                     check_target_trigger(row_id, mile_stone)
                 }
 
                 if(mile_stone.get_sl() != undefined) {// If it has sl object
-                    console.log('checking SL trigger')
+                    // console.log('checking SL trigger')
                     check_sl_trigger(row_id, mile_stone)
                 }
             }
