@@ -347,7 +347,6 @@ shoonya_api = function () {
 
                                 switch (matching_order.status) {
                                     case "COMPLETE": //TODO AMO ORDER
-                                    // case "OPEN": //TODO AMO ORDER
                                         console.log("Order completed.. " + order_id)
                                         matching_order.prc = matching_order.avgprc; // When order status is COMPLETE avgprc field contains the correct price
                                         trade.display_active_trade(matching_order);
@@ -949,7 +948,6 @@ shoonya_api = function () {
 
                                         switch (matching_order.status) {
                                             case "COMPLETE": //TODO AMO ORDER
-                                            // case "OPEN": //TODO AMO ORDER
                                                 console.log("Order completed.. " + order_id)
                                                 matching_order.prc = matching_order.avgprc; // When order status is COMPLETE avgprc field contains the correct price
                                                 const ms_obj = milestone_manager.get_milestone(order_id);
