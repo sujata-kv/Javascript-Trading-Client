@@ -1038,7 +1038,7 @@ shoonya_api = function () {
 
         remove_active_trade : function(closing_order_id) {
             console.log("Removing order id :" , closing_order_id)
-            let tr_elm = $('#active_trades_table tr').attr('ordid', closing_order_id)
+            let tr_elm = $('#active_trades_table tr').find(`[ordid="${closing_order_id}"]`)
             tr_elm.remove()
         },
 
