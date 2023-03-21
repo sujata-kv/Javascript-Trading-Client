@@ -327,6 +327,7 @@ shoonya_api = function () {
 
             let params = this.get_order_params(tr_elm, buy_sell, entry_obj, qty)
             if (entry_obj.spot_based) {
+                params.dname = tr_elm.attr('dname')
                 this.add_to_spot_order_list(params, entry_val)
             } else {
                 post_request(url.place_order, params, function(data) {
@@ -345,8 +346,8 @@ shoonya_api = function () {
                                 }
 
                                 switch (matching_order.status) {
-                                    // case "COMPLETE": //TODO AMO ORDER
-                                    case "OPEN": //TODO AMO ORDER
+                                    case "COMPLETE": //TODO AMO ORDER
+                                    // case "OPEN": //TODO AMO ORDER
                                         console.log("Order completed.. " + order_id)
                                         matching_order.prc = matching_order.avgprc; // When order status is COMPLETE avgprc field contains the correct price
                                         trade.display_active_trade(matching_order);
@@ -447,7 +448,7 @@ shoonya_api = function () {
             values["ret"]       = 'DAY';
             values["remarks"]   = remarks;
 
-            values["amo"] = "Yes";          // TODO - AMO ORDER
+            // values["amo"] = "Yes";          // TODO - AMO ORDER
 
             return values;
         },
@@ -947,8 +948,8 @@ shoonya_api = function () {
                                         orderbook.display_order_exec_msg(matching_order);
 
                                         switch (matching_order.status) {
-                                            // case "COMPLETE": //TODO AMO ORDER
-                                            case "OPEN": //TODO AMO ORDER
+                                            case "COMPLETE": //TODO AMO ORDER
+                                            // case "OPEN": //TODO AMO ORDER
                                                 console.log("Order completed.. " + order_id)
                                                 matching_order.prc = matching_order.avgprc; // When order status is COMPLETE avgprc field contains the correct price
                                                 const ms_obj = milestone_manager.get_milestone(order_id);
@@ -1206,9 +1207,9 @@ shoonya_api = function () {
                 class_name = 'table-danger'
             }
 
-            $('#watch_list_body').append(`<tr class="${class_name}" exch="${exch}" token="${token}" tsym="${tsym}" lot_size="${lot_size}">
+            $('#watch_list_body').append(`<tr class="${class_name}" exch="${exch}" token="${token}" tsym="${tsym}" lot_size="${lot_size}" dname="${sym}">
     
-                <td>${sym}</td>
+                <td class="dname">${sym}</td>
                 <th class="watch_${token} ltp"></th>
                 <td><input type="text" class="form-control entry" placeholder="" ></td>
                 <td><input type="text" class="form-control qty" placeholder="" value="${lot_size}"></td>
