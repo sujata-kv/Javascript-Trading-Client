@@ -551,7 +551,7 @@ shoonya_api = function () {
             post_request(url.place_order, values, function(data){
                 if(data.stat.toUpperCase() === "OK") {
                     milestone_manager.remove_milestone(tr_elm.attr('id'))
-                    tr_elm.remove();
+                    // tr_elm.remove(); //remove_active_trade() function removes the row
                 }
                 orderbook.place_order_success_cb(data, orderno)
             });
@@ -1038,7 +1038,7 @@ shoonya_api = function () {
 
         remove_active_trade : function(closing_order_id) {
             console.log("Removing order id :" , closing_order_id)
-            let tr_elm = $('#active_trades_table tr').find(`[ordid="${closing_order_id}"]`)
+            let tr_elm = $('#active_trades_table').find(`[ordid=${closing_order_id}]`)
             tr_elm.remove()
         },
 
