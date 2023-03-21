@@ -191,10 +191,11 @@ shoonya_api = function () {
                                     };
                                 }));
                             },
-                        error: function (jqXHR, textStatus, errorThrown) {
-                            console.log("Ajax error")
-                        },
-                    })},
+                            error: function (jqXHR, textStatus, errorThrown) {
+                                show_error_msg(errorThrown)
+                                console.log("Ajax error")
+                            },
+                        })},
 
             select: function (event, ui) {
                 // when item is selected
@@ -271,6 +272,7 @@ shoonya_api = function () {
                     success_cb(data)
                 },
                 error: function (jqXHR, textStatus, errorThrown) {
+                    show_error_msg(errorThrown)
                     console.log("Ajax error")
                 }
             });
@@ -313,7 +315,7 @@ shoonya_api = function () {
             }
         },
 
-        place_order : function(tr_elm, buy_sell, success_cb) {
+        place_buy_sell_order : function(tr_elm, buy_sell, success_cb) {
             tr_elm.find('.buy').attr('disabled', 'disabled');
             tr_elm.find('.sell').attr('disabled', 'disabled');
 
@@ -343,20 +345,21 @@ shoonya_api = function () {
                                 }
 
                                 switch (matching_order.status) {
-                                    case "COMPLETE": //TODO AMO ORDER
-                                        console.log("Order completed.. " + orderno)
+                                    // case "COMPLETE": //TODO AMO ORDER
+                                    case "OPEN": //TODO AMO ORDER
+                                        console.log("Order completed.. " + order_id)
                                         matching_order.prc = matching_order.avgprc; // When order status is COMPLETE avgprc field contains the correct price
                                         trade.display_active_trade(matching_order);
                                         break;
                                     case "REJECTED":
-                                        show_error_msg(data.emsg);
+                                        show_error_msg(matching_order.rejreason);
                                         break;
                                     default:
                                         break;
                                 }
                             })
                         } else
-                                show_error_msg(data.emsg);
+                            show_error_msg(data.emsg);
 
                     }
                 })
@@ -444,7 +447,7 @@ shoonya_api = function () {
             values["ret"]       = 'DAY';
             values["remarks"]   = remarks;
 
-            // values["amo"] = "Yes";          // TODO - AMO ORDER
+            values["amo"] = "Yes";          // TODO - AMO ORDER
 
             return values;
         },
@@ -455,9 +458,8 @@ shoonya_api = function () {
             let row_id = tr_elm.attr('id')
 
             if(orderno.includes('Spot')) {  // Spot based entry
-                let entry_obj = milestone_manager.get_value_object(entry_value);
                 milestone_manager.remove_milestone(row_id);
-
+                tr_elm.remove();
             } else {
 
                 let values            = {'ordersource':'WEB'};
@@ -927,11 +929,13 @@ shoonya_api = function () {
                         console.log(entry_obj)
                         let tr_elm = $(`#${row_id}`)
                         tr_elm.find('.entry').val('') // Set entry value to '' in order to place market order
+                        milestone_manager.remove_entry(row_id)
+                        tr_elm.remove();    //Remove entry from Open order table
 
-                        orderbook.place_order(tr_elm, tr_elm.attr('trtype'), function (data) {
+                        orderbook.place_buy_sell_order(tr_elm, tr_elm.attr('trtype'), function (data) {
                             if(data.stat.toUpperCase() === "OK") {
-                                tr_elm.remove();    //Remove entry from Open order table
-                                milestone_manager.remove_entry(row_id)
+
+
                                 let order_id = data.norenordno;
                                 let ms = milestone_manager.add_order_id(row_id, order_id);
 
@@ -941,27 +945,28 @@ shoonya_api = function () {
                                     let matching_order = orders.find(order => order.norenordno === order_id)
                                     if (matching_order != undefined) {
                                         orderbook.display_order_exec_msg(matching_order);
-                                    }
 
-                                    switch (matching_order.status) {
-                                        case "COMPLETE": //TODO AMO ORDER
-                                            console.log("Order completed.. " + orderno)
-                                            matching_order.prc = matching_order.avgprc; // When order status is COMPLETE avgprc field contains the correct price
-                                            const ms_obj = milestone_manager.get_milestone(order_id);
-                                            let target = ''; sl = '';
-                                            if(ms_obj != undefined) {
-                                                const old_row_id = ms_obj.row_id;
-                                                target = milestone_manager.get_value_string(ms_obj.milestone.target)
-                                                sl = milestone_manager.get_value_string(ms_obj.milestone.sl)
-                                                milestone_manager.remove_milestone(old_row_id); //Target and SL have been taken into Active Trade Row
-                                            }
-                                            trade.display_active_trade(matching_order, target, sl);
-                                            break;
-                                        case "REJECTED":
-                                            show_error_msg(data.emsg);
-                                            break;
-                                        default:
-                                            break;
+                                        switch (matching_order.status) {
+                                            // case "COMPLETE": //TODO AMO ORDER
+                                            case "OPEN": //TODO AMO ORDER
+                                                console.log("Order completed.. " + order_id)
+                                                matching_order.prc = matching_order.avgprc; // When order status is COMPLETE avgprc field contains the correct price
+                                                const ms_obj = milestone_manager.get_milestone(order_id);
+                                                let target = ''; sl = '';
+                                                if(ms_obj != undefined) {
+                                                    const old_row_id = ms_obj.row_id;
+                                                    target = milestone_manager.get_value_string(ms_obj.milestone.target)
+                                                    sl = milestone_manager.get_value_string(ms_obj.milestone.sl)
+                                                    milestone_manager.remove_milestone(old_row_id); //Target and SL have been taken into Active Trade Row
+                                                }
+                                                trade.display_active_trade(matching_order, target, sl);
+                                                break;
+                                            case "REJECTED":
+                                                show_error_msg(data.emsg);
+                                                break;
+                                            default:
+                                                break;
+                                        }
                                     }
                                 })
                             } else
@@ -1207,8 +1212,8 @@ shoonya_api = function () {
                 <th class="watch_${token} ltp"></th>
                 <td><input type="text" class="form-control entry" placeholder="" ></td>
                 <td><input type="text" class="form-control qty" placeholder="" value="${lot_size}"></td>
-                <td><button type="button" class="btn btn-success buy" onclick="shoonya_api.orderbook.place_order($(this).parent().parent(), 'B')">BUY</button></td>
-                <td><button type="button" class="btn btn-danger sell" onclick="shoonya_api.orderbook.place_order($(this).parent().parent(), 'S')">SELL</button></td>
+                <td><button type="button" class="btn btn-success buy" onclick="shoonya_api.orderbook.place_buy_sell_order($(this).parent().parent(), 'B')">BUY</button></td>
+                <td><button type="button" class="btn btn-danger sell" onclick="shoonya_api.orderbook.place_buy_sell_order($(this).parent().parent(), 'S')">SELL</button></td>
                 <th class="del-icon" onclick="shoonya_api.delete_row(this)">
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-trash" viewBox="0 0 16 16">
                         <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/>
@@ -1237,6 +1242,7 @@ shoonya_api = function () {
                 },
                 error: function (jqXHR, textStatus, errorThrown) {
                     console.error("Ajax error")
+                    show_error_msg(errorThrown)
                 }
             });
         },
