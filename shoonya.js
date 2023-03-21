@@ -217,78 +217,44 @@ shoonya_api = function () {
             }
     });
 
+    function show_success_msg(msg) {
+        $('#order_success_msg').html(msg);
+        $('#order_success_alert').removeClass('d-none');
+        setTimeout(function(){
+            // $('#order_success_msg').html("");
+            $('#order_success_alert').addClass('d-none')}, alert_msg_disappear_after);
+    }
+
+    function show_error_msg(msg) {
+        $('#order_error_msg').html(msg);
+        $('#order_error_alert').removeClass('d-none');
+        setTimeout(function(){
+            // $('#order_error_msg').html("");
+            $('#order_error_alert').addClass('d-none')}, alert_msg_disappear_after);
+    }
+
     let unique_row_id = 0;
+
     const orderbook = {
 
-        get_order_status : function(orderno, closing_order_id) {
-            console.log("Getting order status for : ", orderno)
-            this.get_orderbook(function(orders) {
-                let matching_order = orders.find(order => order.norenordno === orderno)
-                if(matching_order != undefined) {
-                    console.log(matching_order)
-                    switch (matching_order.status) {
-                        case "COMPLETE": //TODO AMO ORDER
-                            console.log("Order completed.. " + orderno)
-                            if(closing_order_id == undefined) {
-                                matching_order.prc = matching_order.avgprc; // When order status is COMPLETE avgprc field contains the correct price
-                                const ms_obj = milestone_manager.get_milestone(orderno);
-                                let target = ''; sl = '';
-                                if(ms_obj != undefined) {
-                                    const old_row_id = ms_obj.row_id;
-                                    target = milestone_manager.get_value_string(ms_obj.milestone.target)
-                                    sl = milestone_manager.get_value_string(ms_obj.milestone.sl)
-                                    milestone_manager.remove_milestone(old_row_id); //Target and SL have been taken into Active Trade Row
-                                }
-                                trade.display_active_trade(matching_order, target, sl);
-                            } else {
-                                matching_order.prc = matching_order.avgprc; // Exit price
-                                console.log(closing_order_id + " exited.. with " + orderno)
-                                trade.remove_active_trade(closing_order_id)
-                            }
-                            display_order_exec_msg(matching_order);
-                            break;
-                        default:
-                            display_order_exec_msg(matching_order);
-                            break;
-                    }
-                }
-            })
-
-            function display_order_exec_msg(order) {
-                switch (order.status) {
-                    case "OPEN" :
-                        $('#order_success_msg').html("Order is open. Order number: " + orderno + "  Symbol: " + order.tsym + " Qty: " + order.qty);
-                        $('#order_success_alert').removeClass('d-none');
-                        setTimeout(function(){
-                            // $('#order_success_msg').html("");
-                            $('#order_success_alert').addClass('d-none')}, alert_msg_disappear_after);
-                        break;
-                    case "COMPLETE" :
-                        $('#order_success_msg').html("Order completed. Order number: " + orderno + "  Symbol: " + order.tsym + " Qty: " + order.qty);
-                        $('#order_success_alert').removeClass('d-none');
-                        setTimeout(function(){
-                            // $('#order_success_msg').html("");
-                            $('#order_success_alert').addClass('d-none')}, alert_msg_disappear_after);
-                        break;
-                    case "REJECTED" :
-                        $('#order_error_msg').html("Order " + orderno + " rejected. Reason : " + order.rejreason  + "   Symbol: " + order.tsym + " Qty: " + order.qty );
-                        $('#order_error_alert').removeClass('d-none');
-                        setTimeout(function(){
-                            // $('#order_error_msg').html("");
-                            $('#order_error_alert').addClass('d-none')}, alert_msg_disappear_after);
-                        break;
-                    case "CANCELED":
-                        $('#order_success_msg').html("Order " + orderno + " cancelled successfully. Symbol: " + order.tsym + " Qty: " + order.qty );
-                        $('#order_success_alert').removeClass('d-none');
-                        setTimeout(function(){
-                            // $('#order_success_msg').html("");
-                            $('#order_error_alert').addClass('d-none')}, alert_msg_disappear_after);
-                        break;
-                    default:
-                        console.log('Default order status : ')
-                        console.log(JSON.stringify(order))
-                        break;
-                }
+        display_order_exec_msg: function(order) {
+            switch (order.status) {
+                case "OPEN" :
+                    show_success_msg("Order is open. Order number: " + order.norenordno + "  Symbol: " + order.tsym + " Qty: " + order.qty);
+                    break;
+                case "COMPLETE" :
+                    show_success_msg("Order completed. Order number: " + order.norenordno + "  Symbol: " + order.tsym + " Qty: " + order.qty);
+                    break;
+                case "REJECTED" :
+                    show_error_msg("Order " + order.norenordno + " rejected. Reason : " + order.rejreason  + "   Symbol: " + order.tsym + " Qty: " + order.qty );
+                    break;
+                case "CANCELED":
+                    show_success_msg("Order " + order.norenordno + " cancelled successfully. Symbol: " + order.tsym + " Qty: " + order.qty );
+                    break;
+                default:
+                    console.log('Default order status : ')
+                    console.log(JSON.stringify(order))
+                    break;
             }
         },
 
@@ -361,7 +327,39 @@ shoonya_api = function () {
             if (entry_obj.spot_based) {
                 this.add_to_spot_order_list(params, entry_val)
             } else {
-                post_request(url.place_order, params, success_cb)
+                post_request(url.place_order, params, function(data) {
+                    if(success_cb != undefined) {  // Call custom function provided
+                        success_cb(data)
+                    } else { // No custom function provided. Default actions
+                        if(data.stat.toUpperCase() === "OK") {
+                            let order_id = data.norenordno;
+
+                            orderbook.get_orderbook(function(orders) {
+                                orderbook.update_open_order_list(orders);
+
+                                let matching_order = orders.find(order => order.norenordno === order_id)
+                                if (matching_order != undefined) {
+                                    orderbook.display_order_exec_msg(matching_order);
+                                }
+
+                                switch (matching_order.status) {
+                                    case "COMPLETE": //TODO AMO ORDER
+                                        console.log("Order completed.. " + orderno)
+                                        matching_order.prc = matching_order.avgprc; // When order status is COMPLETE avgprc field contains the correct price
+                                        trade.display_active_trade(matching_order);
+                                        break;
+                                    case "REJECTED":
+                                        show_error_msg(data.emsg);
+                                        break;
+                                    default:
+                                        break;
+                                }
+                            })
+                        } else
+                                show_error_msg(data.emsg);
+
+                    }
+                })
             }
 
             setTimeout(function() {
@@ -382,7 +380,7 @@ shoonya_api = function () {
 
             let dname = (item.dname != undefined)? item.dname : item.tsym;
             let row_id = `row_id_${++unique_row_id}`
-            $('#open_order_list').append(`<tr id="${row_id}" ordid="${item.norenordno}" exch="${item.exch}" tsym="${item.tsym}" qty="${item.qty}" token="${item.token}" ttype="${ttype}" trtype="${item.trantype}">
+            $('#spot_order_list').append(`<tr id="${row_id}" ordid="${item.norenordno}" exch="${item.exch}" tsym="${item.tsym}" qty="${item.qty}" token="${item.token}" ttype="${ttype}" trtype="${item.trantype}">
                     <td>${buy_sell}</td>
                     <td class="order-num">Spot Based Entry</td>
                     <td>${dname}</td>
@@ -401,20 +399,9 @@ shoonya_api = function () {
                 milestone_manager.add_entry(row_id, item.token, ttype, entry_obj);
         },
 
-        place_order_success_cb : function(data, closing_order_id) {
-            console.log("Place order success cb : ", data.norenordno)
-            if( data.norenordno != undefined) {
-                shoonya_api.orderbook.get_order_status(data.norenordno, closing_order_id)
-                orderbook.update_open_orders();
-            }else if ( data.result != undefined) {
-                shoonya_api.orderbook.get_order_status(data.result)  //For cancel order, order-id is contained in result variable
-                orderbook.update_open_orders();
-            }
-        },
-
         update_open_orders : function() {
             hide_other_tabs('#open_orders')
-            orderbook.get_orderbook(orderbook.update_open_order_list)
+            orderbook.get_orderbook(function(data) {orderbook.update_open_order_list(data);})
         },
 
         get_order_params: function(elm, buy_or_sell, entry, qty) {
@@ -480,7 +467,18 @@ shoonya_api = function () {
                 post_request(url.cancel_order, values, function (data) {
                     if (data.stat.toUpperCase() === "OK")
                         tr_elm.remove();
-                    shoonya_api.orderbook.place_order_success_cb(data)
+
+                    if ( data.result != undefined) {
+                        let orderno = data.result;  //For cancel order, order-id is contained in result variable
+
+                        orderbook.get_orderbook(function(orders) {
+                            let matching_order = orders.find(order => order.norenordno === orderno)
+                            if (matching_order != undefined) {
+                                orderbook.display_order_exec_msg(matching_order);
+                            }
+                            orderbook.update_open_order_list(orders);
+                        })
+                    }
                 });
             }
         },
@@ -492,6 +490,24 @@ shoonya_api = function () {
             let row_id = tr_elm.attr('id')
             let ttype = tr_elm.attr('ttype')
             let token = tr_elm.attr('token')
+
+            let target_value = tr_elm.find('.target').val()
+
+            if(target_value == undefined || target_value == '') {
+                milestone_manager.remove_target(row_id);
+            } else { // Target has some value
+                let target_obj = milestone_manager.get_value_object(target_value)
+                milestone_manager.add_target(row_id, token, ttype, target_obj);
+            }
+
+            let sl_value = tr_elm.find('.sl').val()
+
+            if(sl_value == undefined || sl_value == '') {
+                milestone_manager.remove_sl(row_id);
+            } else {  // SL has some value
+                let sl_obj = milestone_manager.get_value_object(sl_value)
+                milestone_manager.add_sl(row_id, token, ttype, sl_obj);
+            }
 
             if(orderno.includes('Spot')) {  // Spot based entry
                 let entry_obj = milestone_manager.get_value_object(entry_value)
@@ -516,32 +532,23 @@ shoonya_api = function () {
                 values["prctyp"] = prctyp;
                 values["prc"] = price;
 
-                post_request(url.modify_order, values, orderbook.place_order_success_cb);
+                post_request(url.modify_order, values, function (data) {
+                    orderbook.get_orderbook(function(orders) {
+                        let matching_order = orders.find(order => order.norenordno === orderno)
+                        if (matching_order != undefined) {
+                            orderbook.display_order_exec_msg(matching_order);
+                        }
+                        orderbook.update_open_order_list(orders);
+                    })
+                });
             }
 
-            let target_value = tr_elm.find('.target').val()
-
-            if(target_value == undefined || target_value == '') {
-                milestone_manager.remove_target(row_id);
-            } else { // Target has some value
-                let target_obj = milestone_manager.get_value_object(target_value)
-                milestone_manager.add_target(row_id, token, ttype, target_obj);
-            }
-
-            let sl_value = tr_elm.find('.sl').val()
-
-            if(sl_value == undefined || sl_value == '') {
-                milestone_manager.remove_sl(row_id);
-            } else {  // SL has some value
-                let sl_obj = milestone_manager.get_value_object(sl_value)
-                milestone_manager.add_sl(row_id, token, ttype, sl_obj);
-            }
         },
 
         //TODO - Partial quantity exit should be done
         exit_order : function(td_elm) {
             let tr_elm = $(td_elm).parent().parent();
-            let orderno = tr_elm.attr('ordid')
+            let to_be_closed_order_id = tr_elm.attr('ordid')
             let limit_value = tr_elm.find('.exit-limit').val()
             let qty = tr_elm.find('.qty').val()
 
@@ -551,9 +558,19 @@ shoonya_api = function () {
             post_request(url.place_order, values, function(data){
                 if(data.stat.toUpperCase() === "OK") {
                     milestone_manager.remove_milestone(tr_elm.attr('id'))
-                    // tr_elm.remove(); //remove_active_trade() function removes the row
-                }
-                orderbook.place_order_success_cb(data, orderno)
+                    tr_elm.remove();
+                    let orderno = data.norenordno;
+
+                    orderbook.get_orderbook(function(orders) {
+                        orderbook.update_open_order_list(orders);
+
+                        let matching_order = orders.find(order => order.norenordno === orderno)
+                        if (matching_order != undefined) {
+                            orderbook.display_order_exec_msg(matching_order);
+                        }
+                    })
+                } else
+                    show_error_msg(data.emsg);
             });
         },
 
@@ -912,12 +929,44 @@ shoonya_api = function () {
                         tr_elm.find('.entry').val('') // Set entry value to '' in order to place market order
 
                         orderbook.place_order(tr_elm, tr_elm.attr('trtype'), function (data) {
-                            milestone_manager.remove_entry(row_id)
-                            let order_id = data.norenordno;
-                            let ms = milestone_manager.add_order_id(row_id, order_id);
-                            orderbook.place_order_success_cb(data);
+                            if(data.stat.toUpperCase() === "OK") {
+                                tr_elm.remove();    //Remove entry from Open order table
+                                milestone_manager.remove_entry(row_id)
+                                let order_id = data.norenordno;
+                                let ms = milestone_manager.add_order_id(row_id, order_id);
+
+                                orderbook.get_orderbook(function(orders) {
+                                    orderbook.update_open_order_list(orders);
+
+                                    let matching_order = orders.find(order => order.norenordno === order_id)
+                                    if (matching_order != undefined) {
+                                        orderbook.display_order_exec_msg(matching_order);
+                                    }
+
+                                    switch (matching_order.status) {
+                                        case "COMPLETE": //TODO AMO ORDER
+                                            console.log("Order completed.. " + orderno)
+                                            matching_order.prc = matching_order.avgprc; // When order status is COMPLETE avgprc field contains the correct price
+                                            const ms_obj = milestone_manager.get_milestone(order_id);
+                                            let target = ''; sl = '';
+                                            if(ms_obj != undefined) {
+                                                const old_row_id = ms_obj.row_id;
+                                                target = milestone_manager.get_value_string(ms_obj.milestone.target)
+                                                sl = milestone_manager.get_value_string(ms_obj.milestone.sl)
+                                                milestone_manager.remove_milestone(old_row_id); //Target and SL have been taken into Active Trade Row
+                                            }
+                                            trade.display_active_trade(matching_order, target, sl);
+                                            break;
+                                        case "REJECTED":
+                                            show_error_msg(data.emsg);
+                                            break;
+                                        default:
+                                            break;
+                                    }
+                                })
+                            } else
+                                show_error_msg(data.emsg);
                         })
-                        tr_elm.remove()
                     }
                 }
             }
@@ -950,8 +999,6 @@ shoonya_api = function () {
                     console.log("Target triggered for row_id : " + row_id + " Trigger value = " + trig_value + " Spot value = " + cur_spot_value)
                     let tr_elm = $(`#${row_id}`)
                     tr_elm.find('.entry').text('') // Set entry value to '' in order to place market order
-                    // let trtype = tr_elm.attr('trtype') ==='B'? 'S' : 'B'    //Do the opposite to close position
-                    // orderbook.place_order(tr_elm, trtype)
                     orderbook.exit_order(tr_elm.find('.exit'))
                     tr_elm.remove()
                     milestone_manager.remove_milestone(row_id)
@@ -985,8 +1032,6 @@ shoonya_api = function () {
                     console.log("SL triggered for row_id : " + row_id + " Trigger value = " + trig_value + " Spot value = " + cur_spot_value)
                     let tr_elm = $(`#${row_id}`)
                     tr_elm.find('.entry').val('') // Set entry value to '' in order to place market order
-                    // let trtype = tr_elm.attr('trtype') ==='B'? 'S' : 'B'    //Do the opposite to close position
-                    // orderbook.place_order(tr_elm, trtype)
                     orderbook.exit_order(tr_elm.find('.exit'))
                     tr_elm.remove()
                     milestone_manager.remove_milestone(row_id)
@@ -1035,12 +1080,12 @@ shoonya_api = function () {
                 $('#' + row_id).find('.sl').val(sl)
             }
         },
-
+/*
         remove_active_trade : function(closing_order_id) {
             console.log("Removing order id :" , closing_order_id)
             let tr_elm = $('#active_trades_table').find(`[ordid=${closing_order_id}]`)
             tr_elm.remove()
-        },
+        },*/
 
         modify : function(elm, button_text) {
             let tr_elm = $(elm).parent().parent();
@@ -1104,7 +1149,7 @@ shoonya_api = function () {
 
                 if(qty >0) {
                     console.log("Open position : ", JSON.stringify(pos))
-                    $('#active_trades_table').append(`<tr id="row_id_${++unique_row_id}" ordid="open_position" exch="${pos.exch}" token="${pos.token}" tsym="${pos.tsym}" ttype="${ttype}" trtype="${trtype}">
+                    $('#active_trades_table').append(`<tr id="row_id_${++unique_row_id}" exch="${pos.exch}" token="${pos.token}" tsym="${pos.tsym}" ttype="${ttype}" trtype="${trtype}">
                             <td>${buy_sell}</td>
                             <td>${dname}</td>
                             <td class="entry">
