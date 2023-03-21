@@ -228,12 +228,20 @@ shoonya_api = function () {
                     console.log(matching_order)
                     switch (matching_order.status) {
                         case "COMPLETE": //TODO AMO ORDER
-                        // case "OPEN": //TODO AMO ORDER
                             console.log("Order completed.. " + orderno)
                             if(closing_order_id == undefined) {
-                                matching_order.prc = matching_order.avg_prc; // When order status is COMPLETE avgprc field contains the correct price
-                                trade.display_active_trade(matching_order);
+                                matching_order.prc = matching_order.avgprc; // When order status is COMPLETE avgprc field contains the correct price
+                                const ms_obj = milestone_manager.get_milestone(orderno);
+                                let target = ''; sl = '';
+                                if(ms_obj != undefined) {
+                                    const old_row_id = ms_obj.row_id;
+                                    target = milestone_manager.get_value_string(ms_obj.milestone.target)
+                                    sl = milestone_manager.get_value_string(ms_obj.milestone.sl)
+                                    milestone_manager.remove_milestone(old_row_id); //Target and SL have been taken into Active Trade Row
+                                }
+                                trade.display_active_trade(matching_order, target, sl);
                             } else {
+                                matching_order.prc = matching_order.avgprc; // Exit price
                                 console.log(closing_order_id + " exited.. with " + orderno)
                                 trade.remove_active_trade(closing_order_id)
                             }
@@ -339,11 +347,12 @@ shoonya_api = function () {
             }
         },
 
-        place_order : function(tr_elm, buy_sell) {
+        place_order : function(tr_elm, buy_sell, success_cb) {
             tr_elm.find('.buy').attr('disabled', 'disabled');
             tr_elm.find('.sell').attr('disabled', 'disabled');
 
             let entry_val = tr_elm.find('.entry').val()
+            console.log("Inside place order : " + entry_val)
             if(entry_val == undefined) entry_val = 0.0;
             let entry_obj = milestone_manager.get_value_object(entry_val);
             let qty = tr_elm.find('.qty').val()
@@ -352,7 +361,7 @@ shoonya_api = function () {
             if (entry_obj.spot_based) {
                 this.add_to_spot_order_list(params, entry_val)
             } else {
-                post_request(url.place_order, params, this.place_order_success_cb)
+                post_request(url.place_order, params, success_cb)
             }
 
             setTimeout(function() {
@@ -398,7 +407,7 @@ shoonya_api = function () {
                 shoonya_api.orderbook.get_order_status(data.norenordno, closing_order_id)
                 orderbook.update_open_orders();
             }else if ( data.result != undefined) {
-                shoonya_api.orderbook.get_order_status(data.result)  //For cancel order order id is contained in result variable
+                shoonya_api.orderbook.get_order_status(data.result)  //For cancel order, order-id is contained in result variable
                 orderbook.update_open_orders();
             }
         },
@@ -456,16 +465,24 @@ shoonya_api = function () {
         cancel_order : function(td_elm) {
             let tr_elm = $(td_elm).parent().parent();
             let orderno = tr_elm.find('.order-num').html()
+            let row_id = tr_elm.attr('id')
 
-            let values            = {'ordersource':'WEB'};
-            values["uid"]         = user_id;
-            values["norenordno"]  = orderno;
+            if(orderno.includes('Spot')) {  // Spot based entry
+                let entry_obj = milestone_manager.get_value_object(entry_value);
+                milestone_manager.remove_milestone(row_id);
 
-            post_request(url.cancel_order, values, function(data) {
-                if(data.stat.toUpperCase() === "OK")
-                    tr_elm.remove();
-                shoonya_api.orderbook.place_order_success_cb(data)
-            });
+            } else {
+
+                let values            = {'ordersource':'WEB'};
+                values["uid"]         = user_id;
+                values["norenordno"]  = orderno;
+
+                post_request(url.cancel_order, values, function (data) {
+                    if (data.stat.toUpperCase() === "OK")
+                        tr_elm.remove();
+                    shoonya_api.orderbook.place_order_success_cb(data)
+                });
+            }
         },
 
         modify_order : function(td_elm) {
@@ -499,25 +516,25 @@ shoonya_api = function () {
                 values["prctyp"] = prctyp;
                 values["prc"] = price;
 
-                post_request(url.modify_order, values, this.place_order_success_cb);
+                post_request(url.modify_order, values, orderbook.place_order_success_cb);
             }
 
             let target_value = tr_elm.find('.target').val()
 
-            if(target_value != undefined || target_value != '') {  // Target has some value
+            if(target_value == undefined || target_value == '') {
+                milestone_manager.remove_target(row_id);
+            } else { // Target has some value
                 let target_obj = milestone_manager.get_value_object(target_value)
                 milestone_manager.add_target(row_id, token, ttype, target_obj);
-            } else {
-                milestone_manager.remove_target(row_id);
             }
 
             let sl_value = tr_elm.find('.sl').val()
 
-            if(sl_value != undefined || sl_value != '') {  // SL has some value
+            if(sl_value == undefined || sl_value == '') {
+                milestone_manager.remove_sl(row_id);
+            } else {  // SL has some value
                 let sl_obj = milestone_manager.get_value_object(sl_value)
                 milestone_manager.add_sl(row_id, token, ttype, sl_obj);
-            } else {
-                milestone_manager.remove_sl(row_id);
             }
         },
 
@@ -626,6 +643,14 @@ shoonya_api = function () {
             this.token = token;
         }
 
+        add_order_id(order_id) {
+            this.order_id = order_id;
+        }
+
+        get_order_id() {
+            return this.order_id;
+        }
+
         get_token() {
             return this.token;
         }
@@ -681,13 +706,26 @@ shoonya_api = function () {
             let instrument = 'price';
             let value = val_str;
 
-            if(val_str != undefined && val_str != '' && (val_str.includes('N') || val_str.includes('B'))) {
-                spot_based = true
-                instrument = (val_str).includes('N')? 'nifty' : 'bank_nifty'
-                value = val_str.replace(/N|B/i, '').trim();
+            if(value != undefined && value != ''){
+                value = value.trim();
+                if(value.startsWith('N') || value.startsWith('n') || value.includes('B') || value.includes('b')) {
+                    spot_based = true
+                    instrument = (value).toUpperCase().startsWith('N') ? 'nifty' : 'bank_nifty'
+                    value = value.replace(/N|B|-| /i, '');
+                }
             }
 
             return {spot_based : spot_based, value : value, instrument : instrument}
+        }
+
+        get_value_string(value_obj) {
+            if(value_obj.spot_based) {
+                let value_str = '';
+                value_str = value_obj.instrument === 'nifty' ? 'N ': 'B ';
+                return value_str + value_obj.value;
+            } else {
+                return value_obj.value
+            }
         }
 
         add_entry(row_id, token, ttype, value_obj) {
@@ -699,6 +737,24 @@ shoonya_api = function () {
                 this.milestones[row_id] = ms
             } else {
                 old_ms.set_entry(value_obj)
+            }
+        }
+
+        add_order_id(row_id, order_id) {
+            let old_ms = this.milestones[row_id]
+            if(old_ms != undefined) {
+                old_ms.add_order_id(order_id)
+            }
+        }
+
+        get_milestone(order_id) {
+            for(const [row_id, milestone] of Object.entries(this.milestones)) {
+                if(milestone.get_order_id() === order_id) {
+                    return {
+                        row_id : row_id,
+                        milestone: milestone
+                    };
+                }
             }
         }
 
@@ -730,10 +786,20 @@ shoonya_api = function () {
             let old_ms = this.milestones[row_id]
             if (old_ms != undefined) {
                 old_ms.del_entry()
-                if( old_ms.get_target()=='undefined' && old_ms.get_sl() == 'undefined') {
+                if( old_ms.get_target()== undefined && old_ms.get_sl() == undefined) {
                     delete this.milestones[row_id]
                 }
             }
+        }
+
+        entry_exists(row_id) {
+            let old_ms = this.milestones[row_id]
+            if (old_ms != undefined) {
+               let entry = old_ms.get_entry();
+               if(entry != undefined)
+                    return true;
+            }
+            return false;
         }
 
         remove_target(row_id) {
@@ -823,7 +889,7 @@ shoonya_api = function () {
                     switch(entry_obj.instrument) {
                         case "nifty" : cur_spot_value = live_data[nifty_tk]; break;
                         case "bank_nifty" : cur_spot_value = live_data[bank_nifty_tk]; break;
-                        default : console.error(row_id + " .. Something is wrong .. " + mile_stone); break;
+                        default : console.error(row_id + " Spot based entry.. neither nifty nor bank-nifty " + mile_stone); break;
                     }
                 }
                 if (ttype === 'bull') {
@@ -837,12 +903,22 @@ shoonya_api = function () {
                 }
 
                 function entry_triggered() {
-                    console.log("Entry triggered for row_id : ", row_id)
-                    let tr_elm = $(`#${row_id}`)
-                    tr_elm.find('.entry').val('') // Set entry value to '' in order to place market order
-                    orderbook.place_order(tr_elm, tr_elm.attr('trtype'))
-                    milestone_manager.remove_entry(row_id)
-                    tr_elm.remove()
+
+                    if(milestone_manager.entry_exists(row_id)) {  // To avoid duplicate execution
+
+                        console.log("Entry triggered for row_id : " + row_id + " Trigger value = " + trig_value + " Spot value = " + cur_spot_value)
+                        console.log(entry_obj)
+                        let tr_elm = $(`#${row_id}`)
+                        tr_elm.find('.entry').val('') // Set entry value to '' in order to place market order
+
+                        orderbook.place_order(tr_elm, tr_elm.attr('trtype'), function (data) {
+                            milestone_manager.remove_entry(row_id)
+                            let order_id = data.norenordno;
+                            let ms = milestone_manager.add_order_id(row_id, order_id);
+                            orderbook.place_order_success_cb(data);
+                        })
+                        tr_elm.remove()
+                    }
                 }
             }
 
@@ -871,7 +947,7 @@ shoonya_api = function () {
                 }
 
                 function target_triggered() {
-                    console.log("Target triggered for row_id : ", row_id)
+                    console.log("Target triggered for row_id : " + row_id + " Trigger value = " + trig_value + " Spot value = " + cur_spot_value)
                     let tr_elm = $(`#${row_id}`)
                     tr_elm.find('.entry').text('') // Set entry value to '' in order to place market order
                     // let trtype = tr_elm.attr('trtype') ==='B'? 'S' : 'B'    //Do the opposite to close position
@@ -906,7 +982,7 @@ shoonya_api = function () {
                 }
 
                 function sl_triggered() {
-                    console.log("SL triggered for row_id : ", row_id)
+                    console.log("SL triggered for row_id : " + row_id + " Trigger value = " + trig_value + " Spot value = " + cur_spot_value)
                     let tr_elm = $(`#${row_id}`)
                     tr_elm.find('.entry').val('') // Set entry value to '' in order to place market order
                     // let trtype = tr_elm.attr('trtype') ==='B'? 'S' : 'B'    //Do the opposite to close position
@@ -918,7 +994,7 @@ shoonya_api = function () {
             }
         },
 
-        display_active_trade : function(order) {
+        display_active_trade : function(order, target, sl) {
             let ttype = orderbook.know_bull_or_bear(order)
             let buy_sell = '';
             if (order.trantype == "B") {
@@ -929,8 +1005,10 @@ shoonya_api = function () {
             let dname = (order.dname != undefined)? order.dname : order.tsym;
 
             console.log("Active trade : " + JSON.stringify(order))
+            ++unique_row_id;
+            let row_id = "row_id_" + unique_row_id;
 
-            $('#active_trades_table').append(`<tr id="row_id_${++unique_row_id}" ordid="${order.norenordno}"  exch="${order.exch}" token="${order.token}" tsym="${order.tsym}" ttype="${ttype}" trtype="${order.trantype}">
+            $('#active_trades_table').append(`<tr id="${row_id}" ordid="${order.norenordno}"  exch="${order.exch}" token="${order.token}" tsym="${order.tsym}" ttype="${ttype}" trtype="${order.trantype}">
                         <td>${buy_sell}</td>
                         <td>${dname}</td>
                         <td class="entry">
@@ -940,13 +1018,22 @@ shoonya_api = function () {
                         </td>
                         <td class="trade_${order.token} ltp"></td>
                         <td class="pnl"></td>
-                        <td><input type="text" disabled class="form-control target" placeholder="" ></td>
-                        <td><input type="text" disabled class="form-control sl" placeholder="" ></td>
+                        <td><input type="text" disabled class="form-control target" placeholder="" value=""></td>
+                        <td><input type="text" disabled class="form-control sl" placeholder="" value="" ></td>
                         <td><input type="text" class="form-control exit-limit" placeholder="" ></td>
                         <td><input type="text" class="form-control qty" placeholder=""  value="${lot_size}"></td>
                         <td><button type="button" class="btn btn-success modify" onclick="shoonya_api.trade.modify(this, $(this).text())">Edit</button></td>
                         <td><button type="button" class="btn btn-danger exit" onclick="shoonya_api.trade.exit(this)">Exit</button></td>
                 </tr>`);
+
+            if(target != undefined && target != '' ) {
+                milestone_manager.add_target(row_id, token, ttype, milestone_manager.get_value_object(target))
+                $('#' + row_id).find('.target').val(target)
+            }
+            if(sl != undefined && sl != '' ) {
+                milestone_manager.add_sl(row_id, token, ttype, milestone_manager.get_value_object(sl))
+                $('#' + row_id).find('.sl').val(sl)
+            }
         },
 
         remove_active_trade : function(closing_order_id) {
@@ -1017,7 +1104,7 @@ shoonya_api = function () {
 
                 if(qty >0) {
                     console.log("Open position : ", JSON.stringify(pos))
-                    $('#active_trades_table').append(`<tr id="row_id_${++unique_row_id}" exch="${pos.exch}" token="${pos.token}" tsym="${pos.tsym}" ttype="${ttype}" trtype="${trtype}">
+                    $('#active_trades_table').append(`<tr id="row_id_${++unique_row_id}" ordid="open_position" exch="${pos.exch}" token="${pos.token}" tsym="${pos.tsym}" ttype="${ttype}" trtype="${trtype}">
                             <td>${buy_sell}</td>
                             <td>${dname}</td>
                             <td class="entry">
@@ -1062,7 +1149,8 @@ shoonya_api = function () {
 
         add_row_to_watch : function(sym, lot_size, exch, token, tsym, put_option) {
             console.log("Add row to watch .. ", token)
-            subscribe_token( exch + '|' + token)
+            let symtoken = exch + '|' + token
+            subscribe_token(symtoken)
             class_name = ''
             if(put_option) {
                 class_name = 'table-danger'
@@ -1071,7 +1159,7 @@ shoonya_api = function () {
             $('#watch_list_body').append(`<tr class="${class_name}" exch="${exch}" token="${token}" tsym="${tsym}" lot_size="${lot_size}">
     
                 <td>${sym}</td>
-                <th class="watch_${token}"></th>
+                <th class="watch_${token} ltp"></th>
                 <td><input type="text" class="form-control entry" placeholder="" ></td>
                 <td><input type="text" class="form-control qty" placeholder="" value="${lot_size}"></td>
                 <td><button type="button" class="btn btn-success buy" onclick="shoonya_api.orderbook.place_order($(this).parent().parent(), 'B')">BUY</button></td>
@@ -1100,7 +1188,6 @@ shoonya_api = function () {
                 dataType: "json",
                 data: payload,
                 success: function (data, textStatus, jqXHR) {
-                    // console.log("Ajax success")
                     success_cb(data)
                 },
                 error: function (jqXHR, textStatus, errorThrown) {
