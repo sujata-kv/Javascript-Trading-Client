@@ -13,6 +13,7 @@ shoonya_api = function () {
     let pending_to_subscribe_tokens = new Set();
     let logged_in = false;
     let live_data = {};
+    let heartbeat_timeout = 3000;
 
     const url = {
         websocket : "wss://shoonya.finvasia.com/NorenWSWeb/",
@@ -39,6 +40,11 @@ shoonya_api = function () {
             ws.send(JSON.stringify(data));
             $('#connection_status').css('color', 'green')
             console.log("Session data sent")
+
+            setInterval(function () {
+                var _hb_req = '{"t":"h"}';
+                ws.send(_hb_req);
+            }, heartbeat_timeout);
         };
 
         ws.onmessage = function (event) {
@@ -184,6 +190,7 @@ shoonya_api = function () {
                                         label: item.dname != undefined? item.dname : item.tsym,
                                         value: item.dname != undefined? item.dname : item.tsym,
                                         tsym: item.tsym,
+                                        dname: item.dname,
                                         lot_size: item.ls,
                                         exch: item.exch,
                                         token: item.token,
@@ -204,6 +211,7 @@ shoonya_api = function () {
                 $(this).attr('exch', ui.item.exch)
                 $(this).attr('token', ui.item.token)
                 $(this).attr('tsym', ui.item.tsym)
+                $(this).attr('dname', ui.item.dname)
                 $(this).attr('optt', ui.item.optt)
                 console.log("Selected item : ", ui.item)
             },
@@ -280,7 +288,8 @@ shoonya_api = function () {
 
         update_open_order_list : function(orders) {
             $('#open_order_list').html('')
-            orders.forEach(orderbook.add_open_order)
+            if(orders!= undefined)
+                orders.forEach(orderbook.add_open_order)
         },
 
         add_open_order : function(item) {
@@ -511,40 +520,52 @@ shoonya_api = function () {
                 milestone_manager.add_sl(row_id, token, ttype, sl_obj);
             }
 
-            if(orderno.includes('Spot')) {  // Spot based entry
-                let entry_obj = milestone_manager.get_value_object(entry_value)
+            let entry_obj = milestone_manager.get_value_object(entry_value)
+            if(entry_obj.spot_based && entry_obj.value != '') {  // Spot based entry
                 milestone_manager.add_entry(row_id, token, ttype, entry_obj)
-
             } else {
-
+                milestone_manager.remove_entry(row_id); // Entry should be present in milestone_mgr only if it is spot based. Else LIMIT & MKT order should be placed immediately
                 let prctyp = 'LMT', price = "0.0";
-                if (entry_value == '') {
+                if (entry_obj.value == '') {
                     prctyp = 'MKT'
-                } else price = entry_value.toString()
+                } else price = entry_obj.value;
 
                 let qty = tr_elm.find('.qty').val()
 
                 let values = {'ordersource': 'WEB'};
                 values["uid"] = user_id;
                 values["actid"] = user_id;
-                values["norenordno"] = orderno;
                 values["exch"] = tr_elm.attr('exch');
                 values["tsym"] = tr_elm.attr('tsym');
                 values["qty"] = qty;
                 values["prctyp"] = prctyp;
                 values["prc"] = price;
 
-                post_request(url.modify_order, values, function (data) {
-                    orderbook.get_orderbook(function(orders) {
-                        let matching_order = orders.find(order => order.norenordno === orderno)
-                        if (matching_order != undefined) {
-                            orderbook.display_order_exec_msg(matching_order);
-                        }
-                        orderbook.update_open_order_list(orders);
-                    })
-                });
+                if(!orderno.includes("Spot")) {
+                    values["norenordno"] = orderno;
+                    post_request(url.modify_order, values, function (data) {
+                        console.log("Modify order resp: " + JSON.stringify(data))
+                        orderbook.get_orderbook(function (orders) {
+                            let matching_order = orders.find(order => order.norenordno === orderno)
+                            if (matching_order != undefined) {
+                                orderbook.display_order_exec_msg(matching_order);
+                            }
+                            orderbook.update_open_order_list(orders);
+                        })
+                    });
+                } else { // Place fresh order as spot entry value has been removed
+                    post_request(url.place_order, values, function (data) {
+                        console.log("Place order resp: " + JSON.stringify(data))
+                        orderbook.get_orderbook(function (orders) {
+                            let matching_order = orders.find(order => order.norenordno === data.norenordno)
+                            if (matching_order != undefined) {
+                                orderbook.display_order_exec_msg(matching_order);
+                            }
+                            orderbook.update_open_order_list(orders);
+                        })
+                    });
+                }
             }
-
         },
 
         //TODO - Partial quantity exit should be done
@@ -580,7 +601,8 @@ shoonya_api = function () {
             $('#order_book_table').html("")
             hide_other_tabs('#order_book')
             this.get_orderbook(function(orders) {
-                orders.forEach((order)=> orderbook.show_order(order))
+                if(orders!=undefined)
+                    orders.forEach((order)=> orderbook.show_order(order))
             })
         },
 
@@ -620,7 +642,7 @@ shoonya_api = function () {
                         <td>${dname}</td>
                         <td>${item.qty}</td>
                         <td>${buy_sell}</td>
-                        <td>${item.prc}</td>
+                        <td>${item.avgprc}</td>
                         <td>${item.prctyp}</td>
                         <td>${item.norentm}</td>
                         <td>${rej_reason}</td>
@@ -854,25 +876,38 @@ shoonya_api = function () {
         update_pnl : function(ltp_elm){
             let tr_elm = $(ltp_elm).parent();
             let ttype = tr_elm.attr('ttype');
+            let trtype = tr_elm.attr('trtype');
+            let trade_status = tr_elm.attr('trade');
             let ltp = parseFloat($(ltp_elm).text());
             let entry = parseFloat(tr_elm.find('.entry').find('.price').text());
             let qty = parseFloat(tr_elm.find('.qty').val());
 
-            let pnl = 0.0;
-            if(ttype === "bull") {
-                pnl = ltp - entry;
-            } else {
-                pnl = entry - ltp;
-            }
+            switch(trade_status) {
+                case "active" : {
+                    let pnl = 0.0;
+                    if (trtype == 'B') {
+                        pnl = ltp - entry;
+                    } else {
+                        pnl = entry - ltp;
+                    }
 
-            if (!isNaN(pnl)) {
-                pnl = pnl * qty;
-                let pnl_elm = tr_elm.find('.pnl');
-                pnl_elm.text(pnl.toFixed(2))
-                if (pnl < 0) {
-                    pnl_elm.css('color', 'red')
-                } else {
-                    pnl_elm.css('color', 'green')
+                    if (!isNaN(pnl)) {
+                        pnl = pnl * qty;
+                        let pnl_elm = tr_elm.find('.pnl');
+                        pnl_elm.text(pnl.toFixed(2))
+                        if (pnl < 0) {
+                            pnl_elm.css('color', 'red')
+                        } else {
+                            pnl_elm.css('color', 'green')
+                        }
+                    }
+                    break;
+                }
+                case "closed": {
+                    break;
+                }
+                case "pos" : {
+
                 }
             }
         },
@@ -911,6 +946,7 @@ shoonya_api = function () {
                         default : console.error(row_id + " Spot based entry.. neither nifty nor bank-nifty " + mile_stone); break;
                     }
                 }
+                console.log(`Checking Entry : ${ttype}  spot : ${cur_spot_value}  trig : ${trig_value}`)
                 if (ttype === 'bull') {
                     if (cur_spot_value <= trig_value) {
                         entry_triggered()
@@ -989,6 +1025,9 @@ shoonya_api = function () {
                 } else { // Price based
                     cur_spot_value = live_data[mile_stone.token]
                 }
+
+
+                console.log(`Checking Target : ${ttype}  spot : ${cur_spot_value}  trig : ${trig_value}`)
                 if (ttype === 'bull') {
                     if (cur_spot_value >= trig_value) {
                         target_triggered()
@@ -1022,6 +1061,8 @@ shoonya_api = function () {
                 } else { // Price based
                     cur_spot_value = live_data[mile_stone.token]
                 }
+
+                console.log(`Checking SL : ${ttype}  spot : ${cur_spot_value}  trig : ${trig_value}`)
                 if (ttype === 'bull') {
                     if (cur_spot_value <= trig_value) {
                         sl_triggered()
@@ -1057,7 +1098,7 @@ shoonya_api = function () {
             ++unique_row_id;
             let row_id = "row_id_" + unique_row_id;
 
-            $('#active_trades_table').append(`<tr id="${row_id}" ordid="${order.norenordno}"  exch="${order.exch}" token="${order.token}" tsym="${order.tsym}" ttype="${ttype}" trtype="${order.trantype}">
+            $('#active_trades_table').append(`<tr id="${row_id}" ordid="${order.norenordno}"  exch="${order.exch}" token="${order.token}" tsym="${order.tsym}" ttype="${ttype}" trtype="${order.trantype}" trade="active">
                         <td>${buy_sell}</td>
                         <td>${dname}</td>
                         <td class="entry">
@@ -1084,12 +1125,7 @@ shoonya_api = function () {
                 $('#' + row_id).find('.sl').val(sl)
             }
         },
-/*
-        remove_active_trade : function(closing_order_id) {
-            console.log("Removing order id :" , closing_order_id)
-            let tr_elm = $('#active_trades_table').find(`[ordid=${closing_order_id}]`)
-            tr_elm.remove()
-        },*/
+
 
         modify : function(elm, button_text) {
             let tr_elm = $(elm).parent().parent();
@@ -1153,7 +1189,7 @@ shoonya_api = function () {
 
                 if(qty >0) {
                     console.log("Open position : ", JSON.stringify(pos))
-                    $('#active_trades_table').append(`<tr id="row_id_${++unique_row_id}" exch="${pos.exch}" token="${pos.token}" tsym="${pos.tsym}" ttype="${ttype}" trtype="${trtype}">
+                    $('#active_trades_table').append(`<tr id="row_id_${++unique_row_id}" exch="${pos.exch}" token="${pos.token}" tsym="${pos.tsym}" ttype="${ttype}" trtype="${trtype}" trade="pos">
                             <td>${buy_sell}</td>
                             <td>${dname}</td>
                             <td class="entry">
@@ -1188,6 +1224,7 @@ shoonya_api = function () {
             exch = $('input.watch_item').attr('exch')
             token = $('input.watch_item').attr('token')
             tsym = $('input.watch_item').attr('tsym')
+            dname = $('input.watch_item').attr('dname')
             optt = $('input.watch_item').attr('optt')
             put_option = false
             if (optt === "PE" && exch === "NFO") {
@@ -1361,6 +1398,7 @@ shoonya_api = function () {
         "subscribed_symbols": subscribed_symbols,
         "live_data": live_data,
         "mgr": milestone_manager,
+        // "subscribe_token" : subscribe_token,
     }
 
 }();
