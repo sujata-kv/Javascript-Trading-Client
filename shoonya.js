@@ -252,7 +252,7 @@ shoonya_api = function () {
         },
 
         sell : function(sell_btn) {
-            let tr_elm = $(buy_btn).parent().parent();
+            let tr_elm = $(sell_btn).parent().parent();
             orderbook.place_buy_sell_order(tr_elm, 'S')
         },
 
@@ -594,8 +594,8 @@ shoonya_api = function () {
                                         <span class="badge badge-primary">${order.remarks}</span>`);
                         trade.update_pnl(tr_elm.find('.ltp'), order.avgprc)
 
-                        tr_elm.find('.modify').parent().html('');
-                        tr_elm.find('.exit').parent().html('CLOSED');
+                        tr_elm.find('.modify').parent().html('CLOSED');
+                        tr_elm.find('.exit').parent().html(`<button type="button" class="btn btn-dark btn-sm" onclick="$(this).parent().parent().remove()">Delete</button>`);
                         tr_elm.find('.qty').attr('disabled', 'disabled');
                         tr_elm.find('.exit').attr('disabled', 'disabled');
                     })
@@ -615,7 +615,7 @@ shoonya_api = function () {
                                 orderbook.get_status_and_update_open_orders(orderno);
                             }, 2000)
                             break;
-                        case "COMPLETE": // AMO ORDER CHANGE TO COMPLETE
+                        case "COMPLETE": // TODO - AMO ORDER CHANGE TO COMPLETE
                             oncomplete_cb(matching_order);
                             break;
                         default:
