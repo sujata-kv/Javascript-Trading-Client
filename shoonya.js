@@ -13,7 +13,7 @@ shoonya_api = function () {
     let pending_to_subscribe_tokens = new Set();
     let logged_in = false;
     let live_data = {};
-    let heartbeat_timeout = 3000;
+    let heartbeat_timeout = 7000;
 
     const url = {
         websocket : "wss://shoonya.finvasia.com/NorenWSWeb/",
@@ -84,9 +84,9 @@ shoonya_api = function () {
                         $('#bank_nifty').html(result.lp)
                         break;
                     default:
-                        update_ltp('.watch_' + result.tk);
-                        update_ltp(".open_order_" + result.tk)  // In Open Order table
-                        update_ltp(".trade_" + result.tk)  // In Active Trades table
+                        update_ltp('#watch_list_body .watch_' + result.tk);
+                        update_ltp("#open_orders .open_order_" + result.tk)  // In Open Order table
+                        update_ltp("#active_trades_table .trade_" + result.tk)  // In Active Trades table
                         break;
                 }
             }
@@ -114,9 +114,9 @@ shoonya_api = function () {
     }
 
     function subscribe_token(token) {
-        if (!subscribed_symbols.includes(token)) {  // Subscribe only if not subscribed earlier
+        // if (!subscribed_symbols.includes(token)) {  // Subscribe only if not subscribed earlier
             pending_to_subscribe_tokens.add(token);
-        }
+        // }
         for(token of pending_to_subscribe_tokens.keys()) {
             let symtoken = {"t": "t", "k": token.concat('#')}
             // console.log(symtoken)
@@ -554,18 +554,48 @@ shoonya_api = function () {
                         })
                     });
                 } else { // Place fresh order as spot entry value has been removed
-                    post_request(url.place_order, values, function (data) {
-                        console.log("Place order resp: " + JSON.stringify(data))
-                        orderbook.get_orderbook(function (orders) {
-                            let matching_order = orders.find(order => order.norenordno === data.norenordno)
-                            if (matching_order != undefined) {
-                                orderbook.display_order_exec_msg(matching_order);
-                            }
-                            orderbook.update_open_order_list(orders);
-                        })
-                    });
+                    orderbook.place_buy_sell_order(tr_elm, tr_elm.attr('trtype'), orderbook.place_order_carry_target_sl_cb);
+                    tr_elm.remove()
                 }
             }
+        },
+
+        place_order_carry_target_sl_cb : function (data) {
+            if(data.stat.toUpperCase() === "OK") {
+                let order_id = data.norenordno;
+                let ms = milestone_manager.add_order_id(row_id, order_id);
+
+                orderbook.get_orderbook(function(orders) {
+                    orderbook.update_open_order_list(orders);
+
+                    let matching_order = orders.find(order => order.norenordno === order_id)
+                    if (matching_order != undefined) {
+                        orderbook.display_order_exec_msg(matching_order);
+
+                        switch (matching_order.status) {
+                            case "COMPLETE": //TODO AMO ORDER
+                                console.log("Order completed.. " + order_id)
+                                matching_order.prc = matching_order.avgprc; // When order status is COMPLETE avgprc field contains the correct price
+                                const ms_obj = milestone_manager.get_milestone(order_id);
+                                let target = ''; let sl = '';
+                                if(ms_obj != undefined) {
+                                    const old_row_id = ms_obj.row_id;
+                                    target = milestone_manager.get_value_string(ms_obj.milestone.target)
+                                    sl = milestone_manager.get_value_string(ms_obj.milestone.sl)
+                                    milestone_manager.remove_milestone(old_row_id); //Target and SL have been taken into Active Trade Row
+                                }
+                                trade.display_active_trade(matching_order, target, sl);
+                                break;
+                            case "REJECTED":
+                                show_error_msg(data.emsg);
+                                break;
+                            default:
+                                break;
+                        }
+                    }
+                })
+            } else
+                show_error_msg(data.emsg);
         },
 
         //TODO - Partial quantity exit should be done
@@ -871,7 +901,6 @@ shoonya_api = function () {
     const milestone_manager = new MileStoneManager();
 
     const trade = {
-        active_trades : {},
 
         update_pnl : function(ltp_elm){
             let tr_elm = $(ltp_elm).parent();
@@ -883,7 +912,7 @@ shoonya_api = function () {
             let qty = parseFloat(tr_elm.find('.qty').val());
 
             switch(trade_status) {
-                case "active" : {
+                case "active" :
                     let pnl = 0.0;
                     if (trtype == 'B') {
                         pnl = ltp - entry;
@@ -902,13 +931,8 @@ shoonya_api = function () {
                         }
                     }
                     break;
-                }
-                case "closed": {
-                    break;
-                }
-                case "pos" : {
-
-                }
+                case "closed":  break;
+                case "pos":     break;
             }
         },
 
@@ -966,47 +990,8 @@ shoonya_api = function () {
                         let tr_elm = $(`#${row_id}`)
                         tr_elm.find('.entry').val('') // Set entry value to '' in order to place market order
                         milestone_manager.remove_entry(row_id)
+                        orderbook.place_buy_sell_order(tr_elm, tr_elm.attr('trtype'), orderbook.place_order_carry_target_sl_cb)
                         tr_elm.remove();    //Remove entry from Open order table
-
-                        orderbook.place_buy_sell_order(tr_elm, tr_elm.attr('trtype'), function (data) {
-                            if(data.stat.toUpperCase() === "OK") {
-
-
-                                let order_id = data.norenordno;
-                                let ms = milestone_manager.add_order_id(row_id, order_id);
-
-                                orderbook.get_orderbook(function(orders) {
-                                    orderbook.update_open_order_list(orders);
-
-                                    let matching_order = orders.find(order => order.norenordno === order_id)
-                                    if (matching_order != undefined) {
-                                        orderbook.display_order_exec_msg(matching_order);
-
-                                        switch (matching_order.status) {
-                                            case "COMPLETE": //TODO AMO ORDER
-                                                console.log("Order completed.. " + order_id)
-                                                matching_order.prc = matching_order.avgprc; // When order status is COMPLETE avgprc field contains the correct price
-                                                const ms_obj = milestone_manager.get_milestone(order_id);
-                                                let target = ''; sl = '';
-                                                if(ms_obj != undefined) {
-                                                    const old_row_id = ms_obj.row_id;
-                                                    target = milestone_manager.get_value_string(ms_obj.milestone.target)
-                                                    sl = milestone_manager.get_value_string(ms_obj.milestone.sl)
-                                                    milestone_manager.remove_milestone(old_row_id); //Target and SL have been taken into Active Trade Row
-                                                }
-                                                trade.display_active_trade(matching_order, target, sl);
-                                                break;
-                                            case "REJECTED":
-                                                show_error_msg(data.emsg);
-                                                break;
-                                            default:
-                                                break;
-                                        }
-                                    }
-                                })
-                            } else
-                                show_error_msg(data.emsg);
-                        })
                     }
                 }
             }
@@ -1165,7 +1150,7 @@ shoonya_api = function () {
             positions.get_positions(function(positions) {
                 if (positions != undefined && positions.stat !== 'Not_Ok')
                     positions.forEach((position)=> {
-                        subscribe_token(position.exch+"|"+position.token);
+                        // subscribe_token(position.exch+"|"+position.token);
                         trade.display_trade_position(position)})
             })
         },
@@ -1398,7 +1383,7 @@ shoonya_api = function () {
         "subscribed_symbols": subscribed_symbols,
         "live_data": live_data,
         "mgr": milestone_manager,
-        // "subscribe_token" : subscribe_token,
+        "subscribe_token" : subscribe_token,
     }
 
 }();
