@@ -248,18 +248,12 @@ shoonya_api = function () {
 
         buy : function(buy_btn) {
             let tr_elm = $(buy_btn).parent().parent();
-            orderbook.place_buy_sell_order(tr_elm, 'B',
-                function(data){
-                            shoonya_api.orderbook.place_order_carry_target_sl_cb(data);
-                         })
+            orderbook.place_buy_sell_order(tr_elm, 'B')
         },
 
         sell : function(sell_btn) {
             let tr_elm = $(buy_btn).parent().parent();
-            orderbook.place_buy_sell_order(tr_elm, 'S',
-                function(data){
-                    shoonya_api.orderbook.place_order_carry_target_sl_cb(data);
-                })
+            orderbook.place_buy_sell_order(tr_elm, 'S')
         },
 
         display_order_exec_msg: function(order) {
@@ -356,36 +350,10 @@ shoonya_api = function () {
                 this.add_to_spot_order_list(params, entry_val)
             } else {
                 post_request(url.place_order, params, function(data) {
-                    if(success_cb != undefined) {  // Call custom function provided
+                    if(success_cb != undefined) {  // Call custom function provided.. In case of exit, it needs to remove tr
                         success_cb(data)
                     } else { // No custom function provided. Default actions
-                        if(data.stat.toUpperCase() === "OK") {
-                            let order_id = data.norenordno;
-
-                            orderbook.get_orderbook(function(orders) {
-                                orderbook.update_open_order_list(orders);
-
-                                let matching_order = orders.find(order => order.norenordno === order_id)
-                                if (matching_order != undefined) {
-                                    orderbook.display_order_exec_msg(matching_order);
-                                }
-
-                                switch (matching_order.status) {
-                                    case "COMPLETE": //TODO AMO ORDER
-                                        console.log("Order completed.. " + order_id)
-                                        matching_order.prc = matching_order.avgprc; // When order status is COMPLETE avgprc field contains the correct price
-                                        trade.display_active_trade(matching_order);
-                                        break;
-                                    case "REJECTED":
-                                        show_error_msg(matching_order.rejreason);
-                                        break;
-                                    default:
-                                        break;
-                                }
-                            })
-                        } else
-                            show_error_msg(data.emsg);
-
+                        orderbook.place_order_cb_carry_target_sl_to_active_trade(data)
                     }
                 })
             }
@@ -559,10 +527,14 @@ shoonya_api = function () {
 
                 if(!orderno.includes("Spot")) {  // Modify value order.. Not spot based order
                     values["norenordno"] = orderno;
-                    post_request(url.modify_order, values, orderbook.get_status_and_update_open_orders(orderno));
+                    post_request(url.modify_order, values, function(data) {
+                        if(data.stat == "Ok")
+                            orderbook.get_status_and_update_open_orders(orderno)
+                        else show_error_msg(data.emsg)
+                    });
                 } else { // Place fresh order as spot entry value has been removed as orderno contains "Spot based entry"
                     orderbook.place_buy_sell_order(tr_elm, tr_elm.attr('trtype'), function(data) {
-                        orderbook.place_order_carry_target_sl_cb(data, row_id)
+                        orderbook.place_order_cb_carry_target_sl_to_active_trade(data, row_id)
                     });
                     tr_elm.remove()
                 }
@@ -574,7 +546,7 @@ shoonya_api = function () {
             return tr_elm.attr('id');
         },
 
-        place_order_carry_target_sl_cb : function (data, row_id) {
+        place_order_cb_carry_target_sl_to_active_trade : function (data, row_id) {
             if(data.stat.toUpperCase() === "OK") {
                 let order_id = data.norenordno;
                 if(row_id == undefined)
@@ -613,7 +585,20 @@ shoonya_api = function () {
                 if(data.stat.toUpperCase() === "OK") {
                     milestone_manager.remove_milestone(tr_elm.attr('id'))
                     let orderno = data.norenordno;
-                    orderbook.get_status_and_update_open_orders(orderno, function(){tr_elm.remove();})
+                    orderbook.get_status_and_update_open_orders(orderno, function(order){
+                        tr_elm.addClass('table-secondary')
+                        tr_elm.attr('trade', 'closed');
+                        let td_elm = tr_elm.find('.exit-limit').parent();
+                        td_elm.html(`<span class="badge badge-pill badge-dark">${order.norentm.split(" ")[0]}</span>
+                                            </br><span class="price">${order.avgprc}</span></br>
+                                        <span class="badge badge-primary">${order.remarks}</span>`);
+                        trade.update_pnl(tr_elm.find('.ltp'), order.avgprc)
+
+                        tr_elm.find('.modify').attr('disabled', 'disabled');
+                        tr_elm.find('.exit').attr('disabled', 'disabled');
+                        tr_elm.find('.qty').attr('disabled', 'disabled');
+                        tr_elm.find('.exit').attr('disabled', 'disabled');
+                    })
                 } else
                     show_error_msg(data.emsg);
             });
@@ -630,7 +615,7 @@ shoonya_api = function () {
                                 orderbook.get_status_and_update_open_orders(orderno);
                             }, 2000)
                             break;
-                        case "COMPLETE":
+                        case "COMPLETE": // AMO ORDER CHANGE TO COMPLETE
                             oncomplete_cb(matching_order);
                             break;
                         default:
@@ -915,7 +900,7 @@ shoonya_api = function () {
 
     const trade = {
 
-        update_pnl : function(ltp_elm){
+        update_pnl : function(ltp_elm, exit){
             let tr_elm = $(ltp_elm).parent();
             let ttype = tr_elm.attr('ttype');
             let trtype = tr_elm.attr('trtype');
@@ -923,29 +908,36 @@ shoonya_api = function () {
             let ltp = parseFloat($(ltp_elm).text());
             let entry = parseFloat(tr_elm.find('.entry').find('.price').text());
             let qty = parseFloat(tr_elm.find('.qty').val());
-
+            let pnl = 0.0;
             switch(trade_status) {
+                case "pos" :
                 case "active" :
-                    let pnl = 0.0;
-                    if (trtype == 'B') {
-                        pnl = ltp - entry;
-                    } else {
-                        pnl = entry - ltp;
-                    }
-
-                    if (!isNaN(pnl)) {
-                        pnl = pnl * qty;
-                        let pnl_elm = tr_elm.find('.pnl');
-                        pnl_elm.text(pnl.toFixed(2))
-                        if (pnl < 0) {
-                            pnl_elm.css('color', 'red')
-                        } else {
-                            pnl_elm.css('color', 'green')
-                        }
-                    }
+                    pnl = get_pnl(trtype, entry, ltp)
                     break;
-                case "closed":  break;
-                case "pos":     break;
+                case "closed":
+                    pnl = get_pnl(trtype, entry, exit)
+                    break;
+            }
+
+            if (!isNaN(pnl)) {
+                pnl = pnl * qty;
+                let pnl_elm = tr_elm.find('.pnl');
+                pnl_elm.text(pnl.toFixed(2))
+                if (pnl < 0) {
+                    pnl_elm.css('color', 'red')
+                } else {
+                    pnl_elm.css('color', 'green')
+                }
+            }
+
+            function get_pnl(trtype, entry, exit) {
+                let pnl = 0.0;
+                if (trtype == 'B') {
+                    pnl = exit - entry;
+                } else {
+                    pnl = entry - exit;
+                }
+                return pnl;
             }
         },
 
@@ -1003,7 +995,9 @@ shoonya_api = function () {
                         let tr_elm = $(`#${row_id}`)
                         tr_elm.find('.entry').val('') // Set entry value to '' in order to place market order
                         milestone_manager.remove_entry(row_id)
-                        orderbook.place_buy_sell_order(tr_elm, tr_elm.attr('trtype'), orderbook.place_order_carry_target_sl_cb)
+                        orderbook.place_buy_sell_order(tr_elm, tr_elm.attr('trtype'), function(data) {
+                            orderbook.place_order_cb_carry_target_sl_to_active_trade(data, row_id)
+                        })
                         tr_elm.remove();    //Remove entry from Open order table
                     }
                 }
@@ -1039,9 +1033,7 @@ shoonya_api = function () {
                 function target_triggered() {
                     console.log("Target triggered for row_id : " + row_id + " Trigger value = " + trig_value + " Spot value = " + cur_spot_value)
                     let tr_elm = $(`#${row_id}`)
-                    tr_elm.find('.entry').text('') // Set entry value to '' in order to place market order
-                    orderbook.exit_order(tr_elm.find('.exit'))
-                    tr_elm.remove()
+                    tr_elm.find('.exit').click();
                     milestone_manager.remove_milestone(row_id)
                 }
             }
@@ -1074,9 +1066,7 @@ shoonya_api = function () {
                 function sl_triggered() {
                     console.log("SL triggered for row_id : " + row_id + " Trigger value = " + trig_value + " Spot value = " + cur_spot_value)
                     let tr_elm = $(`#${row_id}`)
-                    tr_elm.find('.entry').val('') // Set entry value to '' in order to place market order
-                    orderbook.exit_order(tr_elm.find('.exit'))
-                    tr_elm.remove()
+                    tr_elm.find('.exit').click();
                     milestone_manager.remove_milestone(row_id)
                 }
             }
