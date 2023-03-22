@@ -6,10 +6,9 @@ shoonya_api = function () {
 
     //TODO - Remove these hardcoded values
     let vix_tk = '26017', nifty_tk = '26000', bank_nifty_tk = '26009'
-    let def_tokens = ["NSE|26017", "NSE|26000", "NSE|26009"]
     let user_id = '', session_token='', ws = '';
 
-    let subscribed_symbols = [];
+    let subscribed_symbols = ["NSE|26017", "NSE|26000", "NSE|26009"];
     let pending_to_subscribe_tokens = new Set();
     let logged_in = false;
     let live_data = {};
@@ -54,7 +53,7 @@ shoonya_api = function () {
                 if (result.s == 'OK') {
                     console.log('Login successful')
                     logged_in = true;
-                    def_tokens.forEach(subscribe_token)
+                    subscribed_symbols.forEach(subscribe_token)
                 }
             }
             if( result.t == 'tk' || result.t == 'tf') {
@@ -128,7 +127,8 @@ shoonya_api = function () {
             } else {
                 console.log("Web socket is ready.. Subscribing ", token)
                 ws.send(JSON.stringify(symtoken));
-                subscribed_symbols.push(token);
+                if(!subscribed_symbols.includes(token))
+                    subscribed_symbols.push(token);
                 pending_to_subscribe_tokens.delete(token);
             }
         }
