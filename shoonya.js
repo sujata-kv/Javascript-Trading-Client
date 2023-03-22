@@ -594,8 +594,8 @@ shoonya_api = function () {
                                         <span class="badge badge-primary">${order.remarks}</span>`);
                         trade.update_pnl(tr_elm.find('.ltp'), order.avgprc)
 
-                        tr_elm.find('.modify').attr('disabled', 'disabled');
-                        tr_elm.find('.exit').attr('disabled', 'disabled');
+                        tr_elm.find('.modify').parent().html('');
+                        tr_elm.find('.exit').parent().html('CLOSED');
                         tr_elm.find('.qty').attr('disabled', 'disabled');
                         tr_elm.find('.exit').attr('disabled', 'disabled');
                     })
@@ -1201,6 +1201,9 @@ shoonya_api = function () {
         exit_all_positions : function() {
             $('#active_trades_table tr').each(function(index, tr_elm) {
                 $(tr_elm).find('.exit').click()
+            })
+            $('#open_orders tr').each(function(index, tr_elm){
+                $(tr_elm).find('.cancel').click()
             })
         }
     };
