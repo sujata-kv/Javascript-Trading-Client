@@ -351,10 +351,13 @@ shoonya_api = function () {
                 params.dname = tr_elm.attr('dname')
                 this.add_to_spot_order_list(params, entry_val)
             } else {
+                console.log("Going to place order " + JSON.stringify(params))
                 post_request(url.place_order, params, function(data) {
                     if(success_cb != undefined) {  // Call custom function provided.. In case of exit, it needs to remove tr
+                        console.log("Success call back is provided. Will be called")
                         success_cb(data)
                     } else { // No custom function provided. Default actions
+                        console.log("Default place order call back called")
                         orderbook.place_order_cb_carry_target_sl_to_active_trade(data)
                     }
                 })
@@ -571,14 +574,15 @@ shoonya_api = function () {
 
         place_order_cb_carry_target_sl_to_active_trade : function (data, row_id) {
             if(data.stat.toUpperCase() === "OK") {
-
+                console.log("place_order_cb_carry_target_sl_to_active_trade : " + row_id + " " + JSON.stringify(data))
                 orderbook.update_open_orders();
                 let order_id = data.norenordno;
 
+                console.log("Going to check order status : " + order_id)
                 orderbook.get_order_status(order_id, function(row_id, order_id) {
                     return function(matching_order, orders) {
 
-                        console.log("Order completed.. " + order_id)
+                        console.log("Normal Order completed.. " + order_id)
                         if(row_id == undefined)
                             row_id = orderbook.get_row_id_by_order_id(order_id);
 
@@ -593,6 +597,7 @@ shoonya_api = function () {
                             sl = milestone_manager.get_value_string(ms_obj.milestone.sl)
                             milestone_manager.remove_milestone(old_row_id); //Target and SL have been taken into Active Trade Row
                         }
+                        console.log("Adding active trade row now for " + order_id)
                         trade.display_active_trade(matching_order, target, sl);
                         orderbook.update_open_order_list(orders);
                     }
@@ -614,6 +619,8 @@ shoonya_api = function () {
             post_request(url.place_order, values, function(data){
                 if(data.stat.toUpperCase() === "OK") {
                     let orderno = data.norenordno;
+                    orderbook.update_open_orders();
+
                     orderbook.get_order_status(orderno, function(matching_order, orders){
                         milestone_manager.remove_milestone(tr_elm.attr('id'));
                         tr_elm.addClass('table-secondary');
@@ -636,33 +643,47 @@ shoonya_api = function () {
         },
 
         get_order_status(orderno, oncomplete_cb) {
+
+            console.log("Order " + orderno + " is OPEN. Checking if present in the waiting order list")
+            if(!orderbook.waiting_order_list.includes(orderno)) {
+                console.log("Adding order " + orderno + " to waiting order list")
+                orderbook.waiting_order_list.push(orderno)
+
+            } else
+                console.log("Order " + orderno + " is already being polled by some other thread")
+
+            console.log("get_order_status : " + orderno+" Making get_orderbook post req")
             orderbook.get_orderbook(function(orders) {
+                console.log("Post request completed..")
                 let matching_order = orders.find(order => order.norenordno === orderno)
                 if (matching_order != undefined) {
+                    console.log(orderno + " : Found matching order ")
                     switch(matching_order.status) {
                         case "OPEN":
-                            if(!orderbook.waiting_order_list.includes(orderno)) {
-                                orderbook.waiting_order_list.push(orderno)
-                                setTimeout(function() {
-                                    orderbook.get_order_status(orderno, oncomplete_cb);
-                                }, 2000)
-                            }
+                            setTimeout(function() {
+                                orderbook.get_order_status(orderno, oncomplete_cb);
+                            }, 2000)
                             break;
                         case "COMPLETE": // TODO - AMO ORDER CHANGE TO COMPLETE
+                            console.log("Completed : " + orderno + ". Checking if order is present in the waiting order list")
                             if(orderbook.waiting_order_list.includes(orderno)) {
+                                console.log("Yes.. present")
                                 // Remove orderno from waiting order list
                                 const index = orderbook.waiting_order_list.indexOf(orderno);
                                 if (index > -1) { // only splice array when item is found
                                     orderbook.waiting_order_list.splice(index, 1); // 2nd parameter means remove one item only
                                 }
+                                console.log(`${orderno} removed from waiting order list : ${orderbook.waiting_order_list}`)
+                                oncomplete_cb(matching_order, orders);
                             }
-                            oncomplete_cb(matching_order, orders);
+
                             break;
                         default:
                             orderbook.display_order_exec_msg(matching_order);
                     }
                 }
             })
+
         },
 
         show_orderbook : function() {
