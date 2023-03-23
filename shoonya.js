@@ -1199,11 +1199,11 @@ shoonya_api = function () {
         },
 
         exit_all_positions : function() {
-            $('#active_trades_table tr').each(function(index, tr_elm) {
-                $(tr_elm).find('.exit').click()
-            })
             $('#open_orders tr').each(function(index, tr_elm){
                 $(tr_elm).find('.cancel').click()
+            })
+            $('#active_trades_table tr').each(function(index, tr_elm) {
+                $(tr_elm).find('.exit').click()
             })
         }
     };
