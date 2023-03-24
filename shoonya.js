@@ -728,6 +728,7 @@ shoonya_api = function () {
             let buy_sell= tr_elm.attr('trtype') == 'B' ? 'S' : 'B'; // Do the opposite
             let exit_limit = milestone_manager.get_value_object(limit_value);
             let values = orderbook.get_order_params(tr_elm, buy_sell, exit_limit, qty)
+
             post_request(url.place_order, values, function(data){
                 if(data.stat.toUpperCase() === "OK") {
                     let orderno = data.norenordno;
@@ -1272,7 +1273,7 @@ shoonya_api = function () {
                         <td><input type="text" disabled class="form-control target" placeholder="" value=""></td>
                         <td><input type="text" disabled class="form-control sl" placeholder="" value="" ></td>
                         <td><input type="text" class="form-control exit-limit" placeholder="" ></td>
-                        <td><input type="text" class="form-control qty" placeholder=""  value="${lot_size}"></td>
+                        <td><input type="text" class="form-control qty" placeholder=""  value="${order.qty}"></td>
                         <td><button type="button" class="btn btn-success modify" onclick="shoonya_api.trade.modify(this, $(this).text())">Edit</button></td>
                         <td><button type="button" class="btn btn-danger exit" onclick="shoonya_api.trade.exit(this)">Exit</button></td>
                 </tr>`);
