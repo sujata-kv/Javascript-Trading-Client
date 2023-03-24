@@ -984,9 +984,9 @@ shoonya_api = function () {
             if(value_obj.spot_based) {
                 let value_str = '';
                 value_str = value_obj.instrument === 'nifty' ? 'N ': 'B ';
-                return value_str + value_obj.value;
+                return value_str + value_obj.value.trim();
             } else {
-                return value_obj.value
+                return value_obj.value.trim()
             }
         }
 
@@ -1315,11 +1315,11 @@ shoonya_api = function () {
                 </tr>`);
 
             if(target != undefined && target != '' ) {
-                milestone_manager.add_target(row_id, token, ttype, milestone_manager.get_value_object(target))
+                milestone_manager.add_target(row_id, order.token, ttype, milestone_manager.get_value_object(target))
                 $('#' + row_id).find('.target').val(target)
             }
             if(sl != undefined && sl != '' ) {
-                milestone_manager.add_sl(row_id, token, ttype, milestone_manager.get_value_object(sl))
+                milestone_manager.add_sl(row_id, order.token, ttype, milestone_manager.get_value_object(sl))
                 $('#' + row_id).find('.sl').val(sl)
             }
         },
