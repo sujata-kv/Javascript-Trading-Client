@@ -439,9 +439,10 @@ shoonya_api = function () {
 
                         let tr_elm = $('#' + row_id);
                         console.log("Row id : " + row_id + " ")
-                        if(trade.containsCounterPosition(tr_elm)) {
+                        let trade_pos = trade.getCounterTradePosition(tr_elm);
+                        if(trade_pos.length > 0) {
                             //Close the position
-                            orderbook.exit_order_cb(matching_order, orders)
+                            orderbook.exit_order_cb(matching_order, orders, trade_pos)
                         } else {
                             //Add new trade
                             orderbook.place_order_default_cb(matching_order, orders, row_id)
@@ -656,28 +657,30 @@ shoonya_api = function () {
                                 let orderno = data.result;  // In case of modify and cancel order 'result' contains order ID.
                                 open_order_mgr.add_modify(orderno)
 
-                                orderbook.get_order_status(order_id, ACTION.modify, function(matching_order, orders){
-                                    let order_id = matching_order.norenordno;
-                                    console.log("Modified Order status = completed.. " + order_id +" row_id = "+row_id)
-                                    console.log(open_order_mgr.open_orders[order_id])
-                                    if (row_id == undefined)
-                                        row_id = orderbook.get_row_id_by_order_id(order_id);
+                                orderbook.get_order_status(order_id, ACTION.modify, (function(row_id){
+                                    return function(matching_order, orders){
+                                        let order_id = matching_order.norenordno;
+                                        console.log("Modified Order status = completed.. " + order_id +" row_id = "+row_id)
+                                        console.log(open_order_mgr.open_orders[order_id])
+                                        /*if (row_id == undefined)
+                                            row_id = orderbook.get_row_id_by_order_id(order_id);*/
 
-                                    milestone_manager.add_order_id(row_id, order_id);
+                                        milestone_manager.add_order_id(row_id, order_id);
 
-                                    matching_order.prc = matching_order.avgprc; // When order status is COMPLETE avgprc field contains the correct price
-                                    const ms_obj = milestone_manager.get_milestone(order_id);
-                                    let target = '';
-                                    let sl = '';
-                                    if (ms_obj != undefined) {
-                                        const old_row_id = ms_obj.row_id;
-                                        target = milestone_manager.get_value_string(ms_obj.milestone.target)
-                                        sl = milestone_manager.get_value_string(ms_obj.milestone.sl)
-                                        milestone_manager.remove_milestone(old_row_id); //Target and SL have been taken into Active Trade Row
+                                        matching_order.prc = matching_order.avgprc; // When order status is COMPLETE avgprc field contains the correct price
+                                        const ms_obj = milestone_manager.get_milestone(order_id);
+                                        let target = '';
+                                        let sl = '';
+                                        if (ms_obj != undefined) {
+                                            const old_row_id = ms_obj.row_id;
+                                            target = milestone_manager.get_value_string(ms_obj.milestone.target)
+                                            sl = milestone_manager.get_value_string(ms_obj.milestone.sl)
+                                            milestone_manager.remove_milestone(old_row_id); //Target and SL have been taken into Active Trade Row
+                                        }
+                                        trade.display_active_trade(matching_order, target, sl);
+                                        orderbook.update_open_order_list(orders);
                                     }
-                                    trade.display_active_trade(matching_order, target, sl);
-                                    orderbook.update_open_order_list(orders);
-                            });
+                                })(row_id));
                         }
                         else show_error_msg(data.emsg)
                     });
@@ -695,7 +698,7 @@ shoonya_api = function () {
         },
 
         get_row_id_by_order_id : function(order_id) {
-            let tr_elm = $('#open_order_list tr').find(`[ordid='${order_id}']`)
+            let tr_elm = $(`#open_order_list tr[ordid=${order_id}]`)
             return tr_elm.attr('id');
         },
 
@@ -707,9 +710,11 @@ shoonya_api = function () {
 
                 open_order_mgr.add_place_order(data.norenordno)
 
-                orderbook.get_order_status(order_id, ACTION.place_order, function(matching_order, orders){
-                    orderbook.place_order_default_cb(matching_order, orders, row_id)
-                })
+                orderbook.get_order_status(order_id, ACTION.place_order, (function(row_id){
+                    return function(matching_order, orders){
+                        orderbook.place_order_default_cb(matching_order, orders, row_id)
+                    }
+                })(row_id));
             } else
                 show_error_msg(data.emsg);
         },
@@ -757,13 +762,16 @@ shoonya_api = function () {
 
                     open_order_mgr.add_exit(orderno)
 
-                    orderbook.get_order_status(orderno, ACTION.exit, orderbook.exit_order_cb)
+                    orderbook.get_order_status(orderno, ACTION.exit, (function(tr_elm){
+                        return function(matching_order, orders){
+                            orderbook.exit_order_cb(matching_order, orders, tr_elm);
+                        }})(tr_elm))
                 } else
                     show_error_msg(data.emsg);
             });
         },
 
-        exit_order_cb: function(matching_order, orders){
+        exit_order_cb: function(matching_order, orders, tr_elm){
             console.log("Exit order complete cb : "+ matching_order.norenordno)
             console.log(open_order_mgr.open_orders[matching_order.norenordno])
 
@@ -795,7 +803,7 @@ shoonya_api = function () {
                             case "OPEN":
                                 setTimeout(function () {
                                     orderbook.get_order_status(orderno, action, oncomplete_cb);
-                                }, 2000)
+                                }, 10000)
                                 break;
                             case "COMPLETE": // TODO - AMO ORDER CHANGE TO COMPLETE
                                 console.log("Calling " + action + " on complete cb")
@@ -1316,7 +1324,7 @@ shoonya_api = function () {
             }
         },
 
-        containsCounterPosition : function(open_ord_tr_elm) {
+        getCounterTradePosition : function(open_ord_tr_elm) {
             let token=open_ord_tr_elm.attr('token')
             let qty=open_ord_tr_elm.attr('qty')
             let trtype=open_ord_tr_elm.attr('trtype') === 'B'? 'S': 'B'
@@ -1325,9 +1333,7 @@ shoonya_api = function () {
             console.log("Trying to find counter position : " + exch + "|" + token + " - " + qty + " trtype = " + trtype);
 
             let counterPos = $(`#active_trades_table tr[token=${token}][exch=${exch}][qty=${qty}][trtype=${trtype}]`)
-            if(counterPos!=undefined)
-                return true;
-            else return false
+            return counterPos;
         },
 
         modify : function(elm, button_text) {
@@ -1392,7 +1398,7 @@ shoonya_api = function () {
 
                 if(qty >0) {
                     console.log("Open position : ", JSON.stringify(pos))
-                    $('#active_trades_table').append(`<tr id="row_id_${++unique_row_id}" exch="${pos.exch}" token="${pos.token}" tsym="${pos.tsym}" ttype="${ttype}" trtype="${trtype}" trade="active">
+                    $('#active_trades_table').append(`<tr id="row_id_${++unique_row_id}" exch="${pos.exch}" token="${pos.token}" tsym="${pos.tsym}" qty="${qty}" ttype="${ttype}" trtype="${trtype}" trade="active">
                             <td>${buy_sell}</td>
                             <td>${dname}</td>
                             <td class="entry">
