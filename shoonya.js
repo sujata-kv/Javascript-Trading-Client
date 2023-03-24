@@ -267,8 +267,10 @@ shoonya_api = function () {
         }
 
         add_open_order(order_id) {
-            console.log("!!! Add open order : ", order_id)
-            this.add_action(order_id, ACTION.open_order)
+            if (this.open_orders[order_id] == undefined){  //Add open order only if there is no other action present
+                console.log("!!! Add open order : ", order_id)
+                this.add_action(order_id, ACTION.open_order)
+            }
         }
 
         add_place_order(order_id) {
@@ -296,7 +298,9 @@ shoonya_api = function () {
                     return true;
                     break;
                 case ACTION.modify:
-                    if(this.open_orders[order_id].includes(ACTION.exit)) {
+                    if(this.open_orders[order_id].includes(ACTION.open_order)) {
+                        return false;
+                    } else if(this.open_orders[order_id].includes(ACTION.exit)) {
                         return false;
                     } else return true;
                     break;
@@ -306,15 +310,15 @@ shoonya_api = function () {
                     } else return true;
                     break;
                 case ACTION.open_order :
-                    if(this.open_orders[order_id].includes(ACTION.modify)) {
+                    /*if(this.open_orders[order_id].includes(ACTION.modify)) {
                         return false;
                     } else if(this.open_orders[order_id].includes(ACTION.place_order)){
                         return false;
                     } else if(this.open_orders[order_id].includes(ACTION.exit)){
                         return false;
                     }
-                    else
-                        return true;
+                    else*/
+                    return true;
                     break;
                 default:
                     console.error("Unknown action " + action + " encountered in open order manager : " + order_id)
@@ -407,7 +411,9 @@ shoonya_api = function () {
                 let ttype = orderbook.know_bull_or_bear(order)
 
                 let dname = (order.dname != undefined)? order.dname : order.tsym;
-                $('#open_order_list').append(`<tr id="row_id_${++unique_row_id}" ordid="${order.norenordno}" exch="${order.exch}" tsym="${order.tsym}" 
+                ++unique_row_id;
+                let row_id = "row_id_" + unique_row_id;
+                $('#open_order_list').append(`<tr id="${row_id}" ordid="${order.norenordno}" exch="${order.exch}" tsym="${order.tsym}" 
                                     qty="${order.qty}" token="${order.token}" ttype="${ttype}" trtype="${order.trantype}"">
                         <td>${buy_sell}</td>
                         <td class="order-num">${order.norenordno}</td>
@@ -428,10 +434,21 @@ shoonya_api = function () {
                 let order_id = order.norenordno
                 if(!open_order_mgr.is_monitored(order_id)) {
                     open_order_mgr.add_open_order(order_id)
-                    orderbook.get_order_status(order_id, ACTION.open_order, function(){
-                        let row_id = orderbook.get_row_id_by_order_id(order_id)
-                        $('#' + row_id).remove();
-                    })
+                    orderbook.get_order_status(order_id, ACTION.open_order, (function(row_id){
+                        return function(matching_order, orders){
+
+                        let tr_elm = $('#' + row_id);
+                        console.log("Row id : " + row_id + " ")
+                        if(trade.containsCounterPosition(tr_elm)) {
+                            //Close the position
+                            orderbook.exit_order_cb(matching_order, orders)
+                        } else {
+                            //Add new trade
+                            orderbook.place_order_default_cb(matching_order, orders, row_id)
+                        }
+                        tr_elm.remove();
+                    }})(row_id)
+                    )
                 }
             }
         },
@@ -690,32 +707,36 @@ shoonya_api = function () {
 
                 open_order_mgr.add_place_order(data.norenordno)
 
-                orderbook.get_order_status(order_id, ACTION.place_order, function(matching_order, orders) {
-
-                        let  order_id = matching_order.norenordno
-                        console.log("Place Order completed.. " + order_id)
-                        console.log(open_order_mgr.open_orders[order_id])
-                        if (row_id == undefined)
-                            row_id = orderbook.get_row_id_by_order_id(order_id);
-
-                        milestone_manager.add_order_id(row_id, order_id);
-
-                        matching_order.prc = matching_order.avgprc; // When order status is COMPLETE avgprc field contains the correct price
-                        const ms_obj = milestone_manager.get_milestone(order_id);
-                        let target = '';
-                        let sl = '';
-                        if (ms_obj != undefined) {
-                            const old_row_id = ms_obj.row_id;
-                            target = milestone_manager.get_value_string(ms_obj.milestone.target)
-                            sl = milestone_manager.get_value_string(ms_obj.milestone.sl)
-                            milestone_manager.remove_milestone(old_row_id); //Target and SL have been taken into Active Trade Row
-                        }
-                        console.log("Adding active trade row now for " + order_id)
-                        trade.display_active_trade(matching_order, target, sl);
-                        orderbook.update_open_order_list(orders);
-                    })
+                orderbook.get_order_status(order_id, ACTION.place_order, function(matching_order, orders){
+                    orderbook.place_order_default_cb(matching_order, orders, row_id)
+                })
             } else
                 show_error_msg(data.emsg);
+        },
+
+        place_order_default_cb : function(matching_order, orders, row_id) {
+
+            let  order_id = matching_order.norenordno
+            console.log("Place Order completed.. " + order_id)
+            console.log(open_order_mgr.open_orders[order_id])
+            if (row_id == undefined)
+                row_id = orderbook.get_row_id_by_order_id(order_id);
+
+            milestone_manager.add_order_id(row_id, order_id);
+
+            matching_order.prc = matching_order.avgprc; // When order status is COMPLETE avgprc field contains the correct price
+            const ms_obj = milestone_manager.get_milestone(order_id);
+            let target = '';
+            let sl = '';
+            if (ms_obj != undefined) {
+                const old_row_id = ms_obj.row_id;
+                target = milestone_manager.get_value_string(ms_obj.milestone.target)
+                sl = milestone_manager.get_value_string(ms_obj.milestone.sl)
+                milestone_manager.remove_milestone(old_row_id); //Target and SL have been taken into Active Trade Row
+            }
+            console.log("Adding active trade row now for " + order_id)
+            trade.display_active_trade(matching_order, target, sl);
+            orderbook.update_open_order_list(orders);
         },
 
         //TODO - Partial quantity exit should be done
@@ -736,28 +757,30 @@ shoonya_api = function () {
 
                     open_order_mgr.add_exit(orderno)
 
-                    orderbook.get_order_status(orderno, ACTION.exit, function(matching_order, orders){
-                        console.log("Exit order complete cb : "+ matching_order.norenordno)
-                        console.log(open_order_mgr.open_orders[matching_order.norenordno])
-
-                        milestone_manager.remove_milestone(tr_elm.attr('id'));
-                        tr_elm.addClass('table-secondary');
-                        tr_elm.attr('trade', 'closed');
-                        let td_elm = tr_elm.find('.exit-limit').parent();
-                        td_elm.html(`<span class="badge badge-pill badge-dark">${matching_order.norentm.split(" ")[0]}</span>
-                                        </br><span class="price">${matching_order.avgprc}</span></br>
-                                    <span class="badge badge-primary">${matching_order.remarks}</span>`);
-                        trade.update_pnl(tr_elm, matching_order.avgprc)
-
-                        tr_elm.find('.modify').parent().html('CLOSED');
-                        tr_elm.find('.exit').parent().html(`<button type="button" class="btn btn-dark btn-sm" onclick="$(this).parent().parent().remove()">Delete</button>`);
-                        tr_elm.find('.qty').attr('disabled', 'disabled');
-                        tr_elm.find('.exit').attr('disabled', 'disabled');
-                        orderbook.update_open_order_list(orders);
-                    })
+                    orderbook.get_order_status(orderno, ACTION.exit, orderbook.exit_order_cb)
                 } else
                     show_error_msg(data.emsg);
             });
+        },
+
+        exit_order_cb: function(matching_order, orders){
+            console.log("Exit order complete cb : "+ matching_order.norenordno)
+            console.log(open_order_mgr.open_orders[matching_order.norenordno])
+
+            milestone_manager.remove_milestone(tr_elm.attr('id'));
+            tr_elm.addClass('table-secondary');
+            tr_elm.attr('trade', 'closed');
+            let td_elm = tr_elm.find('.exit-limit').parent();
+            td_elm.html(`<span class="badge badge-pill badge-dark">${matching_order.norentm.split(" ")[0]}</span>
+                                        </br><span class="price">${matching_order.avgprc}</span></br>
+                                    <span class="badge badge-primary">${matching_order.remarks}</span>`);
+            trade.update_pnl(tr_elm, matching_order.avgprc)
+
+            tr_elm.find('.modify').parent().html('CLOSED');
+            tr_elm.find('.exit').parent().html(`<button type="button" class="btn btn-dark btn-sm" onclick="$(this).parent().parent().remove()">Delete</button>`);
+            tr_elm.find('.qty').attr('disabled', 'disabled');
+            tr_elm.find('.exit').attr('disabled', 'disabled');
+            orderbook.update_open_order_list(orders);
         },
 
         get_order_status(orderno, action, oncomplete_cb) {
@@ -1075,12 +1098,17 @@ shoonya_api = function () {
 
             let pnl = trade.calculate_pnl(params)
 
-            let pnl_elm = tr_elm.find('.pnl');
-            pnl_elm.text(pnl.toFixed(2))
-            if (pnl < 0) {
-                pnl_elm.css('color', 'red')
+            if(!isNaN(pnl)) {
+                let pnl_elm = tr_elm.find('.pnl');
+                pnl_elm.text(pnl.toFixed(2))
+                if (pnl < 0) {
+                    pnl_elm.css('color', 'red')
+                } else {
+                    pnl_elm.css('color', 'green')
+                }
             } else {
-                pnl_elm.css('color', 'green')
+                let pnl_elm = tr_elm.find('.pnl');
+                pnl_elm.text('')
             }
         },
 
@@ -1268,7 +1296,7 @@ shoonya_api = function () {
                             </br><span class="price">${order.prc}</span></br>
                             <span class="badge badge-primary">${order.remarks}</span>
                         </td>
-                        <td class="trade_${order.token} ltp"></td>
+                        <td class="trade_${order.token} ltp">${live_data[order.token]}</td>
                         <td class="pnl"></td>
                         <td><input type="text" disabled class="form-control target" placeholder="" value=""></td>
                         <td><input type="text" disabled class="form-control sl" placeholder="" value="" ></td>
@@ -1288,6 +1316,19 @@ shoonya_api = function () {
             }
         },
 
+        containsCounterPosition : function(open_ord_tr_elm) {
+            let token=open_ord_tr_elm.attr('token')
+            let qty=open_ord_tr_elm.attr('qty')
+            let trtype=open_ord_tr_elm.attr('trtype') === 'B'? 'S': 'B'
+            let exch=open_ord_tr_elm.attr('exch')
+
+            console.log("Trying to find counter position : " + exch + "|" + token + " - " + qty + " trtype = " + trtype);
+
+            let counterPos = $(`#active_trades_table tr[token=${token}][exch=${exch}][qty=${qty}][trtype=${trtype}]`)
+            if(counterPos!=undefined)
+                return true;
+            else return false
+        },
 
         modify : function(elm, button_text) {
             let tr_elm = $(elm).parent().parent();
@@ -1359,7 +1400,7 @@ shoonya_api = function () {
                                 <span class="price">${price}</span>
 <!--                                </br><span class="badge badge-primary"></span>-->
                             </td>
-                            <td class="trade_${pos.token} ltp"></td>
+                            <td class="trade_${pos.token} ltp">${live_data[pos.token]}</td>
                             <td class="pnl"></td>
                             <td><input type="text" disabled class="form-control target" placeholder="" ></td>
                             <td><input type="text" disabled class="form-control sl" placeholder="" ></td>
