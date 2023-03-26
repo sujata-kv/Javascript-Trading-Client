@@ -808,6 +808,17 @@ shoonya_api = function () {
                             case "COMPLETE": // TODO - AMO ORDER CHANGE TO COMPLETE
                                 console.log("Calling " + action + " on complete cb")
                                 oncomplete_cb(matching_order, orders);
+                                setTimeout(function(){
+                                    console.log("Playing sound now..")
+                                    document.getElementById('notify3').play()
+                                }, 10);
+                                break;
+                            case "REJECTED":
+                                orderbook.display_order_exec_msg(matching_order);
+                                setTimeout(function(){
+                                    console.log("Playing sound now..")
+                                    document.getElementById('notify1').play()
+                                }, 10);
                                 break;
                             default:
                                 orderbook.display_order_exec_msg(matching_order);
