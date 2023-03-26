@@ -393,7 +393,7 @@ shoonya_api = function () {
 
         update_open_order_list : function(orders) {
             $('#open_order_list').html('')
-            if(orders!= undefined)
+            if(orders.stat === "Ok" && orders!=undefined)
                 orders.forEach(function(order) {
                     orderbook.add_open_order(order)
                 })
@@ -822,7 +822,7 @@ shoonya_api = function () {
             $('#order_book_table').html("")
             hide_other_tabs('#order_book')
             this.get_orderbook(function(orders) {
-                if(orders!=undefined)
+                if(orders.stat === "Ok" && orders!=undefined)
                     orders.forEach((order)=> orderbook.show_order(order))
             })
         },
@@ -1327,13 +1327,17 @@ shoonya_api = function () {
         getCounterTradePosition : function(open_ord_tr_elm) {
             let token=open_ord_tr_elm.attr('token')
             let qty=open_ord_tr_elm.attr('qty')
-            let trtype=open_ord_tr_elm.attr('trtype') === 'B'? 'S': 'B'
+            let counter_trtype=open_ord_tr_elm.attr('trtype') === 'B'? 'S': 'B'
             let exch=open_ord_tr_elm.attr('exch')
 
             console.log("Trying to find counter position : " + exch + "|" + token + " - " + qty + " trtype = " + trtype);
 
-            let counterPos = $(`#active_trades_table tr[token=${token}][exch=${exch}][qty=${qty}][trtype=${trtype}]`)
-            return counterPos;
+            return this.getTradePosition(token, exch, counter_trtype, qty);
+        },
+
+        getTradePosition : function(token, exch, trtype, qty) {
+            let position = $(`#active_trades_table tr[token=${token}][exch=${exch}][qty=${qty}][trtype=${trtype}]`)
+            return position;
         },
 
         modify : function(elm, button_text) {
@@ -1398,7 +1402,12 @@ shoonya_api = function () {
 
                 if(qty >0) {
                     console.log("Open position : ", JSON.stringify(pos))
-                    $('#active_trades_table').append(`<tr id="row_id_${++unique_row_id}" exch="${pos.exch}" token="${pos.token}" tsym="${pos.tsym}" qty="${qty}" ttype="${ttype}" trtype="${trtype}" trade="active">
+
+                    let pos = trade.getTradePosition(pos.token, pos.exch, pos.trtype, pos.qty);
+
+                    if(pos.length == 0) { //Add new position only if it doesn't exist
+                        console.log("Position doesn't exist in active trades. So adding it..")
+                        $('#active_trades_table').append(`<tr id="row_id_${++unique_row_id}" exch="${pos.exch}" token="${pos.token}" tsym="${pos.tsym}" qty="${qty}" ttype="${ttype}" trtype="${trtype}" trade="active">
                             <td>${buy_sell}</td>
                             <td>${dname}</td>
                             <td class="entry">
@@ -1414,7 +1423,10 @@ shoonya_api = function () {
                             <td><input type="text" class="form-control qty" placeholder=""  value="${qty}"></td>
                             <td><button type="button" class="btn btn-success modify" onclick="shoonya_api.trade.modify(this, $(this).text())">Edit</button></td>
                             <td><button type="button" class="btn btn-danger exit" onclick="shoonya_api.trade.exit(this)">Exit</button></td>
-                    </tr>`);
+                        </tr>`);
+                    }else {
+                        console.log("Position is already present in active trades")
+                    }
                 }
             }
         },
@@ -1577,6 +1589,7 @@ shoonya_api = function () {
             setTimeout(orderbook.update_open_orders, 100);
             setTimeout(trade.load_open_positions, 100);
             setTimeout(trade.trigger, 1000);
+
         });
     });
 
