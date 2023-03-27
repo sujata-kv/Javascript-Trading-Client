@@ -283,13 +283,13 @@ shoonya_api = function () {
             this.add_action(order_id, ACTION.exit)
         }
 
-        add_modify(order_id) {
+        add_modify(order_id) { //Returns if monitored already or not
             console.log("!!! Add modify : ", order_id)
             if(this.open_orders[order_id].includes(ACTION.modify))  // Already first modify is monitoring it
-                return false
+                return true
             else
                 this.add_action(order_id, ACTION.modify)
-                return true
+                return false
         }
 
         exec_permission(order_id, action) {
