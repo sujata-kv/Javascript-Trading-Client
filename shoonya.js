@@ -359,7 +359,7 @@ shoonya_api = function () {
                     show_error_msg("Order " + order.norenordno + " rejected. Reason : " + order.rejreason  + "   Symbol: " + order.tsym + " Qty: " + order.qty );
                     break;
                 case "CANCELED":
-                    show_success_msg("Order " + order.norenordno + " cancelled successfully. Symbol: " + order.tsym + " Qty: " + order.qty );
+                    show_success_msg("Order " + order.norenordno + " cancelled. Symbol: " + order.tsym + " Qty: " + order.qty );
                     break;
                 default:
                     console.log('Default order status : ')
@@ -1452,46 +1452,81 @@ shoonya_api = function () {
     };
 
     const watch_list = {
-        add_to_watchlist : function() {
-            sym = $('input.watch_item').val()
-            lot_size = $('input.watch_item').attr('lot_size')
-            exch = $('input.watch_item').attr('exch')
-            token = $('input.watch_item').attr('token')
-            tsym = $('input.watch_item').attr('tsym')
-            dname = $('input.watch_item').attr('dname')
-            optt = $('input.watch_item').attr('optt')
-            put_option = false
-            if (optt === "PE" && exch === "NFO") {
-                put_option = true
-            }
-            this.add_row_to_watch(sym, lot_size, exch, token, tsym, put_option)
+
+        watched_items : {},
+
+        save_watch_list : function() {
+            let watch_list_str = JSON.stringify(this.watched_items);
+            window.localStorage.setItem("watch_list", watch_list_str);
         },
 
-        add_row_to_watch : function(sym, lot_size, exch, token, tsym, put_option) {
-            console.log("Add row to watch .. ", token)
-            let symtoken = exch + '|' + token
-            subscribe_token(symtoken)
-            class_name = ''
-            if(put_option) {
+        restore_watch_list : function() {
+            let watch_list_str = window.localStorage.getItem("watch_list");
+            let stored_entries = JSON.parse(watch_list_str)
+            for(const [key, value_str] of Object.entries(stored_entries)) {
+                shoonya_api.watch_list.add_row_to_watch(JSON.parse(value_str))
+            }
+        },
+
+        add_to_watchlist : function() {
+            let params = {}
+            params.sym = $('input.watch_item').val()
+            params.lot_size = $('input.watch_item').attr('lot_size')
+            params.exch = $('input.watch_item').attr('exch')
+            params.token = $('input.watch_item').attr('token')
+            params.tsym = $('input.watch_item').attr('tsym')
+            params.dname = $('input.watch_item').attr('dname')
+            let optt = $('input.watch_item').attr('optt')
+            params.put_option = false
+            if (optt === "PE" && params.exch === "NFO") {
+                params.put_option = true
+            }
+
+            watch_list.add_row_to_watch(params)
+        },
+
+        add_row_to_watch : function(params) {
+            console.log("Add row to watch .. ", params.token)
+
+            //Add to watched items
+            watch_list.watched_items[`${params.exch}_${params.token}`] = JSON.stringify(params)
+            watch_list.save_watch_list()
+
+            let class_name = ''
+            if(params.put_option) {
                 class_name = 'table-danger'
             }
 
-            $('#watch_list_body').append(`<tr class="${class_name}" exch="${exch}" token="${token}" tsym="${tsym}" lot_size="${lot_size}" dname="${sym}">
+            $('#watch_list_body').append(`<tr class="${class_name}" exch="${params.exch}" token="${params.token}" tsym="${params.tsym}" lot_size="${params.lot_size}" dname="${params.sym}">
     
-                <td class="dname">${sym}</td>
-                <th class="watch_${token} ltp"></th>
+                <td class="dname">${params.sym}</td>
+                <th class="watch_${params.token} ltp"></th>
                 <td><input type="text" class="form-control entry" placeholder="" ></td>
-                <td><input type="text" class="form-control qty" placeholder="" value="${lot_size}"></td>
+                <td><input type="text" class="form-control qty" placeholder="" value="${params.lot_size}"></td>
                 <td><button type="button" class="btn btn-success buy" onclick="shoonya_api.orderbook.buy(this)">BUY</button></td>
                 <td><button type="button" class="btn btn-danger sell" onclick="shoonya_api.orderbook.sell(this)">SELL</button></td>
-                <th class="del-icon" onclick="shoonya_api.delete_row(this)">
+                <th class="del-icon" onclick="shoonya_api.watch_list.delete_item(this)">
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-trash" viewBox="0 0 16 16">
                         <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/>
                         <path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/>
                     </svg>
                 </th>
                </tr>`);
-        }
+
+            let sym_token = params.exch + '|' + params.token
+            subscribe_token(sym_token)
+        },
+
+        delete_item : function(th_elm) {
+            let tr_elm = $(th_elm).parent();
+            let exch = tr_elm.attr('exch')
+            let token = tr_elm.attr('token')
+
+            delete watch_list.watched_items[`${exch}_${token}`]
+            watch_list.save_watch_list()
+
+            tr_elm.remove();
+        },
     };
 
     const positions = {
@@ -1598,6 +1633,7 @@ shoonya_api = function () {
             connect()
             setTimeout(orderbook.update_open_orders, 100);
             setTimeout(trade.load_open_positions, 100);
+            setTimeout(watch_list.restore_watch_list, 100);
             setTimeout(trade.trigger, 1000);
 
         });
@@ -1616,15 +1652,9 @@ shoonya_api = function () {
         })
     }
 
-
-    function delete_row(elm) {
-        $(elm).parent().remove();
-    }
-
     return {
         "search_instrument" :  search_instrument,
         "connect" : connect,
-        "delete_row": delete_row,
         "post_request": post_request,
         "watch_list": watch_list,
         "orderbook": orderbook,
