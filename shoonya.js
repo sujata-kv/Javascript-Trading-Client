@@ -229,19 +229,19 @@ shoonya_api = function () {
     });
 
     function show_success_msg(msg) {
-        $('#order_success_msg').html(msg);
-        $('#order_success_alert').removeClass('d-none');
+        $('#order_success_msg').html("<strong>" + msg + "</strong>");
+        $('#order_success_alert').show();
         setTimeout(function(){
             // $('#order_success_msg').html("");
-            $('#order_success_alert').addClass('d-none')}, alert_msg_disappear_after);
+            $('#order_success_alert').hide()}, alert_msg_disappear_after);
     }
 
     function show_error_msg(msg) {
-        $('#order_error_msg').html(msg);
-        $('#order_error_alert').removeClass('d-none');
+        $('#order_error_msg').html("<strong>" + msg + "</strong>");
+        $('#order_error_alert').show();
         setTimeout(function(){
             // $('#order_error_msg').html("");
-            $('#order_error_alert').addClass('d-none')}, alert_msg_disappear_after);
+            $('#order_error_alert').hide()}, alert_msg_disappear_after);
     }
 
     const ACTION = Object.freeze({
@@ -1461,6 +1461,7 @@ shoonya_api = function () {
         },
 
         restore_watch_list : function() {
+            $('#watch_list_body').html('')
             let watch_list_str = window.localStorage.getItem("watch_list");
             let stored_entries = JSON.parse(watch_list_str)
             for(const [key, value_str] of Object.entries(stored_entries)) {
@@ -1664,8 +1665,8 @@ shoonya_api = function () {
         "live_data": live_data,
         "mgr": milestone_manager,
         "order_mgr" : open_order_mgr,
-        "update_pnl" : trade.update_pnl,
-        "calc_pnl" : trade.calculate_pnl,
+        "show_success_msg" : show_success_msg,
+        "show_error_msg" : show_error_msg,
     }
 
 }();
@@ -1673,5 +1674,8 @@ shoonya_api = function () {
 
 
 $(document).ready(function(){
-
+    $('button.close-btn').on('click', function (event) {
+        event.preventDefault();
+        $(this).parent().hide();
+    });
 })
