@@ -34,17 +34,14 @@
 
     #instr-drop-down {
         border: 1px dotted #ccc;
-        padding: 3px;
     }
 
     #instr-drop-down ul {
         position: absolute;
         background-color: #f5f5f5;
+        padding: 1px 2px 1px 2px;
     }
 
-    #instr-drop-down ul li {
-        padding: 1px 0;
-    }
 
     .custom-tab {
         padding: 0.25rem 0.25rem !important;
@@ -149,7 +146,7 @@
                 <input type="text"  class="form-control form-control-sm" id="userId" placeholder="User" value="FA90807">
             </div>
             <div class="col-auto">
-                <input type="text" class="form-control form-control-sm" id="sessionToken" placeholder="Session Token" value="17afe674e93d6df651f24e9d3a2406827e3121f80e7e22cba48d7f9747c8cb73">
+                <input type="text" class="form-control form-control-sm" id="sessionToken" placeholder="Session Token" value="1e67526fa4fccd62dd621a0d744a0adb14b5e19a709b28e49dde32ec81cd9d3f">
             </div>
             <div class="col-auto">
                 <button type="submit" class="btn btn-sm btn-info" id="connect_to_server">Connect</button>
@@ -169,18 +166,18 @@
     <hr class="hr hr-blurry" />
 
     <div class="row">
-        <div class="col-auto">
+        <div class="col-md-3">
             <input type="text" class="form-control search-instrument watch_item"  value="" placeholder="Instrument" >
             <div id="instr-drop-down" class="ui-front" style=""></div>
         </div>
-        <div class="col-auto">
+        <div class="col-md-3">
             <button class="btn btn-primary mb-3" id="add_to_watchlist" onclick="shoonya_api.watch_list.add_to_watchlist()">Add To Watchlist</button>
             <button class="btn btn-secondary mb-3" onclick="$('input.search-instrument').val('')">Clear</button>
         </div>
 
 
-        <div class="offset-md-5">
-            <div class="card-header  su-collapse-div-title">
+        <div class="col-md-6">
+            <div class="card-header  su-collapse-div-title" style="float:right;">
                 <h2 class="mb-0">
                     <button class="btn btn-danger" type="button" onclick="shoonya_api.trade.exit_all_positions()">
                         Exit All Positions
