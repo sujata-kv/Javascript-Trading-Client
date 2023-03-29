@@ -1236,14 +1236,20 @@ shoonya_api = function () {
                     cur_spot_value = live_data[mile_stone.token]
                 }
 
-
                 console.log(`Checking Target : ${ttype}  spot : ${cur_spot_value}  trig : ${trig_value}`)
-                if (ttype === 'bull') {
-                    if (cur_spot_value >= trig_value) {
-                        target_triggered()
+
+                if (target_obj.spot_based) {
+                    if (ttype === 'bull') {
+                        if(cur_spot_value >= trig_value) {
+                            target_triggered()
+                        }
+                    } else if (ttype === 'bear') {
+                        if(cur_spot_value <= trig_value) {
+                            target_triggered()
+                        }
                     }
-                } else if (ttype === 'bear') {
-                    if (cur_spot_value <= trig_value) {
+                } else if(target_obj.instrument === "price") {  //Price based
+                    if (cur_spot_value >= trig_value) {
                         target_triggered()
                     }
                 }
@@ -1256,6 +1262,7 @@ shoonya_api = function () {
                     milestone_manager.remove_milestone(row_id)
                 }
             }
+
 
             function check_sl_trigger(row_id, mile_stone) {
                 let cur_spot_value = 0;
@@ -1272,12 +1279,18 @@ shoonya_api = function () {
                 }
 
                 console.log(`Checking SL : ${ttype}  spot : ${cur_spot_value}  trig : ${trig_value}`)
-                if (ttype === 'bull') {
-                    if (cur_spot_value <= trig_value) {
-                        sl_triggered()
+                if(sl_obj.spot_based) {
+                    if (ttype === 'bull') {
+                        if (cur_spot_value <= trig_value) {
+                            sl_triggered()
+                        }
+                    } else if (ttype === 'bear') {
+                        if (cur_spot_value >= trig_value) {
+                            sl_triggered()
+                        }
                     }
-                } else if (ttype === 'bear') {
-                    if (cur_spot_value >= trig_value) {
+                } else if(sl_obj.instrument === "price") {
+                    if (cur_spot_value <= trig_value) {
                         sl_triggered()
                     }
                 }
