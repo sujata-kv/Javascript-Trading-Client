@@ -1194,13 +1194,17 @@ shoonya_api = function () {
                     }
                 }
                 console.log(`Checking Entry : ${ttype}  spot : ${cur_spot_value}  trig : ${trig_value}`)
-                if (ttype === 'bull') {
-                    if (cur_spot_value <= trig_value) {
-                        entry_triggered()
-                    }
-                } else if (ttype === 'bear') {
-                    if (cur_spot_value >= trig_value) {
-                        entry_triggered()
+
+                //Only spot based entry should be checked. If it is price based then limit order will be placed
+                if(entry_obj.spot_based) {
+                    if (ttype === 'bull') {
+                        if (cur_spot_value <= trig_value) {
+                            entry_triggered()
+                        }
+                    } else if (ttype === 'bear') {
+                        if (cur_spot_value >= trig_value) {
+                            entry_triggered()
+                        }
                     }
                 }
 
