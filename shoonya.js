@@ -891,12 +891,15 @@ shoonya_api = function () {
             if(order.exch === "NFO") {
                 if(order.dname != undefined && order.dname != '') {  //"dname":"BANKNIFTY MAR FUT", "NIFTY 23MAR23 16000 PE ", "NIFTY 23MAR23 16000 CE ",
                     let dname = order.dname.trim()
-                    if (dname.endsWith("PE") && order.trantype === "B") {
-                        trade_type = "bear"
-                    } else if (dname.endsWith("CE") && order.trantype === "S") {
-                        trade_type = "bear"
-                    } else if (order.trantype === "S") {
-                        trade_type = "bear"
+                    if (dname.endsWith("PE")) {
+                        if(order.trantype === "B") trade_type = "bear"
+                        if(order.trantype === "S") trade_type = "bull"
+                    }
+                    else if (dname.endsWith("CE")) {
+                        if(order.trantype === "B") trade_type = "bull"
+                        if(order.trantype === "S") trade_type = "bear"
+                    } else {
+                        if(order.trantype === "S") trade_type = "bear"
                     }
                 }
             } else if(order.exch === "NSE" || order.exch === "BSE") {
