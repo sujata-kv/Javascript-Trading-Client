@@ -147,7 +147,7 @@
                 <input type="text"  class="form-control form-control-sm" id="userId" placeholder="User" value="FA90807">
             </div>
             <div class="col-auto">
-                <input type="text" class="form-control form-control-sm" id="sessionToken" placeholder="Session Token" value="1e67526fa4fccd62dd621a0d744a0adb14b5e19a709b28e49dde32ec81cd9d3f">
+                <input type="text" class="form-control form-control-sm" id="sessionToken" placeholder="Session Token" value="d28f88a7eb36e335bd105f1a40907386c42e824c7062e1b9520cb269cbbea763">
             </div>
             <div class="col-auto">
                 <button type="submit" class="btn btn-sm btn-info" id="connect_to_server">Connect</button>
@@ -167,17 +167,17 @@
     <hr class="hr hr-blurry" />
 
     <div class="row">
-        <div class="col-md-3">
+        <div class=" col-sm-4">
             <input type="text" class="form-control search-instrument watch_item"  value="" placeholder="Instrument" >
             <div id="instr-drop-down" class="ui-front" style=""></div>
         </div>
-        <div class="col-md-3">
+        <div class=" col-sm-4">
             <button class="btn btn-primary mb-3" id="add_to_watchlist" onclick="shoonya_api.watch_list.add_to_watchlist()">Add To Watchlist</button>
             <button class="btn btn-secondary mb-3" onclick="$('input.search-instrument').val('')">Clear</button>
         </div>
 
 
-        <div class="col-md-6">
+        <div class=" col-sm-4">
             <button class="btn btn-danger" type="button" style="float:right;" onclick="shoonya_api.trade.exit_all_positions()">
                 Exit All Positions
             </button>

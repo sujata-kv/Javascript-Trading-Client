@@ -873,7 +873,7 @@ shoonya_api = function () {
                         <td>${dname}</td>
                         <td>${item.qty}</td>
                         <td>${buy_sell}</td>
-                        <td>${item.avgprc}</td>
+                        <td>${item.avgprc === undefined? item.prc : item.avgprc}</td>
                         <td>${item.prctyp}</td>
                         <td>${item.norentm}</td>
                         <td>${rej_reason}</td>
