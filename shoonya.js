@@ -236,12 +236,13 @@ shoonya_api = function () {
             $('#order_success_alert').hide()}, alert_msg_disappear_after);
     }
 
-    function show_error_msg(msg) {
+    function show_error_msg(msg, auto_hide=true) {
         $('#order_error_msg').html("<strong>" + msg + "</strong>");
         $('#order_error_alert').show();
-        setTimeout(function(){
-            // $('#order_error_msg').html("");
-            $('#order_error_alert').hide()}, alert_msg_disappear_after);
+        if(auto_hide)
+            setTimeout(function(){
+                // $('#order_error_msg').html("");
+                $('#order_error_alert').hide()}, alert_msg_disappear_after);
     }
 
     const ACTION = Object.freeze({
@@ -356,7 +357,7 @@ shoonya_api = function () {
                     show_success_msg("Order completed. Order number: " + order.norenordno + "  Symbol: " + order.tsym + " Qty: " + order.qty);
                     break;
                 case "REJECTED" :
-                    show_error_msg("Order " + order.norenordno + " rejected. Reason : " + order.rejreason  + "   Symbol: " + order.tsym + " Qty: " + order.qty );
+                    show_error_msg("Order " + order.norenordno + " rejected. Reason : " + order.rejreason  + "   Symbol: " + order.tsym + " Qty: " + order.qty, false );
                     break;
                 case "CANCELED":
                     show_success_msg("Order " + order.norenordno + " cancelled. Symbol: " + order.tsym + " Qty: " + order.qty );
@@ -877,7 +878,7 @@ shoonya_api = function () {
                         <td>${item.prctyp}</td>
                         <td>${item.norentm}</td>
                         <td>${rej_reason}</td>
-                        <td>${item.remarks}</td>
+                        <td>${item.remarks === undefined? "" : item.remarks}</td>
                         <td>${item.exch_tm === undefined? "": item.exch_tm}</td>
                         <td>${item.exch}</td>
                         <td>${prd}</td>
