@@ -15,14 +15,14 @@ shoonya_api = function () {
     let heartbeat_timeout = 7000;
 
     const url = {
-        websocket : "wss://shoonya.finvasia.com/NorenWSWeb/",
-        search_instrument : "https://shoonya.finvasia.com/NorenWClientWeb/SearchScrip",
-        order_book : "https://shoonya.finvasia.com/NorenWClientWeb/OrderBook",
-        place_order : "https://shoonya.finvasia.com/NorenWClientWeb/PlaceOrder",
-        modify_order : "https://shoonya.finvasia.com/NorenWClientWeb/ModifyOrder",
-        cancel_order : "https://shoonya.finvasia.com/NorenWClientWeb/CancelOrder",
-        exit_order : "https://shoonya.finvasia.com/NorenWClientWeb/ExitOrder",
-        positions : "https://shoonya.finvasia.com/NorenWClientWeb/PositionBook",
+        websocket : "wss://trade.shoonya.com/NorenWSWeb/",
+        search_instrument : "https://trade.shoonya.com/NorenWClientWeb/SearchScrip",
+        order_book : "https://trade.shoonya.com/NorenWClientWeb/OrderBook",
+        place_order : "https://trade.shoonya.com/NorenWClientWeb/PlaceOrder",
+        modify_order : "https://trade.shoonya.com/NorenWClientWeb/ModifyOrder",
+        cancel_order : "https://trade.shoonya.com/NorenWClientWeb/CancelOrder",
+        exit_order : "https://trade.shoonya.com/NorenWClientWeb/ExitOrder",
+        positions : "https://trade.shoonya.com/NorenWClientWeb/PositionBook",
     }
 
     function connect() {
@@ -1267,7 +1267,7 @@ shoonya_api = function () {
                     console.log("Target triggered for row_id : " + row_id + " Trigger value = " + trig_value + " Spot value = " + cur_spot_value)
                     let tr_elm = $(`#${row_id}`)
                     tr_elm.find('.exit').click();
-                    milestone_manager.remove_milestone(row_id)
+                    // milestone_manager.remove_milestone(row_id)
                 }
             }
 
@@ -1308,7 +1308,7 @@ shoonya_api = function () {
                     console.log("SL triggered for row_id : " + row_id + " Trigger value = " + trig_value + " Spot value = " + cur_spot_value)
                     let tr_elm = $(`#${row_id}`)
                     tr_elm.find('.exit').click();
-                    milestone_manager.remove_milestone(row_id)
+                    // milestone_manager.remove_milestone(row_id)
                 }
             }
         },
