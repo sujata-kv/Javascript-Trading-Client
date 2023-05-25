@@ -479,6 +479,9 @@ shoonya_api = function () {
                             orderbook.place_order_cb_carry_target_sl_to_active_trade(data)
                         }
                     })
+                } else {
+                    let ltp = tr_elm.find('.ltp').text()
+                    orderbook.place_paper_trade(params, ltp)
                 }
             }
 
@@ -747,6 +750,22 @@ shoonya_api = function () {
             orderbook.update_open_order_list(orders);
         },
 
+        place_paper_trade : function(order, ltp) {
+
+            let order_id = "paper" + Date.now()
+            order.norenordno = order_id
+            order.prc = ltp
+            order.norentm = new Date().toLocaleTimeString()
+
+            ++unique_row_id;
+            let row_id = "row_id_" + unique_row_id;
+            milestone_manager.add_order_id(row_id, order_id);
+
+            let target = '';
+            let sl = '';
+            trade.display_active_trade(order, target, sl, true);
+        },
+
         //TODO - Partial quantity exit should be done
         exit_order : function(td_elm) {
             let tr_elm = $(td_elm).parent().parent();
@@ -758,21 +777,28 @@ shoonya_api = function () {
             let exit_limit = milestone_manager.get_value_object(limit_value);
             let values = orderbook.get_order_params(tr_elm, buy_sell, exit_limit, qty)
 
-            post_request(url.place_order, values, function(data){
-                if(data.stat.toUpperCase() === "OK") {
-                    let orderno = data.norenordno;
-                    orderbook.update_open_orders();
+            if(!is_paper_trade()) {
+                post_request(url.place_order, values, function (data) {
+                    if (data.stat.toUpperCase() === "OK") {
+                        let orderno = data.norenordno;
+                        orderbook.update_open_orders();
 
-                    open_order_mgr.add_exit(orderno)
+                        open_order_mgr.add_exit(orderno)
 
-                    orderbook.get_order_status(orderno, ACTION.exit, (function(tr_elm){
-                        return function(matching_order, orders){
-                            orderbook.exit_order_cb(matching_order, orders, tr_elm);
-                            open_order_mgr.remove_order_id(orderno)
-                        }})(tr_elm))
-                } else
-                    show_error_msg(data.emsg);
-            });
+                        orderbook.get_order_status(orderno, ACTION.exit, (function (tr_elm) {
+                            return function (matching_order, orders) {
+                                orderbook.exit_order_cb(matching_order, orders, tr_elm);
+                                open_order_mgr.remove_order_id(orderno)
+                            }
+                        })(tr_elm))
+                    } else
+                        show_error_msg(data.emsg);
+                });
+            } else {
+                values.avgprc = tr_elm.find('.ltp').text()
+                values.norentm = new Date().toLocaleTimeString()
+                orderbook.exit_order_cb(values, null, tr_elm);
+            }
         },
 
         exit_order_cb: function(matching_order, orders, tr_elm){
@@ -792,7 +818,10 @@ shoonya_api = function () {
             tr_elm.find('.exit').parent().html(`<button type="button" class="btn btn-dark btn-sm" onclick="$(this).parent().parent().remove()">Delete</button>`);
             tr_elm.find('.qty').attr('disabled', 'disabled');
             tr_elm.find('.exit').attr('disabled', 'disabled');
-            orderbook.update_open_order_list(orders);
+
+            if(orders) { // In case of paper trade, orders will be null and the below code will not execute
+                orderbook.update_open_order_list(orders);
+            }
         },
 
         get_order_status(orderno, action, oncomplete_cb) {
@@ -1333,13 +1362,14 @@ shoonya_api = function () {
             }
         },
 
-        display_active_trade : function(order, target, sl) {
+        display_active_trade : function(order, target, sl, paper_trade=false) {
             let ttype = orderbook.know_bull_or_bear(order)
             let buy_sell = '';
+            let paper_tag = paper_trade?"Paper ":""
             if (order.trantype == "B") {
-                buy_sell = '<span class="badge badge-success">Buy</span>'
+                buy_sell = `<span class="badge badge-success"> ${paper_tag} Buy</span>`
             } else {
-                buy_sell = '<span class="badge badge-danger">Sell</span>'
+                buy_sell = `<span class="badge badge-danger"> ${paper_tag} Sell</span>`
             }
             let dname = (order.dname != undefined)? order.dname : order.tsym;
 
@@ -1347,7 +1377,13 @@ shoonya_api = function () {
             ++unique_row_id;
             let row_id = "row_id_" + unique_row_id;
 
-            $('#active_trades_table').append(`<tr id="${row_id}" ordid="${order.norenordno}"  exch="${order.exch}" token="${order.token}" qty="${order.qty}" tsym="${order.tsym}" ttype="${ttype}" trtype="${order.trantype}" trade="active">
+            let tbody_elm;
+            if(paper_trade)
+                tbody_elm = $('#active_paper_trades')
+            else
+                tbody_elm = $('#active_trades_table')
+
+            tbody_elm.append(`<tr id="${row_id}" ordid="${order.norenordno}"  exch="${order.exch}" token="${order.token}" qty="${order.qty}" tsym="${order.tsym}" ttype="${ttype}" trtype="${order.trantype}" trade="active">
                         <td>${buy_sell}</td>
                         <td>${dname}</td>
                         <td class="entry">
