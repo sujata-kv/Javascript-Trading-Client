@@ -1519,12 +1519,18 @@ shoonya_api = function () {
         },
 
         exit_all_positions : function() {
-            $('#open_orders tr').each(function(index, tr_elm){
-                $(tr_elm).find('.cancel').click()
-            })
-            $('#active_trades_table tr').each(function(index, tr_elm) {
-                $(tr_elm).find('.exit').click()
-            })
+            if(!is_paper_trade()) {
+                $('#open_orders tr').each(function (index, tr_elm) {
+                    $(tr_elm).find('.cancel').click()
+                })
+                $('#active_trades_table tr').each(function (index, tr_elm) {
+                    $(tr_elm).find('.exit').click()
+                })
+            } else {
+                $('#active_paper_trades tr').each(function (index, tr_elm) {
+                    $(tr_elm).find('.exit').click()
+                })
+            }
         }
     };
 
