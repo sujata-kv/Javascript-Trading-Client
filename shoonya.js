@@ -65,8 +65,10 @@ shoonya_api = function () {
                         if(selector.startsWith('#active_trade')) {
                             $(ltp_elm).text(result.lp)
                             let tr_elm = $(ltp_elm).parent();
-                            if(tr_elm.attr('trade') == 'active')
+                            if(tr_elm.attr('trade') == 'active') {
                                 trade.update_pnl(tr_elm)
+                                trade.update_total_pnl()
+                            }
                         }
                     });
                 }
@@ -467,15 +469,17 @@ shoonya_api = function () {
                 this.add_to_spot_order_list(params, entry_val)
             } else {
                 console.log("Going to place order " + JSON.stringify(params))
-                post_request(url.place_order, params, function(data) {
-                    if(success_cb != undefined) {  // Call custom function provided.. In case of exit, it needs to remove tr
-                        console.log("Success call back is provided. Will be called")
-                        success_cb(data)
-                    } else { // No custom function provided. Default actions
-                        console.log("Default place order call back called")
-                        orderbook.place_order_cb_carry_target_sl_to_active_trade(data)
-                    }
-                })
+                if(!is_paper_trade()) {
+                    post_request(url.place_order, params, function (data) {
+                        if (success_cb != undefined) {  // Call custom function provided.. In case of exit, it needs to remove tr
+                            console.log("Success call back is provided. Will be called")
+                            success_cb(data)
+                        } else { // No custom function provided. Default actions
+                            console.log("Default place order call back called")
+                            orderbook.place_order_cb_carry_target_sl_to_active_trade(data)
+                        }
+                    })
+                }
             }
 
             setTimeout(function() {
@@ -1134,6 +1138,22 @@ shoonya_api = function () {
             }
         },
 
+        update_total_pnl : function() {
+            var rows = $('#active_trades_table').find('tr')
+            var total = 0
+            rows.each(function() {
+                var pnl = $(this).find('td.pnl').text()
+                total += parseFloat(pnl)
+            })
+            var total_pnl_elm = $('#total_pnl')
+            if (total < 0) {
+                total_pnl_elm.css('color', 'red')
+            } else {
+                total_pnl_elm.css('color', 'green')
+            }
+            total_pnl_elm.text(total)
+        },
+
         calculate_pnl: function(params)  {
             let pnl = 0.0;
             switch(params.trade_status) {
@@ -1644,6 +1664,10 @@ shoonya_api = function () {
                 </tr>`);
             }
         }
+    }
+
+    const is_paper_trade = function() {
+        return document.getElementById('trade_type').checked == false
     }
 
     /*Attach functions to connect, add to watch list button, etc*/
