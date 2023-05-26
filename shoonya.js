@@ -1712,7 +1712,7 @@ shoonya_api = function () {
     }
 
     const is_paper_trade = function() {
-        return document.getElementById('trade_type').checked == false
+        return document.getElementById('trade_type').checked == true
     }
 
     /*Attach functions to connect, add to watch list button, etc*/
