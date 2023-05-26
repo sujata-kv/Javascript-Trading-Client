@@ -62,7 +62,7 @@ shoonya_api = function () {
                     $(selector).each(function(i, ltp_elm) {
                         $(ltp_elm).text(result.lp)
 
-                        if(selector.startsWith('#active_trade')) {
+                        if(selector.startsWith('#active_trade') || selector.startsWith("#active_paper_trade")) {
                             $(ltp_elm).text(result.lp)
                             let tr_elm = $(ltp_elm).parent();
                             if(tr_elm.attr('trade') == 'active') {
@@ -90,6 +90,7 @@ shoonya_api = function () {
                         update_ltp('#watch_list_body .watch_' + result.tk);
                         update_ltp("#open_orders .open_order_" + result.tk)  // In Open Order table
                         update_ltp("#active_trades_table .trade_" + result.tk)  // In Active Trades table
+                        update_ltp("#active_paper_trades .trade_" + result.tk)  // In Active Trades table
                         break;
                 }
             }
@@ -1168,19 +1169,21 @@ shoonya_api = function () {
         },
 
         update_total_pnl : function() {
-            var rows = $('#active_trades_table').find('tr')
             var total = 0
+
+            var rows = $('#active_trades_table, #active_paper_trades').find('tr')
             rows.each(function() {
                 var pnl = $(this).find('td.pnl').text()
                 total += parseFloat(pnl)
             })
+
             var total_pnl_elm = $('#total_pnl')
             if (total < 0) {
                 total_pnl_elm.css('color', 'red')
             } else {
                 total_pnl_elm.css('color', 'green')
             }
-            total_pnl_elm.text(total)
+            total_pnl_elm.text(total.toFixed(2))
         },
 
         calculate_pnl: function(params)  {
