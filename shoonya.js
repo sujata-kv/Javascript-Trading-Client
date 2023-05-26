@@ -1588,7 +1588,7 @@ shoonya_api = function () {
     
                 <td class="dname">${params.sym}</td>
                 <th class="watch_${params.token} ltp"></th>
-                <td><input type="text" class="form-control entry" placeholder="" ></td>
+                <td><input type="text" class="form-control entry" placeholder="" onclick="shoonya_api.watch_list.add_ltp(this)" ></td>
                 <td><input type="text" class="form-control qty" placeholder="" value="${params.lot_size}"></td>
                 <td><button type="button" class="btn btn-success buy" onclick="shoonya_api.orderbook.buy(this)">BUY</button></td>
                 <td><button type="button" class="btn btn-danger sell" onclick="shoonya_api.orderbook.sell(this)">SELL</button></td>
@@ -1602,6 +1602,11 @@ shoonya_api = function () {
 
             let sym_token = params.exch + '|' + params.token
             subscribe_token(sym_token)
+        },
+
+        add_ltp : function(input_elm) {
+            let row_elm = $(input_elm).parent().parent()
+            $(input_elm).val(row_elm.find('.ltp').text())
         },
 
         delete_item : function(th_elm) {
