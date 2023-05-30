@@ -533,6 +533,7 @@ shoonya_api = function () {
             let prctyp = 'LMT', price = "0.0";
             let remarks = "";
             let tsym = elm.attr('tsym');
+            let dname = elm.attr('dname');
             let token = elm.attr('token');
             if(entry.value == '') {
                 prctyp = 'MKT'
@@ -560,6 +561,7 @@ shoonya_api = function () {
             values["prd"]       = prd;
             values["exch"]      = exch;
             values["tsym"]      = tsym;
+            values["dname"]      = dname;
             values["token"]      = token;
             values["qty"]       = qty;
             values["dscqty"]    = qty;
