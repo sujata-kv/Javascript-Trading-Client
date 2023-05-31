@@ -1314,7 +1314,13 @@ shoonya_api = function () {
                         default : console.error(row_id + " .. Something is wrong .. " + mile_stone.token); break;
                     }
                 } else { // Price based
-                    cur_spot_value = live_data[mile_stone.token]
+                    if(row_id === "all_rows") { // Use total P & L value in case of cumulative target and SL
+                        cur_spot_value = $('#all_rows').find('.pnl').text()
+                        if(cur_spot_value!=undefined)
+                            cur_spot_value = parseFloat(cur_spot_value)
+                    }
+                    else
+                        cur_spot_value = live_data[mile_stone.token]
                 }
 
                 console.log(`Checking Target : ${ttype}  spot : ${cur_spot_value}  trig : ${trig_value}`)
@@ -1362,7 +1368,13 @@ shoonya_api = function () {
                         case "bank_nifty" : cur_spot_value = live_data[bank_nifty_tk]; break;
                     }
                 } else { // Price based
-                    cur_spot_value = live_data[mile_stone.token]
+                    if(row_id === "all_rows") { // Use total P & L value in case of cumulative target and SL
+                        cur_spot_value = $('#all_rows').find('.pnl').text()
+                        if(cur_spot_value!=undefined)
+                            cur_spot_value = parseFloat(cur_spot_value)
+                    }
+                    else
+                        cur_spot_value = live_data[mile_stone.token]
                 }
 
                 console.log(`Checking SL : ${ttype}  spot : ${cur_spot_value}  trig : ${trig_value}`)
