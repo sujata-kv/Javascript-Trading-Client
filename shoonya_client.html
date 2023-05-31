@@ -30,7 +30,7 @@
                 <input type="text"  class="form-control form-control-sm" id="userId" placeholder="User" value="FA90807">
             </div>
             <div class="col-auto">
-                <input type="text" class="form-control form-control-sm" id="sessionToken" placeholder="Session Token" value="0229ff60005168d2ed29e66c3786a69c0fc58ea4ece4d8e0ad1526ce588dcc18">
+                <input type="text" class="form-control form-control-sm" id="sessionToken" placeholder="Session Token" value="0330e08bdafea45adf3a9fc08a46f3428899a9a0bffba0ae2a8fbf49105a07da">
             </div>
             <div class="col-auto">
                 <button type="submit" class="btn btn-sm btn-info" id="connect_to_server">Connect</button>
@@ -129,15 +129,21 @@
             <tbody id="active_paper_trades">
             </tbody>
             <tfoot>
-            <tr>
+            <tr id="all_rows" token="all_trades" ttype="bull">
                 <th scope="col"></th>
                 <th scope="col"></th>
                 <th scope="col"></th>
                 <th scope="col">Total</th>
                 <th scope="col" class="pnl" id="total_pnl"></th>
-                <th scope="col"></th>
-                <th scope="col"></th>
-                <th scope="col"></th>
+                <th><input type="text" disabled class="form-control target" placeholder="" value=""></th>
+                <th><input type="text" disabled class="form-control sl" placeholder="" value=""></th>
+                <th>
+                    <select disabled class="form-select" onchange="shoonya_api.trade.select_trade_type(this, $(this).parent().parent())">
+                        <option selected value="bull">Bullish</option>
+                        <option value="bear">Bearish</option>
+                    </select>
+                </th>
+                <th scope="col"><button type="button" class="btn btn-success btn-sm modify" onclick="shoonya_api.trade.modify(this, $(this).text(), true)">Edit</button></th>
                 <th scope="col"></th>
                 <th scope="col"></th>
                 <th scope="col"></th>

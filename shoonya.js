@@ -967,6 +967,10 @@ shoonya_api = function () {
             return this.token;
         }
 
+        set_ttype(ttype) {
+            this.ttype = ttype
+        }
+
         set_entry(entry) {
             this.entry = entry;
         }
@@ -1078,6 +1082,7 @@ shoonya_api = function () {
                 ms.set_target(value_obj);
                 this.milestones[row_id] = ms
             } else {
+                old_ms.set_ttype(ttype)
                 old_ms.set_target(value_obj)
             }
         }
@@ -1090,6 +1095,7 @@ shoonya_api = function () {
                 ms.set_sl(value_obj);
                 this.milestones[row_id] = ms
             } else {
+                old_ms.set_ttype(ttype)
                 old_ms.set_sl(value_obj)
             }
         }
@@ -1283,6 +1289,19 @@ shoonya_api = function () {
                 }
             }
 
+            function close_all_trades() {
+                let tbody_elm;
+                if (is_paper_trade())
+                    tbody_elm = $('#active_paper_trades')
+                else
+                    tbody_elm = $('#active_trades_table')
+
+                tbody_elm.find('tr').each(function (index, tr_elm) {
+                    $(tr_elm).find('.exit').click()
+                })
+                milestone_manager.remove_milestone('all_rows');
+            }
+
             function check_target_trigger(row_id, mile_stone) {
                 let cur_spot_value = 0;
                 let target_obj = mile_stone.get_target();
@@ -1319,8 +1338,14 @@ shoonya_api = function () {
                 function target_triggered() {
                     show_success_msg("Target triggered for row_id : " + row_id + " Trigger value = " + trig_value + " Spot value = " + cur_spot_value)
                     console.log("Target triggered for row_id : " + row_id + " Trigger value = " + trig_value + " Spot value = " + cur_spot_value)
-                    let tr_elm = $(`#${row_id}`)
-                    tr_elm.find('.exit').click();
+                    if(row_id === "all_rows") {
+                        //Close all trades
+                        close_all_trades();
+                    }
+                    else {
+                        let tr_elm = $(`#${row_id}`)
+                        tr_elm.find('.exit').click();
+                    }
                     // milestone_manager.remove_milestone(row_id)
                 }
             }
@@ -1360,8 +1385,14 @@ shoonya_api = function () {
                 function sl_triggered() {
                     show_error_msg("SL triggered for row_id : " + row_id + " Trigger value = " + trig_value + " Spot value = " + cur_spot_value)
                     console.log("SL triggered for row_id : " + row_id + " Trigger value = " + trig_value + " Spot value = " + cur_spot_value)
-                    let tr_elm = $(`#${row_id}`)
-                    tr_elm.find('.exit').click();
+                    if(row_id === "all_rows") {
+                        //Close all trades
+                        close_all_trades()
+                    }
+                    else {
+                        let tr_elm = $(`#${row_id}`)
+                        tr_elm.find('.exit').click();
+                    }
                     // milestone_manager.remove_milestone(row_id)
                 }
             }
@@ -1432,17 +1463,27 @@ shoonya_api = function () {
             return position;
         },
 
-        modify : function(elm, button_text) {
+        select_trade_type : function(select_opt, tr_elm) {
+            let ttype = select_opt.value
+            tr_elm.attr('ttype', ttype)
+        },
+
+        modify : function(elm, button_text, total_row=false) {
             let tr_elm = $(elm).parent().parent();
 
             if(button_text === 'Edit') {
                 tr_elm.find('.target').removeAttr('disabled')
                 tr_elm.find('.sl').removeAttr('disabled')
                 $(elm).text('Done')
+                if(total_row)
+                    tr_elm.find('.form-select').removeAttr('disabled')
+
             } else {
                 tr_elm.find('.target').attr('disabled', 'disabled')
                 tr_elm.find('.sl').attr('disabled', 'disabled')
                 $(elm).text('Edit')
+                if(total_row)
+                    tr_elm.find('.form-select').attr('disabled', 'disabled')
 
                 let ordid = tr_elm.attr('ordid');
                 let ttype = tr_elm.attr('ttype');
@@ -1536,7 +1577,7 @@ shoonya_api = function () {
                     $(tr_elm).find('.exit').click()
                 })
             }
-        }
+        },
     };
 
     const watch_list = {
