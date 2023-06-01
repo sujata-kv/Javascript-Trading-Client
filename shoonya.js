@@ -1162,9 +1162,11 @@ shoonya_api = function () {
 
             let pnl = trade.calculate_pnl(params)
 
-            if(!isNaN(pnl)) {
+            if (!isNaN(pnl)) {
+                let gross_pnl = pnl * params.qty;
+
                 let pnl_elm = tr_elm.find('.pnl');
-                pnl_elm.text(pnl.toFixed(2))
+                pnl_elm.html(gross_pnl.toFixed(2) + "</br><span class='price_diff'>" + pnl.toFixed(2) + "</span>")
                 if (pnl < 0) {
                     pnl_elm.css('color', 'red')
                 } else {
@@ -1206,11 +1208,7 @@ shoonya_api = function () {
                     break;
             }
 
-            if (!isNaN(pnl)) {
-                pnl = pnl * params.qty;
-            }
-
-            return pnl
+            return pnl;
 
             function get_pnl(trtype, entry, exit) {
                 let pnl = 0.0;
