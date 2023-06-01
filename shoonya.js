@@ -1431,7 +1431,7 @@ shoonya_api = function () {
 
             tbody_elm.append(`<tr id="${row_id}" ordid="${order.norenordno}"  exch="${order.exch}" token="${order.token}" qty="${order.qty}" tsym="${order.tsym}" ttype="${ttype}" trtype="${order.trantype}" trade="active">
                         <td>${buy_sell}</td>
-                        <td>${dname}</td>
+                        <td class="instrument">${dname}</td>
                         <td class="entry">
                             <span class="badge badge-pill badge-dark">${order.norentm.split(" ")[0]}</span>
                             </br><span class="price">${order.prc}</span></br>
@@ -1454,6 +1454,47 @@ shoonya_api = function () {
             if(sl != undefined && sl != '' ) {
                 milestone_manager.add_sl(row_id, order.token, ttype, milestone_manager.get_value_object(sl))
                 $('#' + row_id).find('.sl').val(sl)
+            }
+
+            this.fill_in_max_profit_loss_for_debit_spread(tbody_elm)
+        },
+
+        fill_in_max_profit_loss_for_debit_spread : function(tbody_elm) {
+            let row_count = tbody_elm.children().length
+            if(row_count === 2) { // When only two legs are present
+                let row1 = $(tbody_elm.children()[0])
+                let row2 = $(tbody_elm.children()[1])
+
+                let instr1 = $(row1).find('.instrument').text().trim()
+                let instr2 = $(row2).find('.instrument').text().trim()
+
+                let leg1_type = instr1.split(" ").splice(-1)[0]
+                let leg2_type = instr2.split(" ").splice(-1)[0]
+
+                let qty = row1.attr('qty')
+
+                //Check if it is debit spread
+                if( leg1_type.trim() === leg2_type.trim()  &&       //Both are PE or both are CE
+                    row1.attr('trtype') != row2.attr('trtype') &&   //If one leg is buy, other should be sell
+                    row1.attr('qty') === row2.attr('qty') &&        //qty should be matching
+                    row1.attr('exch') === row2.attr('exch') ) {
+
+                    let strike1 = parseInt(instr1.split(" ").splice(2, 1)[0])
+                    let strike2 = parseInt(instr2.split(" ").splice(2, 1)[0])
+
+                    let spread = Math.abs(strike1-strike2)
+                    let ltp1 = parseFloat(row1.find('.ltp').text())
+                    let ltp2 = parseFloat(row2.find('.ltp').text())
+                    let net_debit = Math.abs(ltp1-ltp2)
+                    let max_profit = (spread - net_debit) * qty
+                    let max_loss = net_debit * qty
+                    let leg1 = row1.attr('trtype') == 'B'? strike1 : strike2     //Buy leg is leg1
+                    let break_even = leg1 - net_debit
+
+                    $('#active_trades .max-profit-loss').html("Max profit = " + max_profit.toFixed(1) + "</br> Max loss = " + max_loss.toFixed(1) + "</br> Break-even=" + break_even.toFixed(0))
+                }
+            } else {
+                $('#active_trades .max-profit-loss').html("")
             }
         },
 
