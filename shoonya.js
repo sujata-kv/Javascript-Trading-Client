@@ -178,7 +178,7 @@ shoonya_api = function () {
 
     /* Search instrument autocomplete */
     $( "input.search-instrument" ).autocomplete({
-            minLength: 3,
+            minLength: 2,
             autoFocus: true,
             appendTo: '#instr-drop-down',
             source:  function(request, response){
@@ -401,6 +401,10 @@ shoonya_api = function () {
 
         add_open_order : function(order) {
             if (order.status == "OPEN") {
+
+                let token = order.exch + "|" + order.token
+                subscribe_token(token)
+
                 let type = order.amo == "Yes"? "AMO ": "";
                 let buy_sell = '';
                 if (order.trantype == "B") {
@@ -427,9 +431,6 @@ shoonya_api = function () {
                         <td><button type="button" class="btn btn-success modify" onclick="shoonya_api.orderbook.modify_order(this)">Modify</button></td>
                         <td><button type="button" class="btn btn-danger cancel" onclick="shoonya_api.orderbook.cancel_order(this)">Cancel</button></td>
                 </tr>`);
-
-                let token = order.exch + "|" + order.token
-                subscribe_token(token)
 
                 let order_id = order.norenordno
                 if(!open_order_mgr.is_monitored(order_id)) {
@@ -1702,6 +1703,9 @@ shoonya_api = function () {
         add_row_to_watch : function(params) {
             console.log("Add row to watch .. ", params.token)
 
+            let sym_token = params.exch + '|' + params.token
+            subscribe_token(sym_token)
+
             //Add to watched items
             watch_list.watched_items[`${params.exch}_${params.token}`] = JSON.stringify(params)
             watch_list.save_watch_list()
@@ -1726,9 +1730,6 @@ shoonya_api = function () {
                     </svg>
                 </th>
                </tr>`);
-
-            let sym_token = params.exch + '|' + params.token
-            subscribe_token(sym_token)
         },
 
         add_ltp : function(input_elm) {
