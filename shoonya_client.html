@@ -30,7 +30,7 @@
                 <input type="text"  class="form-control form-control-sm" id="userId" placeholder="User" value="FA90807">
             </div>
             <div class="col-auto">
-                <input type="text" class="form-control form-control-sm" id="sessionToken" placeholder="Session Token" value="70cefe66ba50fbc5b924515c7ccdd4c5900af14c63ae98de9481707c68acdd8e">
+                <input type="text" class="form-control form-control-sm" id="sessionToken" placeholder="Session Token" value="46841f972e3b228422058bd21f31388f16cd766d61b33a851c36b4763716a162">
             </div>
             <div class="col-auto">
                 <button type="submit" class="btn btn-sm btn-info" id="connect_to_server">Connect</button>
@@ -144,9 +144,8 @@
                     </select>
                 </th>
                 <th scope="col"><button type="button" class="btn btn-success btn-sm modify" onclick="shoonya_api.trade.modify(this, $(this).text(), true)">Edit</button></th>
-                <th scope="col"></th>
-                <th scope="col"></th>
-                <th scope="col"></th>
+                <th scope="col" class="pos-mtm" id="max_profit_seen" title="Max Profit Seen"></th>
+                <th scope="col" class="neg-mtm" id="max_loss_seen" title="Max Loss Seen"></th>
             </tr>
             </tfoot>
         </table>

@@ -1149,6 +1149,8 @@ shoonya_api = function () {
 
     const trade = {
 
+        max_profit_seen : {}, max_loss_seen :{},
+
         update_pnl : function(tr_elm, exit) {
 
             let params = {};
@@ -1167,33 +1169,64 @@ shoonya_api = function () {
 
                 let pnl_elm = tr_elm.find('.pnl');
                 pnl_elm.html(gross_pnl.toFixed(2) + "</br><span class='price_diff'>" + pnl.toFixed(2) + "</span>")
+
+                let row_id = tr_elm.attr('id');
+
                 if (pnl < 0) {
                     pnl_elm.css('color', 'red')
                 } else {
                     pnl_elm.css('color', 'green')
                 }
+                let ret = this.get_max_profit_loss(row_id, gross_pnl);
+
+                let text = "Max profit seen : " + ret['profit'].toFixed(2) + "\nMax loss seen: " + ret['loss'].toFixed(2)
+                tr_elm.attr('title', text)
             } else {
                 let pnl_elm = tr_elm.find('.pnl');
                 pnl_elm.text('')
             }
         },
 
-        update_total_pnl : function() {
-            var total = 0
+        get_max_profit_loss: function (row_id, total) {
+            if(total > 0) {
+                if(row_id in this.max_profit_seen) {
+                    this.max_profit_seen[row_id] = Math.max(this.max_profit_seen[row_id], total)
+                } else
+                    this.max_profit_seen[row_id] = total
+            } else {
+                if (row_id in this.max_loss_seen) {
+                    this.max_loss_seen[row_id] = Math.min(this.max_loss_seen[row_id], total)
+                } else
+                    this.max_loss_seen[row_id] = total
+            }
+            return {
+                'profit': this.max_profit_seen[row_id] == undefined ? 0.0 : this.max_profit_seen[row_id],
+                'loss': this.max_loss_seen[row_id] == undefined ? 0.0 : this.max_loss_seen[row_id]
+            }
+        },
 
-            var rows = $('#active_trades_table, #active_paper_trades').find('tr')
-            rows.each(function() {
-                var pnl = $(this).find('td.pnl').text()
+        update_total_pnl : function() {
+            let total = 0
+
+            let rows = $('#active_trades_table, #active_paper_trades').find('tr')
+            rows.each(function () {
+                let pnl = $(this).find('td.pnl').text()
                 total += parseFloat(pnl)
             })
 
-            var total_pnl_elm = $('#total_pnl')
-            if (total < 0) {
-                total_pnl_elm.css('color', 'red')
-            } else {
-                total_pnl_elm.css('color', 'green')
+            if (!isNaN(total)) {
+                let total_pnl_elm = $('#total_pnl')
+                const row_id = 'all_rows';
+                if (total < 0) {
+                    total_pnl_elm.css('color', 'red')
+                } else {
+                    total_pnl_elm.css('color', 'green')
+                }
+                let ret = this.get_max_profit_loss(row_id, total);
+                total_pnl_elm.text(total.toFixed(2))
+                $('#max_profit_seen').text(ret['profit'].toFixed(2))
+                $('#max_loss_seen').text(ret['loss'].toFixed(2))
             }
-            total_pnl_elm.text(total.toFixed(2))
         },
 
         calculate_pnl: function(params)  {
