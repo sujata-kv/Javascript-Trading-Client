@@ -204,8 +204,8 @@ shoonya_api = function () {
                                 }));
                             },
                             error: function (jqXHR, textStatus, errorThrown) {
-                                show_error_msg(errorThrown)
                                 console.log("Ajax error")
+                                show_error_msg(JSON.parse(jqXHR.responseText).emsg)
                             },
                         })},
 
@@ -385,8 +385,8 @@ shoonya_api = function () {
                     success_cb(data)
                 },
                 error: function (jqXHR, textStatus, errorThrown) {
-                    show_error_msg(errorThrown)
                     console.log("Ajax error")
+                    show_error_msg(JSON.parse(jqXHR.responseText).emsg)
                 }
             });
         },
@@ -1767,7 +1767,7 @@ shoonya_api = function () {
                 },
                 error: function (jqXHR, textStatus, errorThrown) {
                     console.error("Ajax error")
-                    show_error_msg(errorThrown)
+                    show_error_msg(JSON.parse(jqXHR.responseText).emsg)
                 }
             });
         },
