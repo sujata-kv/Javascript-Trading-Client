@@ -1561,6 +1561,17 @@ shoonya_api = function () {
             }
         },
 
+        calculate_spreads : function() {
+            let tbody_elm;
+            if(is_paper_trade())
+                tbody_elm = $('#active_paper_trades')
+            else
+                tbody_elm = $('#active_trades_table')
+
+            trade.fill_in_max_profit_loss_for_debit_spread(tbody_elm)
+            setTimeout(trade.calculate_spreads, 1000);
+        },
+
         getCounterTradePosition : function(open_ord_tr_elm) {
             let token=open_ord_tr_elm.attr('token')
             let qty=open_ord_tr_elm.attr('qty')
@@ -1897,6 +1908,7 @@ shoonya_api = function () {
             setTimeout(trade.load_open_positions, 100);
             setTimeout(watch_list.restore_watch_list, 100);
             setTimeout(trade.trigger, 1000);
+            setTimeout(trade.calculate_spreads, 2000);
 
         });
     });
