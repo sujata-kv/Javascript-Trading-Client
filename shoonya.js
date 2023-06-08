@@ -1848,11 +1848,19 @@ shoonya_api = function () {
                 </tr>`);
             }
         }
-    }
+    };
 
     const is_paper_trade = function() {
         return document.getElementById('trade_type').checked == true
-    }
+    };
+
+    const toggle_paper_trade = function() {
+        if(is_paper_trade()) {
+            document.body.className = 'paper_trade';
+        } else {
+            document.body.className = 'real_trade';
+        }
+    };
 
     /*Attach functions to connect, add to watch list button, etc*/
     $(document).ready(function() {
@@ -1896,6 +1904,7 @@ shoonya_api = function () {
         "order_mgr" : open_order_mgr,
         "show_success_msg" : show_success_msg,
         "show_error_msg" : show_error_msg,
+        "toggle_paper_trade": toggle_paper_trade,
     }
 
 }();

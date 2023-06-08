@@ -2,7 +2,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.3.1/dist/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
     <title>JS Client</title>
 </head>
-<body>
+<body class="paper_trade">
 <div class="container">
     <div class="row heading-row">
 
@@ -60,7 +60,9 @@
         </div>
 
         <div class="col-sm-4" style="text-align: right;">
-            <input id="trade_type" type="checkbox" checked data-toggle="toggle" data-on="Paper Trade" data-off="Real Trade" data-onstyle="warning" data-offstyle="success">
+            <input id="trade_type" type="checkbox" checked data-toggle="toggle"
+                   onchange="shoonya_api.toggle_paper_trade()"
+                   data-on="Paper Trade" data-off="Real Trade" data-onstyle="warning" data-offstyle="success">
         </div>
     </div>
 
@@ -429,6 +431,14 @@
 
     #watch_list_body td{
         text-align: center;
+    }
+
+    .paper_trade {
+        background-color: #ffffff;
+    }
+
+    .real_trade {
+        background-color : #eeeee4;
     }
 
 </style>
