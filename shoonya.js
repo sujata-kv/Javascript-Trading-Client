@@ -1532,13 +1532,29 @@ shoonya_api = function () {
                     let spread = Math.abs(strike1-strike2)
                     let ltp1 = parseFloat(row1.find('.ltp').text())
                     let ltp2 = parseFloat(row2.find('.ltp').text())
-                    let net_debit = Math.abs(ltp1-ltp2)
-                    let max_profit = (spread - net_debit) * qty
-                    let max_loss = net_debit * qty
-                    let leg1 = row1.attr('trtype') == 'B'? strike1 : strike2     //Buy leg is leg1
-                    let break_even = leg1 - net_debit
 
-                    $('#active_trades .max-profit-loss').html("Max profit = " + max_profit.toFixed(1) + "</br> Max loss = " + max_loss.toFixed(1) + "</br> Break-even=" + break_even.toFixed(0))
+                    let leg1_is_buy = row1.attr('trtype') == 'B'
+                    let credit_spread
+                    if(ltp1 < ltp2) {
+                        if(leg1_is_buy)
+                            credit_spread = true
+                        else credit_spread = false
+                    }
+
+                    let break_even, max_profit, max_loss
+                    if(credit_spread) {
+                        let net_credit = Math.abs(ltp1-ltp2)
+                        max_loss = (spread - net_credit) * qty
+                        max_profit = net_credit * qty
+                        break_even = strike2 - net_credit
+                    } else {
+                        let net_debit = Math.abs(ltp1-ltp2)
+                        max_profit = (spread - net_debit) * qty
+                        max_loss = net_debit * qty
+                        break_even = strike1 - net_debit
+                    }
+
+                    $('#active_trades .max-profit-loss').html( (credit_spread?"Credit Spread": "Debit Spread") + "<br>Max profit = " + max_profit.toFixed(1) + "</br> Max loss = " + max_loss.toFixed(1) + "</br> Break-even=" + break_even.toFixed(0))
                 }
             } else {
                 $('#active_trades .max-profit-loss').html("")
