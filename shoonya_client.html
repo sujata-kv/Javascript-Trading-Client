@@ -30,7 +30,7 @@
                 <input type="text"  class="form-control form-control-sm" id="userId" placeholder="User" value="FA90807">
             </div>
             <div class="col-auto">
-                <input type="text" class="form-control form-control-sm" id="sessionToken" placeholder="Session Token" value="46841f972e3b228422058bd21f31388f16cd766d61b33a851c36b4763716a162">
+                <input type="text" class="form-control form-control-sm" id="sessionToken" placeholder="Session Token" value="be299fea37fefa92cd6e1b3553b9022398b10d7b29f15c37952180f5a1dee58e">
             </div>
             <div class="col-auto">
                 <button type="submit" class="btn btn-sm btn-info" id="connect_to_server">Connect</button>
@@ -74,6 +74,7 @@
         <thead class="thead-light">
         <tr>
             <th scope="col">Instrument</th>
+            <th scope="col" title="Margin required per lot">Margin</th>
             <th scope="col">LTP</th>
             <th scope="col">Entry</th>
             <th scope="col">Qty</th>
@@ -356,7 +357,7 @@
         padding-bottom: 15px;
     }
 
-    .pos-mtm, .pnl {
+    .pos-mtm, .pnl, .margin_req {
         font-weight:bold;
         color: green;
     }

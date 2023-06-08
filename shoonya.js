@@ -62,6 +62,7 @@ shoonya_api = function () {
                     $(selector).each(function(i, ltp_elm) {
                         $(ltp_elm).text(result.lp)
 
+
                         if(selector.startsWith('#active_trade') || selector.startsWith("#active_paper_trade")) {
                             $(ltp_elm).text(result.lp)
                             let tr_elm = $(ltp_elm).parent();
@@ -69,6 +70,10 @@ shoonya_api = function () {
                                 trade.update_pnl(tr_elm)
                                 trade.update_total_pnl()
                             }
+                        } else if(selector.startsWith('#watch_list')) {
+                            let margin = parseInt($(ltp_elm).attr('lot_size')) * result.lp
+                            if(!isNaN(margin))
+                                $(ltp_elm).parent().find('.margin_req').text(margin.toFixed(0))
                         }
                     });
                 }
@@ -1718,7 +1723,8 @@ shoonya_api = function () {
             $('#watch_list_body').append(`<tr class="${class_name}" exch="${params.exch}" token="${params.token}" tsym="${params.tsym}" lot_size="${params.lot_size}" dname="${params.sym}">
     
                 <td class="dname">${params.sym}</td>
-                <th class="watch_${params.token} ltp"></th>
+                <th class="margin_req num"></th>
+                <th class="watch_${params.token} ltp" lot_size="${params.lot_size}"></th>
                 <td><input type="text" class="form-control entry" placeholder="" onclick="shoonya_api.watch_list.add_ltp(this)" ></td>
                 <td><input type="text" class="form-control qty" placeholder="" value="${params.lot_size}"></td>
                 <td><button type="button" class="btn btn-success buy" onclick="shoonya_api.orderbook.buy(this)">BUY</button></td>
