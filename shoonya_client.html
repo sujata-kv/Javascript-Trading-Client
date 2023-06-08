@@ -44,9 +44,6 @@
                 </div>
             </div>
         </div>
-        <div>
-            <input id="trade_type" type="checkbox" checked data-toggle="toggle" data-on="Paper Trade" data-off="Real Trade" data-onstyle="warning" data-offstyle="success">
-        </div>
     </div>
 
 
@@ -62,11 +59,8 @@
             <button class="btn btn-secondary mb-3" onclick="$('input.search-instrument').val('')">Clear</button>
         </div>
 
-
-        <div class=" col-sm-4">
-            <button class="btn btn-danger" type="button" style="float:right;" onclick="shoonya_api.trade.exit_all_positions()">
-                Exit All Positions
-            </button>
+        <div class="col-sm-4" style="text-align: right;">
+            <input id="trade_type" type="checkbox" checked data-toggle="toggle" data-on="Paper Trade" data-off="Real Trade" data-onstyle="warning" data-offstyle="success">
         </div>
     </div>
 
@@ -103,8 +97,14 @@
     </div>
 
     <div class="row">
-        <div class="custom-tab">
+        <div class="col-sm-2 custom-tab">
             <button class="btn btn-success" type="button" onclick="shoonya_api.trade.load_open_positions()">Active Trades</button>
+        </div>
+
+        <div class=" col-sm-10" style="text-align: right;">
+            <button class="btn btn-danger" type="button" style="float:right;" onclick="shoonya_api.trade.exit_all_positions()">
+                Exit All Positions
+            </button>
         </div>
     </div>
 
@@ -127,7 +127,7 @@
             </thead>
             <tbody id="active_trades_table">
             </tbody>
-            <tbody id="active_paper_trades">
+            <tbody id="active_paper_trades" class="table-light table-bordered">
             </tbody>
             <tfoot>
             <tr id="all_rows" token="all_trades" ttype="bull">
@@ -421,6 +421,14 @@
 
     .price_diff, .max-profit-loss {
         font-size: 0.8rem;
+    }
+
+    #watch_list_body .input_box{
+        width: 140px;
+    }
+
+    #watch_list_body td{
+        text-align: center;
     }
 
 </style>

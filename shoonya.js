@@ -1725,8 +1725,8 @@ shoonya_api = function () {
                 <td class="dname">${params.sym}</td>
                 <th class="margin_req num"></th>
                 <th class="watch_${params.token} ltp" lot_size="${params.lot_size}"></th>
-                <td><input type="text" class="form-control entry" placeholder="" onclick="shoonya_api.watch_list.add_ltp(this)" ></td>
-                <td><input type="text" class="form-control qty" placeholder="" value="${params.lot_size}"></td>
+                <td class="input_box"><input type="text" class="form-control entry" placeholder="" onclick="shoonya_api.watch_list.add_ltp(this)" ></td>
+                <td class="input_box"><input type="text" class="form-control qty" placeholder="" value="${params.lot_size}"></td>
                 <td><button type="button" class="btn btn-success buy" onclick="shoonya_api.orderbook.buy(this)">BUY</button></td>
                 <td><button type="button" class="btn btn-danger sell" onclick="shoonya_api.orderbook.sell(this)">SELL</button></td>
                 <th class="del-icon" onclick="shoonya_api.watch_list.delete_item(this)">
