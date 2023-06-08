@@ -5,10 +5,10 @@ shoonya_api = function () {
     let alert_msg_disappear_after = 3000; // Unit milliseconds
 
     //TODO - Remove these hardcoded values
-    let vix_tk = '26017', nifty_tk = '26000', bank_nifty_tk = '26009'
+    let vix_tk = '26017', nifty_tk = '26000', bank_nifty_tk = '26009', fin_nifty_tk = '26037'
     let user_id = '', session_token='', ws = '';
 
-    let subscribed_symbols = ["NSE|26017", "NSE|26000", "NSE|26009"];
+    let subscribed_symbols = ["NSE|26017", "NSE|26000", "NSE|26009", "NSE|26037"];
     let pending_to_subscribe_tokens = new Set();
     let logged_in = false;
     let live_data = {};
@@ -90,6 +90,9 @@ shoonya_api = function () {
                         break;
                     case bank_nifty_tk:
                         $('#bank_nifty').html(result.lp)
+                        break;
+                    case fin_nifty_tk:
+                        $('#fin_nifty').html(result.lp)
                         break;
                     default:
                         update_ltp('#watch_list_body .watch_' + result.tk);
@@ -557,6 +560,8 @@ shoonya_api = function () {
                         remarks = "N-" + Math.round(live_data[nifty_tk])
                     else if (tsym.startsWith("BANKNIFTY"))
                         remarks = "B-" + Math.round(live_data[bank_nifty_tk])
+                    else if (tsym.startsWith("FINNIFTY"))
+                        remarks = "F-" + Math.round(live_data[fin_nifty_tk])
                 }
             }
 
@@ -1033,7 +1038,7 @@ shoonya_api = function () {
                 if(value.startsWith('N') || value.startsWith('n') || value.includes('B') || value.includes('b')) {
                     spot_based = true
                     instrument = (value).toUpperCase().startsWith('N') ? 'nifty' : 'bank_nifty'
-                    value = value.replace(/N|B|-| /i, '');
+                    value = value.replace(/N|B|F|-| /i, '');
                 }
             }
 
@@ -1291,6 +1296,7 @@ shoonya_api = function () {
                     switch(entry_obj.instrument) {
                         case "nifty" : cur_spot_value = live_data[nifty_tk]; break;
                         case "bank_nifty" : cur_spot_value = live_data[bank_nifty_tk]; break;
+                        case "fin_nifty" : cur_spot_value = live_data[fin_nifty_tk]; break;
                         default : console.error(row_id + " Spot based entry.. neither nifty nor bank-nifty " + mile_stone); break;
                     }
                 }
@@ -1348,6 +1354,7 @@ shoonya_api = function () {
                     switch(target_obj.instrument) {
                         case "nifty" : cur_spot_value = live_data[nifty_tk]; break;
                         case "bank_nifty" : cur_spot_value = live_data[bank_nifty_tk]; break;
+                        case "fin_nifty" : cur_spot_value = live_data[fin_nifty_tk]; break;
                         default : console.error(row_id + " .. Something is wrong .. " + mile_stone.token); break;
                     }
                 } else { // Price based
@@ -1403,6 +1410,7 @@ shoonya_api = function () {
                     switch(sl_obj.instrument) {
                         case "nifty" : cur_spot_value = live_data[nifty_tk]; break;
                         case "bank_nifty" : cur_spot_value = live_data[bank_nifty_tk]; break;
+                        case "fin_nifty" : cur_spot_value = live_data[fin_nifty_tk]; break;
                     }
                 } else { // Price based
                     if(row_id === "all_rows") { // Use total P & L value in case of cumulative target and SL
