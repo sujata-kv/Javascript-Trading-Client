@@ -1181,7 +1181,7 @@ shoonya_api = function () {
                 let ret = this.get_max_profit_loss(row_id, gross_pnl);
 
                 let text = "Max profit seen : " + ret['profit'].toFixed(2) + "\nMax loss seen: " + ret['loss'].toFixed(2)
-                tr_elm.attr('title', text)
+                pnl_elm.attr('title', text)
             } else {
                 let pnl_elm = tr_elm.find('.pnl');
                 pnl_elm.text('')
@@ -1466,7 +1466,7 @@ shoonya_api = function () {
             tbody_elm.append(`<tr id="${row_id}" ordid="${order.norenordno}"  exch="${order.exch}" token="${order.token}" qty="${order.qty}" tsym="${order.tsym}" ttype="${ttype}" trtype="${order.trantype}" trade="active">
                         <td>${buy_sell}</td>
                         <td class="instrument">${dname}</td>
-                        <td class="entry">
+                        <td class="entry" title="Margin Used : ${order.prc * order.qty}">
                             <span class="badge badge-pill badge-dark">${order.norentm.split(" ")[0]}</span>
                             </br><span class="price">${order.prc}</span></br>
                             <span class="badge badge-primary">${order.remarks}</span>
