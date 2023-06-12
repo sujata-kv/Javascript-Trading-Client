@@ -562,7 +562,7 @@ shoonya_api = function () {
                         remarks = "B-" + Math.round(live_data[bank_nifty_tk])
                     else if (tsym.startsWith("FINNIFTY"))
                         remarks = "F-" + Math.round(live_data[fin_nifty_tk])
-                    remarks += "Vix-" + live_data[vix_tk]
+                    remarks += " Vix " + live_data[vix_tk]
                 }
             }
 
