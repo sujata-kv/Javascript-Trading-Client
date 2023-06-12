@@ -562,6 +562,7 @@ shoonya_api = function () {
                         remarks = "B-" + Math.round(live_data[bank_nifty_tk])
                     else if (tsym.startsWith("FINNIFTY"))
                         remarks = "F-" + Math.round(live_data[fin_nifty_tk])
+                    remarks += "Vix-" + live_data[vix_tk]
                 }
             }
 
@@ -824,8 +825,9 @@ shoonya_api = function () {
             tr_elm.attr('trade', 'closed');
             let td_elm = tr_elm.find('.exit-limit').parent();
             td_elm.html(`<span class="badge badge-pill badge-dark">${matching_order.norentm.split(" ")[0]}</span>
-                                        </br><span class="price">${matching_order.avgprc}</span></br>
-                                    <span class="badge badge-primary">${matching_order.remarks}</span>`);
+                                    <span class="badge badge-info">${matching_order.remarks}</span>
+                                    </br><span class="price">${matching_order.avgprc}</span></br>
+                                `);
             trade.update_pnl(tr_elm, matching_order.avgprc)
 
             tr_elm.find('.modify').parent().html('CLOSED');
@@ -1481,8 +1483,8 @@ shoonya_api = function () {
                         <td class="instrument">${dname}</td>
                         <td class="entry" title="Margin Used : ${(order.prc * order.qty).toFixed(2)}">
                             <span class="badge badge-pill badge-dark">${order.norentm.split(" ")[0]}</span>
-                            </br><span class="price">${order.prc}</span></br>
-                            <span class="badge badge-primary">${order.remarks}</span>
+                            </br><span class="badge badge-info">${order.remarks}</span>
+                            <span class="price">${order.prc}</span></br>
                         </td>
                         <td class="trade_${order.token} ltp">${live_data[order.token]}</td>
                         <td class="pnl"></td>
@@ -1671,7 +1673,7 @@ shoonya_api = function () {
                             <td class="entry">
 <!--                                <span class="badge badge-pill badge-dark"></span></br>-->
                                 <span class="price">${price}</span>
-<!--                                </br><span class="badge badge-primary"></span>-->
+<!--                                </br><span class="badge badge-info"></span>-->
                             </td>
                             <td class="trade_${pos.token} ltp">${live_data[pos.token]}</td>
                             <td class="pnl"></td>
@@ -1908,8 +1910,8 @@ shoonya_api = function () {
             setTimeout(trade.load_open_positions, 100);
             setTimeout(watch_list.restore_watch_list, 100);
             setTimeout(trade.trigger, 1000);
-            setTimeout(trade.calculate_spreads, 2000);
-
+            //Uncomment below line to enable spreads dynamic calculation
+            // setTimeout(trade.calculate_spreads, 2000);
         });
     });
 
