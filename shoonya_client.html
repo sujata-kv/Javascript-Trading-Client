@@ -5,7 +5,7 @@
 <body class="paper_trade">
 <div class="container-fluid">
 
-    <div class="d-flex flex-column align-items-stretch flex-shrink-0" style="width: 18%;float:left;">
+    <div class="d-flex flex-column align-items-stretch flex-shrink-0 stats-bar">
         <div class="d-flex align-items-center flex-shrink-0 p-3 link-dark text-decoration-none border-bottom">
             <svg class="bi me-2" width="30" height="24"><use xlink:href="#bootstrap"></use></svg>
 <!--            <span class="fs-5 fw-semibold">Login</span>-->
@@ -67,7 +67,7 @@
             </div>
         </div>
     </div>
-    <div class="d-flex flex-column align-items-stretch" style="width: 80%; padding-left:20px" >
+    <div class="d-flex flex-column align-items-stretch trade-panel">
         <hr class="hr hr-blurry" />
         <div class="row">
             <div class=" col-sm-4">
@@ -464,5 +464,31 @@
         background-color: #d9eed2 ;
     }
 
+    .stats-bar {
+        width: 18%;float:left;
+    }
+    .trade-panel {
+        width: 80%;
+        padding-left:20px;
+    }
+
+/*    @media screen and (max-width: 900px) {
+        .stats-bar {
+            width: 18%;float:left;
+        }
+        .trade-panel {
+            width: 80%;
+            padding-left:20px;
+        }
+    }
+
+    @media screen and (max-width: 600px) {
+        .stats-bar {
+            width: 100%;
+        }
+        .trade-panel {
+            width: 100%;
+        }
+    }*/
 </style>
 </body>
