@@ -199,7 +199,7 @@ shoonya_api = function () {
                             success: function (data, textStatus, jqXHR) {
                                 // console.log("Ajax success")
                                 response($.map(data.values, function (item) {
-                                    // item.dname = watch_list.fin_nifty_dname_fix(item.dname, item.tsym)
+                                    item.dname = watch_list.fin_nifty_dname_fix(item.tsym, item.dname)
                                     return {
                                         label: item.dname != undefined? item.dname : item.tsym,
                                         value: item.dname != undefined? item.dname : item.tsym,
@@ -1748,7 +1748,6 @@ shoonya_api = function () {
             if (optt === "PE" && params.exch === "NFO") {
                 params.put_option = true
             }
-            // params.dname = this.fin_nifty_dname_fix(params.tsym, params.dname)
 
             watch_list.add_row_to_watch(params)
         },
@@ -1757,7 +1756,7 @@ shoonya_api = function () {
             //FINNIFTY13JUN23P19500 = tsym
             //FINNIFTY JUN 19500 PE = dname to be fixed
             if(tsym.startsWith('FINNIFTY')) {
-                let date_str = tsym.replace('FINNIFTY', '').slice(0, 5)
+                let date_str = tsym.replace('FINNIFTY', '').slice(0, 7)
                 let month_str = date_str.substring(2,5)
                 dname = dname.replace(month_str, date_str)
             }
