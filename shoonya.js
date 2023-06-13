@@ -199,6 +199,7 @@ shoonya_api = function () {
                             success: function (data, textStatus, jqXHR) {
                                 // console.log("Ajax success")
                                 response($.map(data.values, function (item) {
+                                    // item.dname = watch_list.fin_nifty_dname_fix(item.dname, item.tsym)
                                     return {
                                         label: item.dname != undefined? item.dname : item.tsym,
                                         value: item.dname != undefined? item.dname : item.tsym,
@@ -831,7 +832,7 @@ shoonya_api = function () {
             trade.update_pnl(tr_elm, matching_order.avgprc)
 
             tr_elm.find('.modify').parent().html('CLOSED');
-            tr_elm.find('.exit').parent().html(`<button type="button" class="btn btn-dark btn-sm" onclick="$(this).parent().parent().remove()">Delete</button>`);
+            tr_elm.find('.exit').parent().html(`<button type="button" class="btn btn-dark btn-sm" onclick="$(this).parent().parent().remove();shoonya_api.trade.reset_max_profit_loss()">Delete</button>`);
             tr_elm.find('.qty').attr('disabled', 'disabled');
             tr_elm.find('.exit').attr('disabled', 'disabled');
 
@@ -1216,6 +1217,15 @@ shoonya_api = function () {
                 'profit': this.max_profit_seen[row_id] == undefined ? 0.0 : this.max_profit_seen[row_id],
                 'loss': this.max_loss_seen[row_id] == undefined ? 0.0 : this.max_loss_seen[row_id]
             }
+        },
+
+        reset_max_profit_loss : function() {
+            $('#max_profit_seen').text('')
+            $('#max_loss_seen').text('')
+            $('#total_pnl').text('')
+            let row_id='all_rows'
+            this.max_profit_seen[row_id] = 0
+            this.max_loss_seen[row_id] = 0
         },
 
         update_total_pnl : function() {
@@ -1738,8 +1748,21 @@ shoonya_api = function () {
             if (optt === "PE" && params.exch === "NFO") {
                 params.put_option = true
             }
+            // params.dname = this.fin_nifty_dname_fix(params.tsym, params.dname)
 
             watch_list.add_row_to_watch(params)
+        },
+
+        fin_nifty_dname_fix : function(tsym, dname) {
+            //FINNIFTY13JUN23P19500 = tsym
+            //FINNIFTY JUN 19500 PE = dname to be fixed
+            if(tsym.startsWith('FINNIFTY')) {
+                let date_str = tsym.replace('FINNIFTY', '').slice(0, 5)
+                let month_str = date_str.substring(2,5)
+                dname = dname.replace(month_str, date_str)
+            }
+
+            return dname
         },
 
         add_row_to_watch : function(params) {
