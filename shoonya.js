@@ -492,7 +492,10 @@ shoonya_api = function () {
                     })
                 } else {
                     let ltp = tr_elm.find('.ltp').text()
-                    orderbook.place_paper_trade(params, ltp)
+                    if(!isNaN(parseFloat(ltp)))
+                        orderbook.place_paper_trade(params, ltp)
+                    else
+                        show_error_msg("LTP is missing")
                 }
             }
 
