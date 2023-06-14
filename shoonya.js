@@ -136,7 +136,7 @@ shoonya_api = function () {
                 console.log("Web socket not ready yet..")
                 setTimeout(function () {
                     subscribe_token(token)
-                }, 10)
+                }, 100)
             } else {
                 console.log("Web socket is ready.. Subscribing ", token)
                 ws.send(JSON.stringify(symtoken));
@@ -1736,20 +1736,32 @@ shoonya_api = function () {
         },
 
         add_to_watchlist : function() {
-            let params = {}
-            params.sym = $('input.watch_item').val()
-            params.lot_size = $('input.watch_item').attr('lot_size')
-            params.exch = $('input.watch_item').attr('exch')
-            params.token = $('input.watch_item').attr('token')
-            params.tsym = $('input.watch_item').attr('tsym')
-            params.dname = $('input.watch_item').attr('dname')
-            let optt = $('input.watch_item').attr('optt')
-            params.put_option = false
-            if (optt === "PE" && params.exch === "NFO") {
-                params.put_option = true
-            }
+            if(this.selection_is_valid()) {
+                let params = {}
+                params.sym = $('input.watch_item').val()
+                params.lot_size = $('input.watch_item').attr('lot_size')
+                params.exch = $('input.watch_item').attr('exch')
+                params.token = $('input.watch_item').attr('token')
+                params.tsym = $('input.watch_item').attr('tsym')
+                params.dname = $('input.watch_item').attr('dname')
+                let optt = $('input.watch_item').attr('optt')
+                params.put_option = false
+                if (optt === "PE" && params.exch === "NFO") {
+                    params.put_option = true
+                }
 
-            watch_list.add_row_to_watch(params)
+                watch_list.add_row_to_watch(params)
+            } else {
+                show_error_msg("Please select an instrument from the drop down")
+            }
+        },
+
+        selection_is_valid : function() {
+            let item = $('input.watch_item')
+            let name = item.val().trim()
+            let dname = item.attr('dname').trim()
+
+            return name === dname
         },
 
         fin_nifty_dname_fix : function(tsym, dname) {
