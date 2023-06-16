@@ -830,9 +830,10 @@ shoonya_api = function () {
             let td_elm = tr_elm.find('.exit-limit').parent();
             td_elm.html(`<span class="badge badge-pill badge-dark">${matching_order.norentm.split(" ")[0]}</span>
                                     <span class="badge badge-info">${matching_order.remarks}</span>
-                                    </br><span class="price">${matching_order.avgprc}</span></br>
+                                    </br><span class="price exit-price">${matching_order.avgprc}</span></br>
                                 `);
             trade.update_pnl(tr_elm, matching_order.avgprc)
+            trade.update_total_pnl()
 
             tr_elm.find('.modify').parent().html(`CLOSED</br><span class="badge badge-pill badge-secondary" title="Watch live" onclick="shoonya_api.trade.toggle_watch_closed_trade($(this))" style="cursor:pointer;padding:8px;margin-top:10px">Watch</span>`);
             tr_elm.find('.exit').parent().html(`<button type="button" class="btn btn-dark btn-sm" onclick="$(this).parent().parent().remove();shoonya_api.trade.reset_max_profit_loss()">Delete</button>`);
@@ -1295,6 +1296,11 @@ shoonya_api = function () {
                 tr_elm.attr('trade', 'closed')
                 elm.text("Watch")
                 elm.attr('title', "Watch live")
+                show_success_msg("Resetting the close price..")
+                setTimeout(function() {
+                    trade.update_pnl(tr_elm, tr_elm.find('.exit-price').text())
+                    trade.update_total_pnl()
+                }, 1500)
             }
         },
 
