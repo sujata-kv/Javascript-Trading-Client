@@ -834,7 +834,7 @@ shoonya_api = function () {
                                 `);
             trade.update_pnl(tr_elm, matching_order.avgprc)
 
-            tr_elm.find('.modify').parent().html('CLOSED');
+            tr_elm.find('.modify').parent().html(`CLOSED</br><span class="badge badge-pill badge-secondary" title="Watch live" onclick="shoonya_api.trade.toggle_watch_closed_trade($(this))" style="cursor:pointer;padding:8px;margin-top:10px">Watch</span>`);
             tr_elm.find('.exit').parent().html(`<button type="button" class="btn btn-dark btn-sm" onclick="$(this).parent().parent().remove();shoonya_api.trade.reset_max_profit_loss()">Delete</button>`);
             tr_elm.find('.qty').attr('disabled', 'disabled');
             tr_elm.find('.exit').attr('disabled', 'disabled');
@@ -1277,6 +1277,24 @@ shoonya_api = function () {
                     pnl = entry - exit;
                 }
                 return pnl;
+            }
+        },
+
+        toggle_watch_closed_trade : function(elm) {
+            if(elm.text() === "Watch") {
+                elm.removeClass('badge-secondary')
+                elm.addClass('badge-success')
+                let tr_elm = elm.parent().parent()
+                tr_elm.attr('trade', 'active')
+                elm.text("Stop")
+                elm.attr('title', "Stop live watching")
+            } else {
+                elm.removeClass('badge-success')
+                elm.addClass('badge-secondary')
+                let tr_elm = elm.parent().parent()
+                tr_elm.attr('trade', 'closed')
+                elm.text("Watch")
+                elm.attr('title', "Watch live")
             }
         },
 
