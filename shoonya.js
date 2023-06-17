@@ -1296,7 +1296,7 @@ shoonya_api = function () {
                 tr_elm.attr('trade', 'closed')
                 elm.text("Watch")
                 elm.attr('title', "Watch live")
-                show_success_msg("Resetting the close price..")
+                show_success_msg("Resetting the P&L")
                 setTimeout(function() {
                     trade.update_pnl(tr_elm, tr_elm.find('.exit-price').text())
                     trade.update_total_pnl()
@@ -1671,13 +1671,16 @@ shoonya_api = function () {
         },
 
         load_open_positions : function() {
-            // $('#active_trades_table').html("")
-            positions.get_positions(function(positions) {
-                if (positions != undefined && positions.stat !== 'Not_Ok')
-                    positions.forEach((position)=> {
-                        subscribe_token(position.exch+"|"+position.token);
-                        trade.display_trade_position(position)})
-            })
+            if(!is_paper_trade()) {
+                // $('#active_trades_table').html("")
+                positions.get_positions(function (positions) {
+                    if (positions != undefined && positions.stat !== 'Not_Ok')
+                        positions.forEach((position) => {
+                            subscribe_token(position.exch + "|" + position.token);
+                            trade.display_trade_position(position)
+                        })
+                })
+            }
         },
 
         display_trade_position : function(pos) {
