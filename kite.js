@@ -7,8 +7,8 @@ kite_api = function () {
     let vix_tk = 264969, nifty_tk = 256265, bank_nifty_tk = 260105, fin_nifty_tk = 257801;
     let user_id = '', session_token='', ws = '';
 
-    // let subscribed_symbols = [256265, 260105, 257801, 264969];
-    let subscribed_symbols = [256265, 260105];
+    let subscribed_symbols = [256265, 260105, 257801, 264969];
+    // let subscribed_symbols = [256265, 260105];
     let pending_to_subscribe_tokens = new Set();
     let logged_in = false;
     let live_data = {};
@@ -30,57 +30,18 @@ kite_api = function () {
         // let uid = "1687168506046"  //uid=${uid}&
         let ws_url = url.websocket + `?api_key=kitefront&user_id=${user_id}&enctoken=${encodeURIComponent(session_token)}&user-agent=kite3-web&version=3.0.14`
         console.log(ws_url)
+
         ws = new WebSocket(ws_url);
         ws.binaryType = 'arraybuffer';
+
         ws.onopen = function (event) {
             console.log("Socket opened")
             $('#connection_status').css('color', 'green')
             logged_in = true;
             console.log("Logged in..")
 
-            if(!!Object.keys(subscribed_symbols).length)
+            if(subscribed_symbols.length > 0)
                 subscribed_symbols.forEach(subscribe_token)
-
-            /*if (ws.readyState !== WebSocket.OPEN || !logged_in) {
-                console.log("Web socket is not ready yet. waiting")
-                setTimeout(function () {
-                    temp_subscribe()
-                }, 1000)
-            } else {
-                temp_subscribe()
-            }
-
-            function temp_subscribe() {
-
-                subscribe(subscribed_symbols)
-                setMode("ltpc", subscribed_symbols)
-
-                function subscribe(tokens) {
-                    if (tokens.length > 0) {
-                        send({"a": "subscribe", "v": tokens});
-                    }
-                    return tokens;
-                }
-
-                 function setMode(mode, tokens) {
-                    if(tokens.length > 0) {
-                        send({"a": "mode", "v": [mode, tokens]});
-                    }
-                    return tokens;
-                };
-
-            }
-
-            function send(message) {
-                if(!ws || ws.readyState != ws.OPEN) return;
-
-                try {
-                    if(typeof(message) == "object") {
-                        message = JSON.stringify(message);
-                    }
-                    ws.send(message);
-                } catch(e) { ws.close(); };
-            } */
 
            /* setInterval(function () {
                 var _hb_req = '{"t":"h"}';
@@ -95,75 +56,41 @@ kite_api = function () {
                 // Trigger on message event when binary message is received
                 trigger("message", [e.data]);
                 if(e.data.byteLength > 2) {
-                    var d = parseBinary(e.data);
-                    if(d) trigger("ticks", [d]);
+                    var ticks = parseBinary(e.data);
+                    if(ticks) {
+                        for(let i=0; i<ticks.length; ++i) {
+                            let instr_token = ticks[i]['instrument_token'], ltp = ticks[i]['last_price'];
+                            live_data[instr_token] = parseFloat(ltp)
+                            update_ltps(instr_token, ltp)
+                        }
+                    }
                 }
             } else {
                 parseTextMessage(e.data)
             }
-        //     result = JSON.parse(event.data)
-            /*if(result.t == 'ck') {
-                 // trigger("open", [result]);
-                if (result.s == 'OK') {
-                    console.log('Login successful')
-                    logged_in = true;
-                    subscribed_symbols.forEach(subscribe_token)
-                }
-            }
-            if( result.t == 'tk' || result.t == 'tf') {
 
-                function update_ltp(selector) {
-                    $(selector).each(function(i, ltp_elm) {
-                        $(ltp_elm).text(result.lp)
-
-
-                        if(selector.startsWith('#active_trade') || selector.startsWith("#active_paper_trade")) {
-                            $(ltp_elm).text(result.lp)
-                            let tr_elm = $(ltp_elm).parent();
-                            if(tr_elm.attr('trade') == 'active') {
-                                trade.update_pnl(tr_elm)
-                                trade.update_total_pnl()
-                            }
-                        } else if(selector.startsWith('#watch_list')) {
-                            let margin = parseInt($(ltp_elm).attr('lot_size')) * result.lp
-                            if(!isNaN(margin))
-                                $(ltp_elm).parent().find('.margin_req').text(margin.toFixed(0))
-                        }
-                    });
-                }
-
-                if(result.lp != undefined)
-                    live_data[result.tk] = parseFloat(result.lp).toFixed(2)
-
-                switch (result.tk) {
+            function update_ltps(instr_token, ltp) {
+                switch (instr_token) {
                     case vix_tk:
-                        $('#vix').html(result.lp)
+                        $('#vix').html(ltp)
                         break;
                     case nifty_tk:
-                        $('#nifty').html(result.lp)
+                        $('#nifty').html(ltp)
                         break;
                     case bank_nifty_tk:
-                        $('#bank_nifty').html(result.lp)
+                        $('#bank_nifty').html(ltp)
                         break;
                     case fin_nifty_tk:
-                        $('#fin_nifty').html(result.lp)
+                        $('#fin_nifty').html(ltp)
                         break;
                     default:
-                        update_ltp('#watch_list_body .watch_' + result.tk);
-                        update_ltp("#open_orders .open_order_" + result.tk)  // In Open Order table
-                        update_ltp("#active_trades_table .trade_" + result.tk)  // In Active Trades table
-                        update_ltp("#active_paper_trades .trade_" + result.tk)  // In Active Trades table
+                        update_ltp('#watch_list_body .watch_' + instr_token);   //In watch list
+                        update_ltp("#open_orders .open_order_" + instr_token)  // In Open Order table
+                        update_ltp("#active_trades_table .trade_" + instr_token)  // In Active Trades table
+                        update_ltp("#active_paper_trades .trade_" + instr_token)  // In Active Trades table
                         break;
                 }
             }
-            if( result.t == 'dk' || result.t == 'df') {
-                console.log("..................  Another quote ...................")
-                // trigger("quote", [result]);
-            }
-            if(result.t == 'om') {
-                // console.log("..................  OM ...................")
-                // console.log(result)
-            }*/
         };
 
         ws.onclose = function (event) {
@@ -177,6 +104,26 @@ kite_api = function () {
         ws.onerror = function (event) {
             console.error("WebSocket error: ", event);
         };
+
+        function update_ltp(selector) {
+            $(selector).each(function(i, ltp_elm) {
+                $(ltp_elm).text(result.lp)
+
+
+                if(selector.startsWith('#active_trade') || selector.startsWith("#active_paper_trade")) {
+                    $(ltp_elm).text(result.lp)
+                    let tr_elm = $(ltp_elm).parent();
+                    if(tr_elm.attr('trade') == 'active') {
+                        trade.update_pnl(tr_elm)
+                        trade.update_total_pnl()
+                    }
+                } else if(selector.startsWith('#watch_list')) {
+                    let margin = parseInt($(ltp_elm).attr('lot_size')) * result.lp
+                    if(!isNaN(margin))
+                        $(ltp_elm).parent().find('.margin_req').text(margin.toFixed(0))
+                }
+            });
+        }
     }
 
     // segment constants
