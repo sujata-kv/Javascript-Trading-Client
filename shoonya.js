@@ -1041,10 +1041,18 @@ shoonya_api = function () {
             let value = val_str;
 
             if(value != undefined && value != ''){
+                value = value.replace(/-/, '')
                 value = value.trim();
-                if(value.startsWith('N') || value.startsWith('n') || value.includes('B') || value.includes('b')) {
+                if(value.startsWith('N') || value.startsWith('n') || value.includes('B') || value.includes('b')
+                    || value.includes('F') || value.includes('f')) {
                     spot_based = true
-                    instrument = (value).toUpperCase().startsWith('N') ? 'nifty' : 'bank_nifty'
+                    let ii = (value).charAt(0).toUpperCase()
+                    if(ii === 'N')
+                        instrument = 'nifty';
+                    else if(ii === 'B')
+                        instrument = 'bank_nifty'
+                    else if(ii === 'F')
+                        instrument = 'fin_nifty'
                     value = value.replace(/N|B|F|-| /i, '');
                 }
             }
@@ -1055,7 +1063,11 @@ shoonya_api = function () {
         get_value_string(value_obj) {
             if(value_obj.spot_based) {
                 let value_str = '';
-                value_str = value_obj.instrument === 'nifty' ? 'N ': 'B ';
+                switch(value_obj.instrument) {
+                    case 'nifty' : value_str = 'N '; break;
+                    case 'bank_nifty' : value_str = 'B '; break;
+                    case 'fin_nifty' : value_str = 'F '; break;
+                }
                 return value_str + value_obj.value.trim();
             } else {
                 return value_obj.value.trim()
