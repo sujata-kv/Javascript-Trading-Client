@@ -1041,11 +1041,12 @@ shoonya_api = function () {
             let value = val_str;
 
             if(value != undefined && value != ''){
-                value = value.replace(/-/, '')
                 value = value.trim();
                 if(value.startsWith('N') || value.startsWith('n') || value.includes('B') || value.includes('b')
                     || value.includes('F') || value.includes('f')) {
                     spot_based = true
+                    value = value.replace(/-/, '')
+                    value = value.trim()
                     let ii = (value).charAt(0).toUpperCase()
                     if(ii === 'N')
                         instrument = 'nifty';
