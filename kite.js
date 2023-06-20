@@ -1,4 +1,3 @@
-
 kite_api = window.kite_api || {};
 
 kite_api = function () {
@@ -32,6 +31,7 @@ kite_api = function () {
         let ws_url = url.websocket + `?api_key=kitefront&user_id=${user_id}&enctoken=${encodeURIComponent(session_token)}&user-agent=kite3-web&version=3.0.14`
         console.log(ws_url)
         ws = new WebSocket(ws_url);
+        ws.binaryType = 'arraybuffer';
         ws.onopen = function (event) {
             console.log("Socket opened")
             $('#connection_status').css('color', 'green')
@@ -88,18 +88,18 @@ kite_api = function () {
             }, heartbeat_timeout);*/
         };
 
-        ws.onmessage = function (event) {
-            console.log(event.data)
+        ws.onmessage = function (e) {
+            console.log(e.data)
 
-            if(event.data instanceof Blob) {
+            if(e.data instanceof ArrayBuffer) {
                 // Trigger on message event when binary message is received
-                trigger("message", [event.data]);
-                if(event.data.size > 2) {
-                    var d = parseBinary(event.data);
+                trigger("message", [e.data]);
+                if(e.data.byteLength > 2) {
+                    var d = parseBinary(e.data);
                     if(d) trigger("ticks", [d]);
                 }
             } else {
-                parseTextMessage(event.data)
+                parseTextMessage(e.data)
             }
         //     result = JSON.parse(event.data)
             /*if(result.t == 'ck') {
@@ -395,7 +395,7 @@ kite_api = function () {
                 console.log("Web socket is ready.. Subscribing ", token)
                 ws.send(JSON.stringify(mesg));
                 // mesg = {"a": "mode", "v" : ["ltpc", [token]]}
-                mesg = {"a": "mode", "v" : ["ltpc", [token]]}
+                mesg = {"a": "mode", "v" : ["ltp", [token]]}
                 ws.send(JSON.stringify(mesg));
 
                 if(!subscribed_symbols.includes(token))
