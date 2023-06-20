@@ -1,0 +1,494 @@
+<head>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.3.1/dist/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+    <title>Kite Client</title>
+</head>
+<body class="paper_trade">
+<div class="container-fluid">
+
+    <div class="d-flex flex-column align-items-stretch flex-shrink-0 stats-bar">
+        <div class="d-flex align-items-center flex-shrink-0 p-3 link-dark text-decoration-none border-bottom">
+            <svg class="bi me-2" width="30" height="24"><use xlink:href="#bootstrap"></use></svg>
+<!--            <span class="fs-5 fw-semibold">Login</span>-->
+            <h3 class="card-subtitle mb-2">Login </h3>
+        </div>
+        <div class="list-group list-group-flush border-bottom scrollarea">
+            <a href="#" class="list-group-item list-group-item-action py-3 lh-tight" aria-current="true">
+                <div class="form-row align-items-center">
+                    <div class="col-auto">
+                        <input type="text"  class="form-control form-control-sm" id="userId" placeholder="User" value="VC1177">
+                    </div>
+                    <div class="col-auto">
+                        <input type="text" class="form-control form-control-sm" id="sessionToken" placeholder="Session Token" value="Er7+U0gwitjABtiWg1FU+kmoKik54CBxKx13MjJ3s5RUiRVKFSo2pqBiOt7GgaDZY1Ew6gVaVx8hX3IbgdEGHWYXZByN3GADaXQXUFuPQiD7HEPpc7di2A==">
+                    </div>
+                    <div class="col-auto">
+                        <button type="submit" class="btn btn-sm btn-info" id="connect_to_server">Connect</button>
+                    </div>
+
+                    <div class="col">
+                        <div class="card-body conn-status" title="Connection Status">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-circle-fill" viewBox="0 0 16 16">
+                                <circle cx="8" cy="8" r="8" id="connection_status" color="grey"></circle>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+            </a>
+            <div class="list-group-item list-group-item-action py-3 lh-tight">
+                <div class="col">
+                    <div class="card-body">
+                        <h5 class="card-title">NIFTY</h5>
+                        <h3 class="card-subtitle mb-2" id="nifty"> &nbsp; </h3>
+                    </div>
+                </div>
+            </div>
+            <div class="list-group-item list-group-item-action py-3 lh-tight">
+                <div class="col">
+                    <div class="card-body">
+                        <h5 class="card-title">BANK_NIFTY</h5>
+                        <h3 class="card-subtitle mb-2" id="bank_nifty"> &nbsp; </h3>
+                    </div>
+                </div>
+            </div>
+            <div class="list-group-item list-group-item-action py-3 lh-tight" aria-current="true">
+                <div class="col">
+                    <div class="card-body">
+                        <h5 class="card-title">FIN_NIFTY</h5>
+                        <h3 class="card-subtitle mb-2" id="fin_nifty"> &nbsp; </h3>
+                    </div>
+                </div>
+            </div>
+            <div class="list-group-item list-group-item-action py-3 lh-tight" aria-current="true">
+                <div class="col">
+                    <div class="card-body">
+                        <h5 class="card-title">VIX</h5>
+                        <h3 class="card-subtitle mb-2" id="vix"> &nbsp; </h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="d-flex flex-column align-items-stretch trade-panel">
+        <hr class="hr hr-blurry" />
+        <div class="row">
+            <div class=" col-sm-4">
+                <input type="text" class="form-control search-instrument watch_item"  value="" placeholder="Instrument" >
+                <div id="instr-drop-down" class="ui-front" style=""></div>
+            </div>
+            <div class=" col-sm-4" style="padding-left:0px">
+                <button class="btn btn-primary mb-3" id="add_to_watchlist" onclick="shoonya_api.watch_list.add_to_watchlist()">Add To Watchlist</button>
+                <button class="btn btn-secondary mb-3" onclick="$('input.search-instrument').val('')">Clear</button>
+            </div>
+
+            <div class="col-sm-4" style="text-align: right;">
+                <input id="trade_type" type="checkbox" checked data-toggle="toggle"
+                       onchange="shoonya_api.toggle_paper_trade()"
+                       data-on="Paper Trade" data-off="Real Trade" data-onstyle="warning" data-offstyle="success">
+            </div>
+        </div>
+
+        <table class="table table-secondary table-condensed table-striped table-bordered">
+            <thead class="thead-light">
+            <tr>
+                <th scope="col">Instrument</th>
+                <th scope="col" title="Margin required per lot">Margin</th>
+                <th scope="col">LTP</th>
+                <th scope="col">Entry</th>
+                <th scope="col">Qty</th>
+                <th scope="col">Buy</th>
+                <th scope="col">Sell</th>
+                <th scope="col">Delete</th>
+            </tr>
+            </thead>
+            <tbody id="watch_list_body">
+            </tbody>
+        </table>
+
+        <hr class="hr hr-blurry" />
+
+        <div class="alert alert-success" id="order_success_alert" style="display:none">
+            <span id="order_success_msg"></span>
+            <button type="button" class="close-btn" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+            </button>
+        </div>
+        <div class="alert alert-danger" id="order_error_alert" style="display:none">
+            <span id="order_error_msg"></span>
+            <button type="button" class="close-btn">
+                <span aria-hidden="true">&times;</span>
+            </button>
+        </div>
+
+        <div class="row">
+            <div class="custom-tab" style="margin-left:10px">
+                <button class="btn btn-success" type="button" onclick="shoonya_api.trade.load_open_positions()">Active Trades</button>
+            </div>
+
+            <div class="col-sm-10">
+                <button class="btn btn-danger" type="button" style="float:right; margin-right: -60px" onclick="shoonya_api.trade.exit_all_positions()">
+                    Exit All Positions
+                </button>
+            </div>
+        </div>
+
+        <div id="active_trades">
+            <table class="table table-success table-condensed table-striped table-bordered">
+                <thead>
+                    <tr>
+                        <th scope="col">Type</th>
+                        <th scope="col">Instrument</th>
+                        <th scope="col">Entry</th>
+                        <th scope="col">LTP</th>
+                        <th scope="col">P&L</th>
+                        <th scope="col">Target</th>
+                        <th scope="col">SL</th>
+                        <th scope="col">Exit Limit</th>
+                        <th scope="col">Quantity</th>
+                        <th scope="col">Modify</th>
+                        <th scope="col">Exit</th>
+                    </tr>
+                </thead>
+                <tbody id="active_trades_table"> </tbody>
+                <tbody id="active_paper_trades" class="table-light"> </tbody>
+                <tfoot>
+                    <tr id="all_rows" token="all_trades" ttype="bull">
+                        <th scope="col"></th>
+                        <th scope="col" class="max-profit-loss"></th>
+                        <th scope="col"></th>
+                        <th scope="col">Total</th>
+                        <th scope="col" class="pnl" id="total_pnl"></th>
+                        <th><input type="text" disabled class="form-control target" placeholder="" value=""></th>
+                        <th><input type="text" disabled class="form-control sl" placeholder="" value=""></th>
+                        <th>
+                            <select disabled class="form-select" onchange="shoonya_api.trade.select_trade_type(this, $(this).parent().parent())">
+                                <option selected value="bull">Bullish</option>
+                                <option value="bear">Bearish</option>
+                            </select>
+                        </th>
+                        <th scope="col"><button type="button" class="btn btn-success btn-sm modify" onclick="shoonya_api.trade.modify(this, $(this).text(), true)">Edit</button></th>
+                        <th scope="col" class="pos-mtm" id="max_profit_seen" title="Max Profit Seen"></th>
+                        <th scope="col" class="neg-mtm" id="max_loss_seen" title="Max Loss Seen"></th>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+
+        <hr class="hr hr-blurry" />
+
+        <div class="row" id="tabs">
+            <div class="custom-tab" style="margin-left:12px">
+                <button class="btn btn-warning" type="button" onclick="shoonya_api.orderbook.update_open_orders()">
+                    Open Orders
+                </button>
+            </div>
+            <div class="custom-tab">
+                <button class="btn btn-secondary" type="button" onclick="shoonya_api.orderbook.show_orderbook()">
+                    Order book
+                </button>
+            </div>
+            <div class="custom-tab">
+                <button class="btn btn-primary" type="button" onclick="shoonya_api.positions.show_positions()">
+                    Positions
+                </button>
+            </div>
+        </div>
+
+        <div id="open_orders">
+            <table class="table table-condensed table-striped table-bordered">
+                <thead>
+                <tr>
+                    <th scope="col">Type</th>
+                    <th scope="col">OrderID</th>
+                    <th scope="col">Instrument</th>
+                    <th scope="col">LTP</th>
+                    <th scope="col">Entry/Limit</th>
+                    <th scope="col">Target</th>
+                    <th scope="col">SL</th>
+                    <th scope="col">Quantity</th>
+                    <th scope="col">Modify</th>
+                    <th scope="col">Cancel</th>
+                </tr>
+                </thead>
+
+                <tbody id="open_order_list">
+                </tbody>
+
+                <tbody id="spot_order_list">
+                </tbody>
+            </table>
+        </div>
+
+
+        <div id="order_book">
+            <table class="table table-condensed table-bordered table-striped">
+                <thead>
+                <tr>
+                    <th scope="col">OrderID</th>
+                    <th scope="col">Status</th>
+                    <th scope="col">Instrument</th>
+                    <th scope="col">Qty</th>
+                    <th scope="col">Buy/Sell</th>
+                    <th scope="col">Price</th>
+                    <th scope="col">PriceType</th>
+                    <th scope="col">Noren Time</th>
+                    <th scope="col">Reject Reason</th>
+                    <th scope="col">Remarks</th>
+                    <th scope="col">Exch Time</th>
+                    <th scope="col">Exch</th>
+                    <th scope="col">Prod</th>
+                    <th scope="col">Token</th>
+    <!--                <th scope="col">TSym</th>-->
+                    <th scope="col">Exch Order ID</th>
+                </tr>
+                </thead>
+                <tbody id="order_book_table">
+                </tbody>
+            </table>
+        </div>
+
+        <div id="positions">
+
+            <div class="row">
+                <div class="col">
+                    <div class="card-body">
+                        <h5 class="card-title  text-info">Unrealized P&L : <span id="unrealized_pnl"></span></h5>
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="card-body">
+                        <h5 class="card-title  text-info">Realized P&L : <span id="realized_pnl"></span></h5>
+                    </div>
+                </div>
+                <div class="col"></div>
+            </div>
+
+            <table class="table table-condensed table-bordered table-striped">
+                <thead>
+                <tr>
+                    <th scope="col">Instrument</th>
+                    <th scope="col">Unrealized MTM</th>
+                    <th scope="col">Realized P&L</th>
+                    <th scope="col">DayAvgBuy Price</th>
+                    <th scope="col">DaySellAvg Price</th>
+                    <th scope="col">DayBuy Qty</th>
+                    <th scope="col">DaySell Qty</th>
+                    <th scope="col">LTP</th>
+                    <th scope="col">Product</th>
+                    <th scope="col">DayBuy Amount</th>
+                    <th scope="col">DaySell Amount</th>
+                    <th scope="col">DayAvg Price</th>
+                    <th scope="col">NetQty</th>
+                    <th scope="col">NetAvg Price</th>
+                    <th scope="col">Exch</th>
+                </tr>
+                </thead>
+                <tbody id="positions_table">
+                </tbody>
+            </table>
+        </div>
+
+        <div>
+            <audio id="notify1">
+                <source src="audio/notify1.mp3" type="audio/mp3">
+                Your browser does not support the audio element.
+            </audio>
+            <audio id="notify2">
+                <source src="audio/notify2.mp3" type="audio/mp3">
+                Your browser does not support the audio element.
+            </audio>
+            <audio id="notify3">
+                <source src="audio/notify3.mp3" type="audio/mp3">
+                Your browser does not support the audio element.
+            </audio>
+        </div>
+
+    </div>
+
+</div>
+
+
+
+<!--<script src="https://code.jquery.com/jquery-3.6.4.min.js" integrity="sha256-oP6HI9z1XaZNBrJURtCoUT5SUnxFr8s3BzRl+cbzUq8=" crossorigin="anonymous"></script>-->
+<script src="lib/jquery-3.6.4.min.js"></script>
+<script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js" integrity="sha256-lSjKY0/srUM9BE3dPm+c4fBo1dky2v27Gdjm2uoZaL0=" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/popper.js@1.14.7/dist/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.3.1/dist/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+<script src="kite.js"></script>
+<link href="https://cdn.jsdelivr.net/gh/gitbrent/bootstrap4-toggle@3.6.1/css/bootstrap4-toggle.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/gh/gitbrent/bootstrap4-toggle@3.6.1/js/bootstrap4-toggle.min.js"></script>
+<style>
+    .table-condensed>thead>tr>th, .table-condensed>tbody>tr>th, .table-condensed>tfoot>tr>th, .table-condensed>thead>tr>td, .table-condensed>tbody>tr>td, .table-condensed>tfoot>tr>td{
+        padding: 5px;
+    }
+
+    .table-condensed input{
+        padding : 2px;
+        line-height:1;
+    }
+
+    .ui-autocomplete li {
+        list-style-type:none;
+    }
+
+    th.del-icon {
+        color: red;
+        /*padding-top: 1.35rem;*/
+        /*padding-left: 2.2rem;*/
+        padding-top: 1.0rem !important;
+        padding-left: 1.5rem !important;
+    }
+
+    .su-collapse-div-title{
+        padding: 0.25rem 0.25rem !important;
+    }
+
+    .table thead th {
+        text-align: center !important;
+    }
+
+    #instr-drop-down {
+        border: 1px dotted #ccc;
+    }
+
+    #instr-drop-down ul {
+        position: absolute;
+        background-color: #f5f5f5;
+        padding: 1px 2px 1px 2px;
+    }
+
+
+    .custom-tab {
+        padding: 0.25rem 0.25rem !important;
+        margin-bottom: 0;
+        background-color: rgba(0,0,0,.03);
+        border-bottom: 1px solid rgba(0,0,0,.125);
+        display: -ms-flexbox;
+        display: flex;
+        -ms-flex-direction: column;
+        flex-direction: column;
+        min-width: 0;
+        word-wrap: break-word;
+        background-color: #fff;
+        background-clip: border-box;
+        border: 1px solid rgba(0,0,0,.125);
+        border-radius: 0.25rem;
+    }
+
+    #tabs {
+        padding-bottom: 15px;
+    }
+
+    .pos-mtm, .pnl, .margin_req {
+        font-weight:bold;
+        color: green;
+    }
+
+    .neg-mtm {
+        font-weight:bold;
+        color: red;
+    }
+
+    .ltp , .pnl{
+        color: #0001f7;
+        font-weight:bold;
+        text-align:right;
+    }
+
+    tr .text {
+        text-align: left;
+    }
+    tr .num {
+        text-align : right;
+    }
+
+    #order_book tr, #positions tr {
+        font-size : 14px;
+    }
+
+    .ui-helper-hidden-accessible { /* Jquery autocomplete's class */
+        display : none !important;
+    }
+
+    .alert{
+        z-index: 1000;
+        position: absolute;
+        width: 800px;
+        bottom: 10px;
+        right: 15px;
+    }
+
+    .close-btn {
+        cursor: pointer;
+        padding: 0;
+        background-color: transparent;
+        border: 0;
+
+        float: right;
+        font-size: 1.5rem;
+        font-weight: 700;
+        line-height: 1;
+        color: #000;
+        text-shadow: 0 1px 0 #fff;
+        opacity: .5;
+    }
+
+    .heading-row .card-body {
+        width: 70px;
+    }
+
+    .conn-status {
+        margin-left : 57px;
+        padding: 1.25rem !important;
+    }
+
+    .card-body {
+        padding : 0.5rem;
+    }
+
+    .price_diff, .max-profit-loss {
+        font-size: 0.8rem;
+    }
+
+    #watch_list_body .input_box{
+        width: 140px;
+    }
+
+    #watch_list_body td{
+        text-align: center;
+    }
+
+    .paper_trade {
+        background-color : #eeeee4;
+    }
+
+    .real_trade {
+        background-color: #d9eed2 ;
+    }
+
+    .stats-bar {
+        width: 18%;float:left;
+    }
+    .trade-panel {
+        width: 80%;
+        padding-left:20px;
+    }
+
+/*    @media screen and (max-width: 900px) {
+        .stats-bar {
+            width: 18%;float:left;
+        }
+        .trade-panel {
+            width: 80%;
+            padding-left:20px;
+        }
+    }
+
+    @media screen and (max-width: 600px) {
+        .stats-bar {
+            width: 100%;
+        }
+        .trade-panel {
+            width: 100%;
+        }
+    }*/
+</style>
+</body>
