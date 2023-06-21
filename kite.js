@@ -16,13 +16,13 @@ kite_api = function () {
 
     const url = {
         websocket : "wss://ws.zerodha.com/",
-        search_instrument : "https://www.zerodha.com/NorenWClientWeb/SearchScrip",
-        order_book : "https://www.zerodha.com/NorenWClientWeb/OrderBook",
-        place_order : "https://www.zerodha.com/NorenWClientWeb/PlaceOrder",
-        modify_order : "https://www.zerodha.com/NorenWClientWeb/ModifyOrder",
-        cancel_order : "https://www.zerodha.com/NorenWClientWeb/CancelOrder",
-        exit_order : "https://www.zerodha.com/NorenWClientWeb/ExitOrder",
-        positions : "https://www.zerodha.com/NorenWClientWeb/PositionBook",
+        search_instrument : "https://kite.zerodha.com/NorenWClientWeb/SearchScrip",
+        order_book : "https://kite.zerodha.com/NorenWClientWeb/OrderBook",
+        place_order : "https://kite.zerodha.com/NorenWClientWeb/PlaceOrder",
+        modify_order : "https://kite.zerodha.com/NorenWClientWeb/ModifyOrder",
+        cancel_order : "https://kite.zerodha.com/NorenWClientWeb/CancelOrder",
+        exit_order : "https://kite.zerodha.com/NorenWClientWeb/ExitOrder",
+        positions : "https://kite.zerodha.com/oms/portfolio/positions",
     }
 
     function connect() {
@@ -35,10 +35,13 @@ kite_api = function () {
         ws.binaryType = 'arraybuffer';
 
         ws.onopen = function (event) {
-            console.log("Socket opened")
             $('#connection_status').css('color', 'green')
             logged_in = true;
             console.log("Logged in..")
+
+            createCookie('enctoken', session_token, 1)
+            createCookie('public_token', 'VDZ42IuhS7gMD1MPg5wmaGtRy0ficXyY', 1)
+            createCookie('user_id', user_id, 1)
 
             if(subscribed_symbols.length > 0)
                 subscribed_symbols.forEach(subscribe_token)
@@ -50,7 +53,7 @@ kite_api = function () {
         };
 
         ws.onmessage = function (e) {
-            console.log(e.data)
+            // console.log(e.data)
 
             if(e.data instanceof ArrayBuffer) {
                 // Trigger on message event when binary message is received
@@ -65,9 +68,9 @@ kite_api = function () {
                         }
                     }
                 }
-            } else {
+            } /*else {
                 parseTextMessage(e.data)
-            }
+            }*/
 
             function update_ltps(instr_token, ltp) {
                 switch (instr_token) {
@@ -358,16 +361,36 @@ kite_api = function () {
         return payload
     }
 
-    function post_request(url, params, success_cb, failure_cb) {
-        let payload = get_payload(params)
-        $.ajax({
+    function createCookie(name, value, days) {
+        var expires;
+
+        if (days) {
+            var date = new Date();
+            date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+            expires = "; expires=" + date.toGMTString();
+        } else {
+            expires = "";
+        }
+        document.cookie = encodeURIComponent(name) + "=" + encodeURIComponent(value) + expires + "; path=/";
+    }
+
+    function get_request(url, params, success_cb, failure_cb) {
+        $.get({
             url: url,
-            type: "POST",
+            type: "GET",
             dataType: "json",
-            data: payload,
+            headers : {
+                "Referrer Policy": "strict-origin-when-cross-origin",
+                "Authorization" : "enctoken " + session_token,
+                "X-Kite-Userid" : user_id
+            },
+            xhrFields: {
+                withCredentials: true
+            },
+            crossDomain : true,
             success: function (data, textStatus, jqXHR) {
                 console.log(url + " : params = ", JSON.stringify(params))
-                console.log("Post request success: Resp = ", JSON.stringify(data))
+                console.log("Get request success: Resp = ", JSON.stringify(data))
                 if (success_cb != undefined) {
                     success_cb(data)
                 }
@@ -386,7 +409,7 @@ kite_api = function () {
 
     let search_instrument = function(stext) {
         let params = {"uid": user_id, "stext": stext}
-        post_request(url.search_instrument, params);
+        get_request(url.search_instrument, params);
     }
 
     /* Search instrument autocomplete */
@@ -686,7 +709,7 @@ kite_api = function () {
             } else {
                 console.log("Going to place order " + JSON.stringify(params))
                 if(!is_paper_trade()) {
-                    post_request(url.place_order, params, function (data) {
+                    get_request(url.place_order, params, function (data) {
                         if (success_cb != undefined) {  // Call custom function provided.. In case of exit, it needs to remove tr
                             console.log("Success call back is provided. Will be called")
                             success_cb(data)
@@ -810,7 +833,7 @@ kite_api = function () {
                 values["uid"]         = user_id;
                 values["norenordno"]  = orderno;
 
-                post_request(url.cancel_order, values, function (data) {
+                get_request(url.cancel_order, values, function (data) {
                     if (data.stat.toUpperCase() === "OK")
                         tr_elm.remove();
 
@@ -880,7 +903,7 @@ kite_api = function () {
 
                 if(!order_id.includes("Spot")) {  // Modify value order.. Not spot based order
                     values["norenordno"] = order_id;
-                    post_request(url.modify_order, values, function(data) {
+                    get_request(url.modify_order, values, function(data) {
                         if(data.stat == "Ok") {
                                 let orderno = data.result;  // In case of modify and cancel order 'result' contains order ID.
                                 let monitored = open_order_mgr.add_modify(orderno)
@@ -1002,7 +1025,7 @@ kite_api = function () {
             let values = orderbook.get_order_params(tr_elm, buy_sell, exit_limit, qty)
 
             if(!is_paper_trade()) {
-                post_request(url.place_order, values, function (data) {
+                get_request(url.place_order, values, function (data) {
                     if (data.stat.toUpperCase() === "OK") {
                         let orderno = data.norenordno;
                         orderbook.update_open_orders();
@@ -1653,7 +1676,7 @@ kite_api = function () {
                         let tr_elm = $(`#${row_id}`)
                         tr_elm.find('.exit').click();
                     }
-                    // milestone_manager.remove_milestone(row_id)
+                    milestone_manager.remove_milestone(row_id)
                 }
             }
 
@@ -1707,7 +1730,7 @@ kite_api = function () {
                         let tr_elm = $(`#${row_id}`)
                         tr_elm.find('.exit').click();
                     }
-                    // milestone_manager.remove_milestone(row_id)
+                    milestone_manager.remove_milestone(row_id)
                 }
             }
         },
@@ -1877,10 +1900,13 @@ kite_api = function () {
                 let trtype = tr_elm.attr('trtype')
                 if(target != undefined && target != '' ) {
                     milestone_manager.add_target(row_id, token, ttype, milestone_manager.get_value_object(target))
-                }
+                } else
+                    milestone_manager.remove_target(row_id)
+
                 if(sl != undefined && sl != '' ) {
                     milestone_manager.add_sl(row_id, token, ttype, milestone_manager.get_value_object(sl))
-                }
+                } else
+                    milestone_manager.remove_sl(row_id)
             }
         },
 
@@ -2219,7 +2245,7 @@ kite_api = function () {
     return {
         "search_instrument" :  search_instrument,
         "connect" : connect,
-        "post_request": post_request,
+        "get_request": get_request,
         "watch_list": watch_list,
         "orderbook": orderbook,
         "trade" : trade,

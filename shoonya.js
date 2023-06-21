@@ -1448,7 +1448,7 @@ shoonya_api = function () {
                         let tr_elm = $(`#${row_id}`)
                         tr_elm.find('.exit').click();
                     }
-                    // milestone_manager.remove_milestone(row_id)
+                    milestone_manager.remove_milestone(row_id)
                 }
             }
 
@@ -1502,7 +1502,7 @@ shoonya_api = function () {
                         let tr_elm = $(`#${row_id}`)
                         tr_elm.find('.exit').click();
                     }
-                    // milestone_manager.remove_milestone(row_id)
+                    milestone_manager.remove_milestone(row_id)
                 }
             }
         },
@@ -1670,12 +1670,14 @@ shoonya_api = function () {
                 let row_id = tr_elm.attr('id')
                 let token = tr_elm.attr('token')
                 let trtype = tr_elm.attr('trtype')
+
                 if(target != undefined && target != '' ) {
                     milestone_manager.add_target(row_id, token, ttype, milestone_manager.get_value_object(target))
-                }
+                } else milestone_manager.remove_target(row_id)
+
                 if(sl != undefined && sl != '' ) {
                     milestone_manager.add_sl(row_id, token, ttype, milestone_manager.get_value_object(sl))
-                }
+                } else milestone_manager.remove_sl(row_id)
             }
         },
 

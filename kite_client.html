@@ -18,7 +18,7 @@
                         <input type="text"  class="form-control form-control-sm" id="userId" placeholder="User" value="VC1177">
                     </div>
                     <div class="col-auto">
-                        <input type="text" class="form-control form-control-sm" id="sessionToken" placeholder="Session Token" value="Er7+U0gwitjABtiWg1FU+kmoKik54CBxKx13MjJ3s5RUiRVKFSo2pqBiOt7GgaDZY1Ew6gVaVx8hX3IbgdEGHWYXZByN3GADaXQXUFuPQiD7HEPpc7di2A==">
+                        <input type="text" class="form-control form-control-sm" id="sessionToken" placeholder="Session Token" value="FHd08rrKtDdqkbt3JjPZonkdxsMGMN5C9yVhkrB3cwADuhv+fvoUfTNxOdDYXHBr0kSyIY6DVppOtbTsYxlQK3E1j38mRgCJL3aUaKWMm9pIwwTlODZwNg==">
                     </div>
                     <div class="col-auto">
                         <button type="submit" class="btn btn-sm btn-info" id="connect_to_server">Connect</button>
@@ -75,13 +75,13 @@
                 <div id="instr-drop-down" class="ui-front" style=""></div>
             </div>
             <div class=" col-sm-4" style="padding-left:0px">
-                <button class="btn btn-primary mb-3" id="add_to_watchlist" onclick="shoonya_api.watch_list.add_to_watchlist()">Add To Watchlist</button>
+                <button class="btn btn-primary mb-3" id="add_to_watchlist" onclick="kite_api.watch_list.add_to_watchlist()">Add To Watchlist</button>
                 <button class="btn btn-secondary mb-3" onclick="$('input.search-instrument').val('')">Clear</button>
             </div>
 
             <div class="col-sm-4" style="text-align: right;">
                 <input id="trade_type" type="checkbox" checked data-toggle="toggle"
-                       onchange="shoonya_api.toggle_paper_trade()"
+                       onchange="kite_api.toggle_paper_trade()"
                        data-on="Paper Trade" data-off="Real Trade" data-onstyle="warning" data-offstyle="success">
             </div>
         </div>
@@ -120,11 +120,11 @@
 
         <div class="row">
             <div class="custom-tab" style="margin-left:10px">
-                <button class="btn btn-success" type="button" onclick="shoonya_api.trade.load_open_positions()">Active Trades</button>
+                <button class="btn btn-success" type="button" onclick="kite_api.trade.load_open_positions()">Active Trades</button>
             </div>
 
             <div class="col-sm-10">
-                <button class="btn btn-danger" type="button" style="float:right; margin-right: -60px" onclick="shoonya_api.trade.exit_all_positions()">
+                <button class="btn btn-danger" type="button" style="float:right; margin-right: -60px" onclick="kite_api.trade.exit_all_positions()">
                     Exit All Positions
                 </button>
             </div>
@@ -159,12 +159,12 @@
                         <th><input type="text" disabled class="form-control target" placeholder="" value=""></th>
                         <th><input type="text" disabled class="form-control sl" placeholder="" value=""></th>
                         <th>
-                            <select disabled class="form-select" onchange="shoonya_api.trade.select_trade_type(this, $(this).parent().parent())">
+                            <select disabled class="form-select" onchange="kite_api.trade.select_trade_type(this, $(this).parent().parent())">
                                 <option selected value="bull">Bullish</option>
                                 <option value="bear">Bearish</option>
                             </select>
                         </th>
-                        <th scope="col"><button type="button" class="btn btn-success btn-sm modify" onclick="shoonya_api.trade.modify(this, $(this).text(), true)">Edit</button></th>
+                        <th scope="col"><button type="button" class="btn btn-success btn-sm modify" onclick="kite_api.trade.modify(this, $(this).text(), true)">Edit</button></th>
                         <th scope="col" class="pos-mtm" id="max_profit_seen" title="Max Profit Seen"></th>
                         <th scope="col" class="neg-mtm" id="max_loss_seen" title="Max Loss Seen"></th>
                     </tr>
@@ -176,17 +176,17 @@
 
         <div class="row" id="tabs">
             <div class="custom-tab" style="margin-left:12px">
-                <button class="btn btn-warning" type="button" onclick="shoonya_api.orderbook.update_open_orders()">
+                <button class="btn btn-warning" type="button" onclick="kite_api.orderbook.update_open_orders()">
                     Open Orders
                 </button>
             </div>
             <div class="custom-tab">
-                <button class="btn btn-secondary" type="button" onclick="shoonya_api.orderbook.show_orderbook()">
+                <button class="btn btn-secondary" type="button" onclick="kite_api.orderbook.show_orderbook()">
                     Order book
                 </button>
             </div>
             <div class="custom-tab">
-                <button class="btn btn-primary" type="button" onclick="shoonya_api.positions.show_positions()">
+                <button class="btn btn-primary" type="button" onclick="kite_api.positions.show_positions()">
                     Positions
                 </button>
             </div>
