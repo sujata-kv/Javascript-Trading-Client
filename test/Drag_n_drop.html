@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<style>
+    table {
+        width: 100%;
+        border: 1px #000 solid;
+        user-select: none;
+    }
+
+    table::selection {
+        color: transparent;
+        outline-color: transparent;
+    }
+
+    table th {
+        text-align: center;
+        border: 1px #000 solid;
+    }
+
+    table td {
+        text-align: center;
+        border: 1px #000 solid;
+    }
+</style>
+<body>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
+<table id="multiTable" style="cursor: auto">
+
+    <thead>
+    <tr id="1">
+        <th>Game</th>
+        <th>Contest</th>
+        <th>Life</th>
+        <th>Fight</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr id="2">
+        <td>Mortal Combact</td>
+        <td>Imagine Cup</td>
+        <td>Bangladesh</td>
+        <td>Ban - Ind</td>
+    </tr>
+    <tr id="3">
+        <td>Crysis 2</td>
+        <td>Voice Radio</td>
+        <td>Sri</td>
+        <td>Ind - Pak</td>
+    </tr>
+    <tr id="4">
+        <td>House of dead</td>
+        <td>Code 2 Win</td>
+        <td>Bangladesh</td>
+        <td>Usa - Rus</td>
+    </tr>
+    <tr id="5">
+        <td>Plant vs Zombie</td>
+        <td>EATL App Comitition</td>
+        <td>Bangladesh</td>
+        <td>Isr - Pal</td>
+    </tr>
+    <tr>
+        <td>Highway Rider</td>
+        <td>Code Gear</td>
+        <td>Bangladesh</td>
+        <td>Iraq - Iran</td>
+    </tr>
+    </tbody>
+    <tfoot>
+    <tr id="10">
+        <th>Game</th>
+        <th>Contest</th>
+        <th>Life</th>
+        <th>Fight</th>
+    </tr>
+    </tfoot>
+</table>
+
+<script>
+    $(function () {
+        var html = "", id="",
+            index = -1, isDown = false;
+        $(document).on("mouseup","#multiTable tbody tr",function (e) {
+            console.log("Mouse up-> ")
+            if(isDown) {
+                // $(this).css({background:"grey"});
+
+                var index1 = $(this).index();
+                var index2 = index;
+                if (index1 == index2) {
+                    e.preventDefault();
+                    return;
+                }
+                var id1 = $(this).attr('id')
+
+                var spaceIndex1 = index2 + 1;
+                var html1 = `<tr id='${id1}'>` + $(this).html().trim() + "<tr>";
+                var html2 = `<tr id='${id}'>`  + html + "</tr>";
+
+                // var html1 = this;
+                // var html2 = html;
+                console.log(html1);
+                console.log(html2);
+                $('#multiTable > tbody > tr').eq(index1).replaceWith(html2);
+                $('#multiTable > tbody > tr').eq(index2).replaceWith(html1);
+                $('#multiTable > tbody > tr').eq(spaceIndex1).remove();
+
+                isDown = false;
+            }
+        });
+
+        $(document).on("mouseover", "#multiTable tbody tr", function() {
+            if(isDown) {        // Only change css if mouse is down
+                console.log("Mouse Over-> ")
+                $(this).css({background:"white"});
+                $(this).css('cursor', 'grabbing')
+            }
+        });
+
+        $(document).on("mousedown","#multiTable tbody tr",function (e) {
+            console.log("Mouse Down->");
+            isDown = true;
+            $(this).css('cursor', 'grabbing')
+            html = $(this).html().trim();
+            id = $(this).attr('id');
+            // html = this;
+            console.log(html)
+            index = $(this).index();
+            // $(this).css({background:"grey"});
+            //console.log($(this).index());
+            //console.log($(this).html().trim());
+        });
+    });
+
+
+    let intervalID;
+
+    function repeatEverySecond() {
+        console.log("Wait for 10 seconds" +
+            "" +
+            "")
+        intervalID = setInterval(sendMessage, 10000);
+    }
+
+    function sendMessage() {
+        console.log("ten seconds elapsed");
+    }
+
+    repeatEverySecond()
+    clearInterval(intervalID)
+</script>
+</body>
+</html>
