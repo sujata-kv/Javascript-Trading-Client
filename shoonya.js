@@ -843,6 +843,13 @@ shoonya_api = function () {
             if(orders) { // In case of paper trade, orders will be null and the below code will not execute
                 orderbook.update_open_order_list(orders);
             }
+
+            //Remove SL and Target set on Total row, if there are no active trades
+            let table_id = is_paper_trade()? "#active_paper_trades" : "active_trades_table"
+            if($(`${table_id} tr[trade="active"]`).length < 1) {
+                milestone_manager.remove_milestone("all_rows");
+                $('#all_rows th input.target, #all_rows th input.sl').val("")  //Reset UI
+            }
         },
 
         get_order_status(orderno, action, oncomplete_cb) {
