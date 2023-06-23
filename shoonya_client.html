@@ -18,7 +18,7 @@
                         <input type="text"  class="form-control form-control-sm" id="userId" placeholder="User" value="FA90807">
                     </div>
                     <div class="col-auto">
-                        <input type="text" class="form-control form-control-sm" id="sessionToken" placeholder="Session Token" value="b1c199e7e858232681b501e646399d07da124190d4f229b481f4d04b21d9683c">
+                        <input type="text" class="form-control form-control-sm" id="sessionToken" placeholder="Session Token" value="8724b4cfe1ebb75d65c7cf95add1e82d05dd787493825fe9ef76c2f57206f68a">
                     </div>
                     <div class="col-auto">
                         <button type="submit" class="btn btn-sm btn-info" id="connect_to_server">Connect</button>
@@ -89,6 +89,7 @@
         <table class="table table-secondary table-condensed table-striped table-bordered">
             <thead class="thead-light">
             <tr>
+                <th> <input type="checkbox" value="" onclick="shoonya_api.watch_list.select_all(this)"> </th>
                 <th scope="col">Instrument</th>
                 <th scope="col" title="Margin required per lot">Margin</th>
                 <th scope="col">LTP</th>
@@ -102,8 +103,10 @@
             <tbody id="watch_list_body">
             </tbody>
         </table>
-
-        <hr class="hr hr-blurry" />
+        <div class="row col-md-5 offset-md-2">
+            <button type="button" class="btn btn-success buy" onclick="shoonya_api.orderbook.buy_selected(this)">Buy Selected</button>
+            <button type="button" class="btn btn-danger sell" onclick="shoonya_api.orderbook.sell_selected(this)" style="margin-left:30px">Sell Selected</button>
+        </div>
 
         <div class="alert alert-success" id="order_success_alert" style="display:none">
             <span id="order_success_msg"></span>
@@ -454,6 +457,7 @@
 
     #watch_list_body td{
         text-align: center;
+        vertical-align: middle;
     }
 
     .paper_trade {
@@ -471,6 +475,12 @@
         width: 80%;
         padding-left:20px;
     }
+
+    input[type=checkbox] {
+        width: 20px;
+        height: 20px;
+    }
+
 
 /*    @media screen and (max-width: 900px) {
         .stats-bar {
