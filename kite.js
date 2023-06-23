@@ -1,4 +1,4 @@
-kite_api = window.kite_api || {};
+Bukite_api = window.kite_api || {};
 
 kite_api = function () {
     let alert_msg_disappear_after = 3000; // Unit milliseconds
@@ -22,7 +22,7 @@ kite_api = function () {
         modify_order : "https://kite.zerodha.com/NorenWClientWeb/ModifyOrder",
         cancel_order : "https://kite.zerodha.com/NorenWClientWeb/CancelOrder",
         exit_order : "https://kite.zerodha.com/NorenWClientWeb/ExitOrder",
-        positions : "https://kite.zerodha.com/oms/portfolio/positions",
+        positions : "https://kite.zerodha.com/oms/portfolio/holdings",
     }
 
     function connect() {
@@ -586,6 +586,20 @@ kite_api = function () {
         sell : function(sell_btn) {
             let tr_elm = $(sell_btn).parent().parent();
             orderbook.place_buy_sell_order(tr_elm, 'S')
+        },
+
+        buy_selected : function() {
+            $('#watch_list_body input:checkbox:checked').each(function(){
+                let row_elm = $(this).parent().parent()
+                row_elm.find('.buy').click()
+            })
+        },
+
+        sell_selected : function() {
+            $('#watch_list_body input:checkbox:checked').each(function(){
+                let row_elm = $(this).parent().parent()
+                row_elm.find('.sell').click()
+            })
         },
 
         display_order_exec_msg: function(order) {
@@ -2057,6 +2071,15 @@ kite_api = function () {
             return dname
         },
 
+        select_all : function(chk_elm) {
+            $("#watch_list_body .select").each(function() {
+                if(chk_elm.checked)
+                    this.checked = true
+                else
+                    this.checked = false
+            })
+        },
+
         add_row_to_watch : function(params) {
             console.log("Add row to watch .. ", params.token)
 
@@ -2117,15 +2140,24 @@ kite_api = function () {
             let payload = get_payload(values)
             $.ajax({
                 url: url.positions,
-                type: "POST",
+                method: "GET",
                 dataType: "json",
-                data: payload,
+                /*headers : {
+                    "Referrer Policy": "strict-origin-when-cross-origin",
+                    "Authorization" : "enctoken " + session_token,
+                    "X-Kite-Userid" : user_id
+                },*/
+                /*xhrFields: {
+                    withCredentials: true
+                },*/
+                // crossDomain : true,
                 success: function (data, textStatus, jqXHR) {
                     success_cb(data)
                 },
                 error: function (jqXHR, textStatus, errorThrown) {
-                    console.error("Ajax error")
-                    show_error_msg(JSON.parse(jqXHR.responseText).emsg)
+                    console.error("Ajax error " + errorThrown)
+                    show_error_msg(jqXHR.responseText)
+
                 }
             });
         },

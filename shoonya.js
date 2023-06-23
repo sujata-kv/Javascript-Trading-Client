@@ -1843,7 +1843,12 @@ shoonya_api = function () {
         },
 
         select_all : function(chk_elm) {
-            $("#watch_list_body .select").attr('checked', chk_elm.checked);
+            $("#watch_list_body .select").each(function() {
+                if(chk_elm.checked)
+                    this.checked = true
+                else
+                    this.checked = false
+            })
         },
 
         add_row_to_watch : function(params) {

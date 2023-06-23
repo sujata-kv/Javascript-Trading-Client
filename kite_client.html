@@ -18,7 +18,7 @@
                         <input type="text"  class="form-control form-control-sm" id="userId" placeholder="User" value="VC1177">
                     </div>
                     <div class="col-auto">
-                        <input type="text" class="form-control form-control-sm" id="sessionToken" placeholder="Session Token" value="FHd08rrKtDdqkbt3JjPZonkdxsMGMN5C9yVhkrB3cwADuhv+fvoUfTNxOdDYXHBr0kSyIY6DVppOtbTsYxlQK3E1j38mRgCJL3aUaKWMm9pIwwTlODZwNg==">
+                        <input type="text" class="form-control form-control-sm" id="sessionToken" placeholder="Session Token" value="kQmuh2Czcu8cN6Fnqu4kMvHJIiWk6ZoB61uQyb/JCJtAg+cA3oj5oxJ9Ouww05DR2nZ2vCbcz7494MqnkZK8jpqEMm7khtU2rS0DYdXk5iFQiznC0X0MAQ==">
                     </div>
                     <div class="col-auto">
                         <button type="submit" class="btn btn-sm btn-info" id="connect_to_server">Connect</button>
@@ -89,6 +89,7 @@
         <table class="table table-secondary table-condensed table-striped table-bordered">
             <thead class="thead-light">
             <tr>
+                <th> <input type="checkbox" value="" onclick="kite_api.watch_list.select_all(this)"> </th>
                 <th scope="col">Instrument</th>
                 <th scope="col" title="Margin required per lot">Margin</th>
                 <th scope="col">LTP</th>
@@ -102,6 +103,10 @@
             <tbody id="watch_list_body">
             </tbody>
         </table>
+        <div class="row col-md-5 offset-md-2">
+            <button type="button" class="btn btn-success buy" onclick="kite_api.orderbook.buy_selected(this)">Buy Selected</button>
+            <button type="button" class="btn btn-danger sell" onclick="kite_api.orderbook.sell_selected(this)" style="margin-left:30px">Sell Selected</button>
+        </div>
 
         <hr class="hr hr-blurry" />
 
@@ -470,6 +475,11 @@
     .trade-panel {
         width: 80%;
         padding-left:20px;
+    }
+
+    input[type=checkbox] {
+        width: 20px;
+        height: 20px;
     }
 
 /*    @media screen and (max-width: 900px) {
