@@ -2089,7 +2089,7 @@ kite_api = function () {
             }
 
             $('#watch_list_body').append(`<tr class="${class_name}" exch="${params.exch}" token="${params.token}" tsym="${params.tsym}" lot_size="${params.lot_size}" dname="${params.sym}">
-    
+                <td> <input type="checkbox" class="select" value=""> </td>
                 <td class="dname">${params.sym}</td>
                 <th class="margin_req num"></th>
                 <th class="watch_${params.token} ltp" lot_size="${params.lot_size}"></th>

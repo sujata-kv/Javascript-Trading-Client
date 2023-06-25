@@ -111,7 +111,29 @@ client_api = function () {
                     pending_to_subscribe_tokens.delete(token);
                 }
             }
-        }
+        },
+
+        get_positions : function (success_cb) {
+
+            let values          = {};
+            values["uid"]       = user_id   ;
+            values["actid"]     = user_id   ;
+
+            let payload = get_payload(values)
+            $.ajax({
+                url: this.url.positions,
+                type: "POST",
+                dataType: "json",
+                data: payload,
+                success: function (data, textStatus, jqXHR) {
+                    success_cb(data)
+                },
+                error: function (jqXHR, textStatus, errorThrown) {
+                    console.error("Ajax error")
+                    show_error_msg(JSON.parse(jqXHR.responseText).emsg)
+                }
+            });
+        },
     }
     
     let kite = {
@@ -411,7 +433,32 @@ client_api = function () {
             }
     
             return val;
-        }
+        },
+
+        get_positions : function (success_cb) {
+
+            let values          = {};
+            values["uid"]       = user_id   ;
+            values["actid"]     = user_id   ;
+
+            $.get({
+                url: this.url.positions,
+                dataType: "json",
+                headers : {
+                    "Authorization" : "enctoken " + session_token,
+                    // "Accept": "application/json"
+                },
+
+                success: function (data, textStatus, jqXHR) {
+                    success_cb(data)
+                },
+                error: function (jqXHR, textStatus, errorThrown) {
+                    console.error("Ajax error " + errorThrown)
+                    show_error_msg(jqXHR.responseText)
+
+                }
+            });
+        },
     }
 
     function update_ltp(selector) {
@@ -470,27 +517,16 @@ client_api = function () {
         return payload
     }
 
-/*    function createCookie(name, value, days) {
-        var expires;
-
-        if (days) {
-            var date = new Date();
-            date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
-            expires = "; expires=" + date.toGMTString();
-        } else {
-            expires = "";
-        }
-        document.cookie = encodeURIComponent(name) + "=" + encodeURIComponent(value) + expires + "; path=/";
-    }*/
-
-    function get_request(url, params, success_cb, failure_cb) {
-        $.get({
+    function post_request(url, params, success_cb, failure_cb) {
+        let payload = get_payload(params)
+        $.ajax({
             url: url,
-            type: "GET",
+            type: "POST",
             dataType: "json",
+            data: payload,
             success: function (data, textStatus, jqXHR) {
                 console.log(url + " : params = ", JSON.stringify(params))
-                console.log("Get request success: Resp = ", JSON.stringify(data))
+                console.log("Post request success: Resp = ", JSON.stringify(data))
                 if (success_cb != undefined) {
                     success_cb(data)
                 }
@@ -509,7 +545,7 @@ client_api = function () {
 
     let search_instrument = function(stext) {
         let params = {"uid": user_id, "stext": stext}
-        get_request(broker.url.search_instrument, params);
+        post_request(broker.url.search_instrument, params);
     }
 
     /* Search instrument autocomplete */
@@ -744,7 +780,7 @@ client_api = function () {
 
         update_open_order_list : function(orders) {
             $('#open_order_list').html('')
-            if(orders!=undefined)
+            if(orders!=undefined && Array.isArray(orders))
                 orders.forEach(function(order) {
                     orderbook.add_open_order(order)
                 })
@@ -754,7 +790,7 @@ client_api = function () {
             if (order.status == "OPEN") {
 
                 let token = order.exch + "|" + order.token
-                subscribe_token(token)
+                broker.subscribe_token(token)
 
                 let type = order.amo == "Yes"? "AMO ": "";
                 let buy_sell = '';
@@ -823,7 +859,7 @@ client_api = function () {
             } else {
                 console.log("Going to place order " + JSON.stringify(params))
                 if(!is_paper_trade()) {
-                    get_request(broker.url.place_order, params, function (data) {
+                    post_request(broker.url.place_order, params, function (data) {
                         if (success_cb != undefined) {  // Call custom function provided.. In case of exit, it needs to remove tr
                             console.log("Success call back is provided. Will be called")
                             success_cb(data)
@@ -928,7 +964,7 @@ client_api = function () {
             values["ret"]       = 'DAY';
             values["remarks"]   = remarks;
 
-            // values["amo"] = "Yes";          // TODO - AMO ORDER
+            values["amo"] = "Yes";          // TODO - AMO ORDER
 
             return values;
         },
@@ -947,7 +983,7 @@ client_api = function () {
                 values["uid"]         = user_id;
                 values["norenordno"]  = orderno;
 
-                get_request(broker.url.cancel_order, values, function (data) {
+                post_request(broker.url.cancel_order, values, function (data) {
                     if (data.stat.toUpperCase() === "OK")
                         tr_elm.remove();
 
@@ -1017,7 +1053,7 @@ client_api = function () {
 
                 if(!order_id.includes("Spot")) {  // Modify value order.. Not spot based order
                     values["norenordno"] = order_id;
-                    get_request(url.modify_order, values, function(data) {
+                    post_request(url.modify_order, values, function(data) {
                         if(data.stat == "Ok") {
                                 let orderno = data.result;  // In case of modify and cancel order 'result' contains order ID.
                                 let monitored = open_order_mgr.add_modify(orderno)
@@ -1139,7 +1175,7 @@ client_api = function () {
             let values = orderbook.get_order_params(tr_elm, buy_sell, exit_limit, qty)
 
             if(!is_paper_trade()) {
-                get_request(url.place_order, values, function (data) {
+                post_request(url.place_order, values, function (data) {
                     if (data.stat.toUpperCase() === "OK") {
                         let orderno = data.norenordno;
                         orderbook.update_open_orders();
@@ -1236,7 +1272,7 @@ client_api = function () {
             $('#order_book_table').html("")
             hide_other_tabs('#order_book')
             this.get_orderbook(function(orders) {
-                if(orders!=undefined)
+                if(orders!=undefined && Array.isArray(orders))
                     orders.forEach((order)=> orderbook.show_order(order))
             })
         },
@@ -2184,7 +2220,7 @@ client_api = function () {
             console.log("Add row to watch .. ", params.token)
 
             let sym_token = params.exch + '|' + params.token
-            subscribe_token(sym_token)
+            broker.subscribe_token(sym_token)
 
             //Add to watched items
             watch_list.watched_items[`${params.exch}_${params.token}`] = JSON.stringify(params)
@@ -2197,6 +2233,7 @@ client_api = function () {
 
             $('#watch_list_body').append(`<tr class="${class_name}" exch="${params.exch}" token="${params.token}" tsym="${params.tsym}" lot_size="${params.lot_size}" dname="${params.sym}">
     
+                <td> <input type="checkbox" class="select" value=""> </td>
                 <td class="dname">${params.sym}</td>
                 <th class="margin_req num"></th>
                 <th class="watch_${params.token} ltp" lot_size="${params.lot_size}"></th>
@@ -2231,41 +2268,12 @@ client_api = function () {
     };
 
     const positions = {
-        get_positions : function (success_cb) {
 
-            let values          = {};
-            values["uid"]       = user_id   ;
-            values["actid"]     = user_id   ;
-
-            let payload = get_payload(values)
-            $.get({
-                url: broker.url.positions,
-                // type: "GET",
-                dataType: "json",
-                headers : {
-                    "Authorization" : "enctoken " + session_token,
-                    //"Access-Control-Allow-Origin" : "https://kite.zerodha.com/positions",
-                    // "origin" : "https://kite.zerodha.com/positions",
-                    // "Referer": "https://kite.zerodha.com/positions",
-                    "Accept": "application/json"
-
-                },
-
-                success: function (data, textStatus, jqXHR) {
-                    success_cb(data)
-                },
-                error: function (jqXHR, textStatus, errorThrown) {
-                    console.error("Ajax error " + errorThrown)
-                    show_error_msg(jqXHR.responseText)
-
-                }
-            });
-        },
 
         show_positions : function() {
             $('#positions_table').html("")
             hide_other_tabs('#positions')
-            this.get_positions(function(positions) {
+            broker.get_positions(function(positions) {
                 let pnl = {unrealized_pnl : 0.0, realized_pnl:0.0 };
                 if (positions != undefined && positions.stat !== 'Not_Ok')
                     positions.forEach((position)=> client_api.positions.show_position(position, pnl))
@@ -2346,7 +2354,7 @@ client_api = function () {
         }
     };
 
-    let broker = kite;
+    let broker = shoonya
 
     /*Attach functions to connect, add to watch list button, etc*/
     $(document).ready(function() {
@@ -2387,7 +2395,7 @@ client_api = function () {
     return {
         "search_instrument" :  search_instrument,
         "connect" : broker.connect,
-        "get_request": get_request,
+        "post_request": post_request,
         "watch_list": watch_list,
         "orderbook": orderbook,
         "trade" : trade,
