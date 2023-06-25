@@ -31,14 +31,20 @@
 <table id="multiTable" style="cursor: auto">
 
     <thead>
-    <tr id="1">
+    <tr>
         <th>Game</th>
-        <th>Contest</th>
+        <th>Contest</th>N
         <th>Life</th>
         <th>Fight</th>
     </tr>
     </thead>
     <tbody>
+    <tr id="1">
+        <td>Highway Rider</td>
+        <td>Code Gear</td>
+        <td>Bangladesh</td>
+        <td>Iraq - Iran</td>
+    </tr>
     <tr id="2">
         <td>Mortal Combact</td>
         <td>Imagine Cup</td>
@@ -63,12 +69,7 @@
         <td>Bangladesh</td>
         <td>Isr - Pal</td>
     </tr>
-    <tr>
-        <td>Highway Rider</td>
-        <td>Code Gear</td>
-        <td>Bangladesh</td>
-        <td>Iraq - Iran</td>
-    </tr>
+
     </tbody>
     <tfoot>
     <tr id="10">
@@ -130,14 +131,14 @@
             // html = this;
             console.log(html)
             index = $(this).index();
-            // $(this).css({background:"grey"});
+            $(this).css({background:"grey"});
             //console.log($(this).index());
             //console.log($(this).html().trim());
         });
     });
 
 
-    let intervalID;
+/*    let intervalID;
 
     function repeatEverySecond() {
         console.log("Wait for 10 seconds" +
@@ -151,7 +152,8 @@
     }
 
     repeatEverySecond()
-    clearInterval(intervalID)
+    clearInterval(intervalID)*/
+
 </script>
 </body>
 </html>

@@ -23,6 +23,8 @@ kite_api = function () {
         cancel_order : "https://kite.zerodha.com/NorenWClientWeb/CancelOrder",
         exit_order : "https://kite.zerodha.com/NorenWClientWeb/ExitOrder",
         positions : "https://kite.zerodha.com/oms/portfolio/holdings",
+        // positions : "https://kite.zerodha.com/positions",
+
     }
 
     function connect() {
@@ -39,9 +41,9 @@ kite_api = function () {
             logged_in = true;
             console.log("Logged in..")
 
-            createCookie('enctoken', session_token, 1)
-            createCookie('public_token', 'VDZ42IuhS7gMD1MPg5wmaGtRy0ficXyY', 1)
-            createCookie('user_id', user_id, 1)
+            // createCookie('enctoken', session_token, 1)
+            // createCookie('public_token', 'VDZ42IuhS7gMD1MPg5wmaGtRy0ficXyY', 1)
+            // createCookie('user_id', user_id, 1)
 
             if(subscribed_symbols.length > 0)
                 subscribed_symbols.forEach(subscribe_token)
@@ -361,7 +363,7 @@ kite_api = function () {
         return payload
     }
 
-    function createCookie(name, value, days) {
+/*    function createCookie(name, value, days) {
         var expires;
 
         if (days) {
@@ -372,22 +374,13 @@ kite_api = function () {
             expires = "";
         }
         document.cookie = encodeURIComponent(name) + "=" + encodeURIComponent(value) + expires + "; path=/";
-    }
+    }*/
 
     function get_request(url, params, success_cb, failure_cb) {
         $.get({
             url: url,
             type: "GET",
             dataType: "json",
-            headers : {
-                "Referrer Policy": "strict-origin-when-cross-origin",
-                "Authorization" : "enctoken " + session_token,
-                "X-Kite-Userid" : user_id
-            },
-            xhrFields: {
-                withCredentials: true
-            },
-            crossDomain : true,
             success: function (data, textStatus, jqXHR) {
                 console.log(url + " : params = ", JSON.stringify(params))
                 console.log("Get request success: Resp = ", JSON.stringify(data))
@@ -2138,19 +2131,19 @@ kite_api = function () {
             values["actid"]     = user_id   ;
 
             let payload = get_payload(values)
-            $.ajax({
+            $.get({
                 url: url.positions,
-                method: "GET",
+                // type: "GET",
                 dataType: "json",
-                /*headers : {
-                    "Referrer Policy": "strict-origin-when-cross-origin",
+                headers : {
                     "Authorization" : "enctoken " + session_token,
-                    "X-Kite-Userid" : user_id
-                },*/
-                /*xhrFields: {
-                    withCredentials: true
-                },*/
-                // crossDomain : true,
+                    //"Access-Control-Allow-Origin" : "https://kite.zerodha.com/positions",
+                    // "origin" : "https://kite.zerodha.com/positions",
+                    // "Referer": "https://kite.zerodha.com/positions",
+                    "Accept": "application/json"
+
+                },
+
                 success: function (data, textStatus, jqXHR) {
                     success_cb(data)
                 },

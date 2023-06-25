@@ -1,30 +1,439 @@
+client_api = window.client_api || {};
 
-shoonya_api = window.shoonya_api || {};
-
-shoonya_api = function () {
+client_api = function () {
+    
     let alert_msg_disappear_after = 3000; // Unit milliseconds
-
-    //TODO - Remove these hardcoded values
-    let vix_tk = '26017', nifty_tk = '26000', bank_nifty_tk = '26009', fin_nifty_tk = '26037'
+    let vix_tk, nifty_tk, bank_nifty_tk, fin_nifty_tk = '';
     let user_id = '', session_token='', ws = '';
-
-    let subscribed_symbols = ["NSE|26017", "NSE|26000", "NSE|26009", "NSE|26037"];
+    let subscribed_symbols = []
     let pending_to_subscribe_tokens = new Set();
     let logged_in = false;
-    let live_data = {};
     let heartbeat_timeout = 7000;
+    let live_data = {};
 
-    const url = {
-        websocket : "wss://trade.shoonya.com/NorenWSWeb/",
-        search_instrument : "https://trade.shoonya.com/NorenWClientWeb/SearchScrip",
-        order_book : "https://trade.shoonya.com/NorenWClientWeb/OrderBook",
-        place_order : "https://trade.shoonya.com/NorenWClientWeb/PlaceOrder",
-        modify_order : "https://trade.shoonya.com/NorenWClientWeb/ModifyOrder",
-        cancel_order : "https://trade.shoonya.com/NorenWClientWeb/CancelOrder",
-        exit_order : "https://trade.shoonya.com/NorenWClientWeb/ExitOrder",
-        positions : "https://trade.shoonya.com/NorenWClientWeb/PositionBook",
+    let shoonya = {
+
+        url : {
+            websocket : "wss://trade.shoonya.com/NorenWSWeb/",
+            search_instrument : "https://trade.shoonya.com/NorenWClientWeb/SearchScrip",
+            order_book : "https://trade.shoonya.com/NorenWClientWeb/OrderBook",
+            place_order : "https://trade.shoonya.com/NorenWClientWeb/PlaceOrder",
+            modify_order : "https://trade.shoonya.com/NorenWClientWeb/ModifyOrder",
+            cancel_order : "https://trade.shoonya.com/NorenWClientWeb/CancelOrder",
+            exit_order : "https://trade.shoonya.com/NorenWClientWeb/ExitOrder",
+            positions : "https://trade.shoonya.com/NorenWClientWeb/PositionBook",
+        },
+
+        init : function() {
+            vix_tk = '26017', nifty_tk = '26000', bank_nifty_tk = '26009', fin_nifty_tk = '26037';
+            subscribed_symbols = ["NSE|26017", "NSE|26000", "NSE|26009", "NSE|26037"];
+        },
+
+        connect: function() {
+            ws = new WebSocket(this.url.websocket);
+            ws.onopen = function (event) {
+                let data = {
+                    "t": "c",
+                    "uid": user_id,
+                    "actid": user_id,
+                    "susertoken": session_token,
+                    "source": "WEB"
+                };
+                console.log("Socket opened")
+                ws.send(JSON.stringify(data));
+                $('#connection_status').css('color', 'green')
+                console.log("Session data sent")
+
+                setInterval(function () {
+                    var _hb_req = '{"t":"h"}';
+                    ws.send(_hb_req);
+                }, heartbeat_timeout);
+            };
+
+            ws.onmessage = function (event) {
+                result = JSON.parse(event.data)
+                if(result.t == 'ck') {
+                    // trigger("open", [result]);
+                    if (result.s == 'OK') {
+                        console.log('Login successful')
+                        logged_in = true;
+                        subscribed_symbols.forEach(shoonya.subscribe_token)
+                    }
+                }
+                if( result.t == 'tk' || result.t == 'tf') {
+                    if(result.lp != undefined) {
+                        let instr_token = result.tk
+                        let ltpf = parseFloat(result.lp).toFixed(2)
+                        live_data[instr_token] = ltpf
+                        update_ltps(instr_token, ltpf)
+                    }
+                }
+                if( result.t == 'dk' || result.t == 'df') {
+                    console.log("..................  Another quote ...................")
+                    // trigger("quote", [result]);
+                }
+                if(result.t == 'om') {
+                    // console.log("..................  OM ...................")
+                    // console.log(result)
+                }
+            }
+
+            ws.onclose = function (event) {
+                $('#connection_status').css('color', 'red')
+                console.log('WebSocket is closed. Reconnect will be attempted in 1 second.', event.reason);
+                setTimeout(function () {
+                    connect();
+                }, 1000);
+            };
+
+            ws.onerror = function (event) {
+                console.error("WebSocket error: ", event);
+            };
+        },
+
+        subscribe_token: function(token) {
+            // if (!subscribed_symbols.includes(token)) {  // Subscribe only if not subscribed earlier
+            pending_to_subscribe_tokens.add(token);
+            // }
+            for(token of pending_to_subscribe_tokens.keys()) {
+                let symtoken = {"t": "t", "k": token.concat('#')}
+                // console.log(symtoken)
+                if (ws.readyState != WebSocket.OPEN || !logged_in) {
+                    console.log("Web socket not ready yet..")
+                    setTimeout(function () {
+                        subscribe_token(token)
+                    }, 100)
+                } else {
+                    console.log("Web socket is ready.. Subscribing ", token)
+                    ws.send(JSON.stringify(symtoken));
+                    if(!subscribed_symbols.includes(token))
+                        subscribed_symbols.push(token);
+                    pending_to_subscribe_tokens.delete(token);
+                }
+            }
+        }
+    }
+    
+    let kite = {
+        
+        url : {
+            websocket : "wss://ws.zerodha.com/",
+            search_instrument : "https://kite.zerodha.com/NorenWClientWeb/SearchScrip",
+            order_book : "https://kite.zerodha.com/NorenWClientWeb/OrderBook",
+            place_order : "https://kite.zerodha.com/NorenWClientWeb/PlaceOrder",
+            modify_order : "https://kite.zerodha.com/NorenWClientWeb/ModifyOrder",
+            cancel_order : "https://kite.zerodha.com/NorenWClientWeb/CancelOrder",
+            exit_order : "https://kite.zerodha.com/NorenWClientWeb/ExitOrder",
+            positions : "https://kite.zerodha.com/oms/portfolio/positions",
+
+        },
+        
+        init : function() {
+            vix_tk = 264969, nifty_tk = 256265, bank_nifty_tk = 260105, fin_nifty_tk = 257801;
+            subscribed_symbols = [256265, 260105, 257801, 264969];
+        },
+
+        connect : function() {
+
+            let ws_url = this.url.websocket + `?api_key=kitefront&user_id=${user_id}&enctoken=${encodeURIComponent(session_token)}&user-agent=kite3-web&version=3.0.14`
+            console.log(ws_url)
+    
+            ws = new WebSocket(ws_url);
+            ws.binaryType = 'arraybuffer';
+    
+            ws.onopen = function (event) {
+                $('#connection_status').css('color', 'green')
+                logged_in = true;
+                console.log("Logged in..")
+    
+                if(subscribed_symbols.length > 0)
+                    subscribed_symbols.forEach(kite.subscribe_token)
+            };
+    
+            ws.onmessage = function (e) {
+                if(e.data instanceof ArrayBuffer) {
+                    // Trigger on message event when binary message is received
+                    kite.trigger("message", [e.data]);
+                    if(e.data.byteLength > 2) {
+                        var ticks = kite.parseBinary(e.data);
+                        if(ticks) {
+                            for(let i=0; i<ticks.length; ++i) {
+                                let instr_token = ticks[i]['instrument_token'], ltp = ticks[i]['last_price'];
+                                let ltpf = parseFloat(ltp)
+                                live_data[instr_token] = ltpf
+                                update_ltps(instr_token, ltpf)
+                            }
+                        }
+                    }
+                } /*else {
+                    kite.parseTextMessage(e.data)
+                }*/
+            };
+    
+            ws.onclose = function (event) {
+                $('#connection_status').css('color', 'red')
+                console.log('WebSocket is closed. Reconnect will be attempted in 1 second.', event.reason);
+                setTimeout(function () {
+                    connect();
+                }, 1000);
+            };
+    
+            ws.onerror = function (event) {
+                console.error("WebSocket error: ", event);
+            };
+        },
+
+        subscribe_token : function(token) {
+            // if (!subscribed_symbols.includes(token)) {  // Subscribe only if not subscribed earlier
+            pending_to_subscribe_tokens.add(token);
+            // }
+            for(token of pending_to_subscribe_tokens.keys()) {
+                if (ws.readyState !== WebSocket.OPEN || !logged_in) {
+                    console.log("Web socket not ready yet..")
+                    setTimeout(function () {
+                        subscribe_token(token)
+                    }, 100)
+                } else {
+                    let mesg = {"a": "subscribe", "v": [token]}
+                    console.log("Web socket is ready.. Subscribing ", token)
+                    ws.send(JSON.stringify(mesg));
+                    // mesg = {"a": "mode", "v" : ["ltpc", [token]]}
+                    mesg = {"a": "mode", "v" : ["ltp", [token]]}
+                    ws.send(JSON.stringify(mesg));
+
+                    if(!subscribed_symbols.includes(token))
+                        subscribed_symbols.push(token);
+                    pending_to_subscribe_tokens.delete(token);
+                }
+            }
+        },
+        
+        segment_const : {
+            // segment constants
+            NseCM : 1,
+            NseFO : 2,
+            NseCD : 3,
+            BseCM : 4,
+            BseFO : 5,
+            BseCD : 6,
+            McxFO : 7,
+            McxSX : 8,
+            Indices : 9
+        },
+
+         triggers : {
+            "connect": [],
+            "ticks": [],
+            "disconnect": [],
+            "error": [],
+            "close": [],
+            "reconnect": [],
+            "noreconnect": [],
+            "message": [],
+            "order_update": []
+        },
+
+        // trigger event callbacks
+        trigger :    function(e, args) {
+            if (!this.triggers[e]) return
+            for(var n=0; n<this.triggers[e].length; n++) {
+                this.triggers[e][n].apply(this.triggers[e][n], args ? args : []);
+            }
+        },
+    
+        parseTextMessage: function(data) {
+            try {
+                data = JSON.parse(data)
+                console.log(data)
+            } catch (e) {
+                return
+            }
+    
+            if (data.type === "order") {
+                console.log("order_update", [data.data]);
+            }
+        },
+    
+        parseBinary: function(binpacks) {
+            var packets = this.splitPackets(binpacks),
+                ticks = [];
+    
+            for(var n=0; n<packets.length; n++) {
+                var bin = packets[n],
+                    instrument_token = this.buf2long(bin.slice(0, 4)),
+                    segment = instrument_token & 0xff;
+    
+                var tradable = true;
+                if (segment === this.segment_const.Indices) tradable = false;
+    
+                // Add price divisor based on segment
+                var divisor = 100.0;
+                if (segment === this.segment_const.NseCD) {
+                    divisor = 10000000.0;
+    
+                } else if (segment == this.segment_const.BseCD) {
+                    divisor = 10000.0;
+                }
+    
+                // Parse LTP
+                if (bin.byteLength === 8) {
+                    ticks.push({
+                        tradable: tradable,
+                        mode: "ltp",
+                        instrument_token: instrument_token,
+                        last_price: this.buf2long(bin.slice(4,8)) / divisor
+                    });
+                    // Parse indices quote and full mode
+                } else if (bin.byteLength === 28 || bin.byteLength === 32) {
+                    var mode = modeQuote;
+                    if (bin.byteLength === 32) mode = modeFull;
+    
+                    var tick = {
+                        tradable: tradable,
+                        mode: mode,
+                        instrument_token: instrument_token,
+                        last_price: this.buf2long(bin.slice(4,8)) / divisor,
+                        ohlc: {
+                            high: this.buf2long(bin.slice(8, 12)) / divisor,
+                            low: this.buf2long(bin.slice(12, 16)) / divisor,
+                            open: this.buf2long(bin.slice(16, 20)) / divisor,
+                            close: this.buf2long(bin.slice(20, 24)) / divisor
+                        },
+                        change: this.buf2long(bin.slice(24, 28))
+                    };
+    
+                    // Compute the change price using close price and last price
+                    if(tick.ohlc.close != 0) {
+                        tick.change = (tick.last_price - tick.ohlc.close) * 100 / tick.ohlc.close;
+                    }
+    
+                    // Full mode with timestamp in seconds
+                    if (bin.byteLength === 32) {
+                        tick.exchange_timestamp = null;
+                        var timestamp = this.buf2long(bin.slice(28, 32));
+                        if (timestamp) tick.exchange_timestamp = new Date(timestamp * 1000);
+                    }
+    
+                    ticks.push(tick);
+                } else if (bin.byteLength === 44 || bin.byteLength === 184) {
+                    var mode = modeQuote;
+                    if (bin.byteLength === 184) mode = modeFull;
+    
+                    var tick = {
+                        tradable: tradable,
+                        mode: mode,
+                        instrument_token: instrument_token,
+                        last_price: this.buf2long(bin.slice(4, 8)) / divisor,
+                        last_traded_quantity: this.buf2long(bin.slice(8, 12)),
+                        average_traded_price: this.buf2long(bin.slice(12, 16)) / divisor,
+                        volume_traded: this.buf2long(bin.slice(16, 20)),
+                        total_buy_quantity: this.buf2long(bin.slice(20, 24)),
+                        total_sell_quantity: this.buf2long(bin.slice(24, 28)),
+                        ohlc: {
+                            open: this.buf2long(bin.slice(28, 32)) / divisor,
+                            high: this.buf2long(bin.slice(32, 36)) / divisor,
+                            low: this.buf2long(bin.slice(36, 40)) / divisor,
+                            close: this.buf2long(bin.slice(40, 44)) / divisor
+                        }
+                    };
+    
+                    // Compute the change price using close price and last price
+                    if (tick.ohlc.close != 0) {
+                        tick.change = (tick.last_price - tick.ohlc.close) * 100 / tick.ohlc.close;
+                    }
+    
+                    // Parse full mode
+                    if (bin.byteLength === 184) {
+                        // Parse last trade time
+                        tick.last_trade_time = null;
+                        var last_trade_time = this.buf2long(bin.slice(44, 48));
+                        if (last_trade_time) tick.last_trade_time = new Date(last_trade_time * 1000);
+    
+                        // Parse timestamp
+                        tick.exchange_timestamp = null;
+                        var timestamp = this.buf2long(bin.slice(60, 64));
+                        if (timestamp) tick.exchange_timestamp = new Date(timestamp * 1000);
+    
+                        // Parse OI
+                        tick.oi = this.buf2long(bin.slice(48, 52));
+                        tick.oi_day_high = this.buf2long(bin.slice(52, 56));
+                        tick.oi_day_low = this.buf2long(bin.slice(56, 60));
+                        tick.depth = {
+                            buy: [],
+                            sell: []
+                        };
+    
+                        var s = 0, depth = bin.slice(64, 184);
+                        for (var i=0; i<10; i++) {
+                            s = i * 12;
+                            tick.depth[i < 5 ? "buy" : "sell"].push({
+                                quantity:	this.buf2long(depth.slice(s, s + 4)),
+                                price:		this.buf2long(depth.slice(s + 4, s + 8)) / divisor,
+                                orders: 	this.buf2long(depth.slice(s + 8, s + 10))
+                            });
+                        }
+                    }
+    
+                    ticks.push(tick);
+                }
+            }
+    
+            return ticks;
+        },
+    
+        splitPackets : function(bin) {
+            // number of packets
+            var num = this.buf2long(bin.slice(0, 2)),
+                j = 2,
+                packets = [];
+    
+            for(var i=0; i<num; i++) {
+                // first two bytes is the packet length
+                var size = this.buf2long(bin.slice(j, j+2)),
+                    packet = bin.slice(j+2, j+2+size);
+    
+                packets.push(packet);
+    
+                j += 2 + size;
+            }
+    
+            return packets;
+        },
+    
+        // Big endian byte array to long.
+        buf2long: function(buf) {
+            var b = new Uint8Array(buf),
+                val = 0,
+                len = b.length;
+    
+            for(var i=0, j=len-1; i<len; i++, j--) {
+                val += b[j] << (i*8);
+            }
+    
+            return val;
+        }
     }
 
+    function update_ltp(selector) {
+        $(selector).each(function(i, ltp_elm) {
+            $(ltp_elm).text(result.lp)
+
+
+            if(selector.startsWith('#active_trade') || selector.startsWith("#active_paper_trade")) {
+                $(ltp_elm).text(result.lp)
+                let tr_elm = $(ltp_elm).parent();
+                if(tr_elm.attr('trade') == 'active') {
+                    trade.update_pnl(tr_elm)
+                    trade.update_total_pnl()
+                }
+            } else if(selector.startsWith('#watch_list')) {
+                let margin = parseInt($(ltp_elm).attr('lot_size')) * result.lp
+                if(!isNaN(margin))
+                    $(ltp_elm).parent().find('.margin_req').text(margin.toFixed(0))
+            }
+        });
+    }
+    
     function update_ltps(instr_token, ltp) {
         switch (instr_token) {
             case vix_tk:
@@ -48,108 +457,12 @@ shoonya_api = function () {
         }
     }
 
-    function update_ltp(selector) {
-        $(selector).each(function(i, ltp_elm) {
-            $(ltp_elm).text(result.lp)
 
-            if(selector.startsWith('#active_trade') || selector.startsWith("#active_paper_trade")) {
-                $(ltp_elm).text(result.lp)
-                let tr_elm = $(ltp_elm).parent();
-                if(tr_elm.attr('trade') == 'active') {
-                    trade.update_pnl(tr_elm)
-                    trade.update_total_pnl()
-                }
-            } else if(selector.startsWith('#watch_list')) {
-                let margin = parseInt($(ltp_elm).attr('lot_size')) * result.lp
-                if(!isNaN(margin))
-                    $(ltp_elm).parent().find('.margin_req').text(margin.toFixed(0))
-            }
-        });
-    }
+   
 
-    function connect() {
-        ws = new WebSocket(url.websocket);
-        ws.onopen = function (event) {
-            let data = {
-                "t": "c",
-                "uid": user_id,
-                "actid": user_id,
-                "susertoken": session_token,
-                "source": "WEB"
-            };
-            console.log("Socket opened")
-            ws.send(JSON.stringify(data));
-            $('#connection_status').css('color', 'green')
-            console.log("Session data sent")
+    
 
-            setInterval(function () {
-                var _hb_req = '{"t":"h"}';
-                ws.send(_hb_req);
-            }, heartbeat_timeout);
-        };
 
-        ws.onmessage = function (event) {
-            result = JSON.parse(event.data)
-            if(result.t == 'ck') {
-                 // trigger("open", [result]);
-                if (result.s == 'OK') {
-                    console.log('Login successful')
-                    logged_in = true;
-                    subscribed_symbols.forEach(subscribe_token)
-                }
-            }
-            if( result.t == 'tk' || result.t == 'tf') {
-                if(result.lp != undefined) {
-                    let instr_token = result.tk
-                    let ltpf = parseFloat(result.lp).toFixed(2)
-                    live_data[instr_token] = ltpf
-                    update_ltps(instr_token, ltpf)
-                }
-            }
-            if( result.t == 'dk' || result.t == 'df') {
-                console.log("..................  Another quote ...................")
-                // trigger("quote", [result]);
-            }
-            if(result.t == 'om') {
-                // console.log("..................  OM ...................")
-                // console.log(result)
-            }
-        }
-
-        ws.onclose = function (event) {
-            $('#connection_status').css('color', 'red')
-            console.log('WebSocket is closed. Reconnect will be attempted in 1 second.', event.reason);
-            setTimeout(function () {
-                connect();
-            }, 1000);
-        };
-
-        ws.onerror = function (event) {
-            console.error("WebSocket error: ", event);
-        };
-    }
-
-    function subscribe_token(token) {
-        // if (!subscribed_symbols.includes(token)) {  // Subscribe only if not subscribed earlier
-            pending_to_subscribe_tokens.add(token);
-        // }
-        for(token of pending_to_subscribe_tokens.keys()) {
-            let symtoken = {"t": "t", "k": token.concat('#')}
-            // console.log(symtoken)
-            if (ws.readyState != WebSocket.OPEN || !logged_in) {
-                console.log("Web socket not ready yet..")
-                setTimeout(function () {
-                    subscribe_token(token)
-                }, 100)
-            } else {
-                console.log("Web socket is ready.. Subscribing ", token)
-                ws.send(JSON.stringify(symtoken));
-                if(!subscribed_symbols.includes(token))
-                    subscribed_symbols.push(token);
-                pending_to_subscribe_tokens.delete(token);
-            }
-        }
-    }
 
     function get_payload(params) {
         let payload = 'jData=' + JSON.stringify(params);
@@ -157,16 +470,27 @@ shoonya_api = function () {
         return payload
     }
 
-    function post_request(url, params, success_cb, failure_cb) {
-        let payload = get_payload(params)
-        $.ajax({
+/*    function createCookie(name, value, days) {
+        var expires;
+
+        if (days) {
+            var date = new Date();
+            date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+            expires = "; expires=" + date.toGMTString();
+        } else {
+            expires = "";
+        }
+        document.cookie = encodeURIComponent(name) + "=" + encodeURIComponent(value) + expires + "; path=/";
+    }*/
+
+    function get_request(url, params, success_cb, failure_cb) {
+        $.get({
             url: url,
-            type: "POST",
+            type: "GET",
             dataType: "json",
-            data: payload,
             success: function (data, textStatus, jqXHR) {
                 console.log(url + " : params = ", JSON.stringify(params))
-                console.log("Post request success: Resp = ", JSON.stringify(data))
+                console.log("Get request success: Resp = ", JSON.stringify(data))
                 if (success_cb != undefined) {
                     success_cb(data)
                 }
@@ -185,7 +509,7 @@ shoonya_api = function () {
 
     let search_instrument = function(stext) {
         let params = {"uid": user_id, "stext": stext}
-        post_request(url.search_instrument, params);
+        get_request(broker.url.search_instrument, params);
     }
 
     /* Search instrument autocomplete */
@@ -196,7 +520,7 @@ shoonya_api = function () {
             source:  function(request, response){
                         params = {"uid": user_id, "stext": request.term}
                         $.ajax({
-                            url: url.search_instrument,
+                            url: broker.url.search_instrument,
                             type: "POST",
                             dataType: "json",
                             data: get_payload(params),
@@ -404,7 +728,7 @@ shoonya_api = function () {
             values["uid"]       = user_id ;
             let payload = get_payload(values)
             $.ajax({
-                url: url.order_book,
+                url: broker.url.order_book,
                 type: "POST",
                 dataType: "json",
                 data: payload,
@@ -455,8 +779,8 @@ shoonya_api = function () {
                         <td><input type="text" class="form-control sl" placeholder=""  value=""></td>
                         <td><input type="text" class="form-control qty" placeholder=""  value="${order.qty}"></td>
     
-                        <td><button type="button" class="btn btn-success modify" onclick="shoonya_api.orderbook.modify_order(this)">Modify</button></td>
-                        <td><button type="button" class="btn btn-danger cancel" onclick="shoonya_api.orderbook.cancel_order(this)">Cancel</button></td>
+                        <td><button type="button" class="btn btn-success modify" onclick="client_api.orderbook.modify_order(this)">Modify</button></td>
+                        <td><button type="button" class="btn btn-danger cancel" onclick="client_api.orderbook.cancel_order(this)">Cancel</button></td>
                 </tr>`);
 
                 let order_id = order.norenordno
@@ -499,7 +823,7 @@ shoonya_api = function () {
             } else {
                 console.log("Going to place order " + JSON.stringify(params))
                 if(!is_paper_trade()) {
-                    post_request(url.place_order, params, function (data) {
+                    get_request(broker.url.place_order, params, function (data) {
                         if (success_cb != undefined) {  // Call custom function provided.. In case of exit, it needs to remove tr
                             console.log("Success call back is provided. Will be called")
                             success_cb(data)
@@ -545,8 +869,8 @@ shoonya_api = function () {
                     <td><input type="text" class="form-control sl" placeholder=""  value=""></td>
                     <td><input type="text" class="form-control qty" placeholder=""  value="${item.qty}"></td>
 
-                    <td><button type="button" class="btn btn-success modify" onclick="shoonya_api.orderbook.modify_order(this)">Modify</button></td>
-                    <td><button type="button" class="btn btn-danger cancel" onclick="shoonya_api.orderbook.cancel_order(this)">Cancel</button></td>
+                    <td><button type="button" class="btn btn-success modify" onclick="client_api.orderbook.modify_order(this)">Modify</button></td>
+                    <td><button type="button" class="btn btn-danger cancel" onclick="client_api.orderbook.cancel_order(this)">Cancel</button></td>
             </tr>`);
 
             let entry_obj = milestone_manager.get_value_object(entry_val)
@@ -623,7 +947,7 @@ shoonya_api = function () {
                 values["uid"]         = user_id;
                 values["norenordno"]  = orderno;
 
-                post_request(url.cancel_order, values, function (data) {
+                get_request(broker.url.cancel_order, values, function (data) {
                     if (data.stat.toUpperCase() === "OK")
                         tr_elm.remove();
 
@@ -693,7 +1017,7 @@ shoonya_api = function () {
 
                 if(!order_id.includes("Spot")) {  // Modify value order.. Not spot based order
                     values["norenordno"] = order_id;
-                    post_request(url.modify_order, values, function(data) {
+                    get_request(url.modify_order, values, function(data) {
                         if(data.stat == "Ok") {
                                 let orderno = data.result;  // In case of modify and cancel order 'result' contains order ID.
                                 let monitored = open_order_mgr.add_modify(orderno)
@@ -815,7 +1139,7 @@ shoonya_api = function () {
             let values = orderbook.get_order_params(tr_elm, buy_sell, exit_limit, qty)
 
             if(!is_paper_trade()) {
-                post_request(url.place_order, values, function (data) {
+                get_request(url.place_order, values, function (data) {
                     if (data.stat.toUpperCase() === "OK") {
                         let orderno = data.norenordno;
                         orderbook.update_open_orders();
@@ -853,8 +1177,8 @@ shoonya_api = function () {
             trade.update_pnl(tr_elm, matching_order.avgprc)
             trade.update_total_pnl()
 
-            tr_elm.find('.modify').parent().html(`CLOSED</br><span class="badge badge-pill badge-secondary" title="Watch live" onclick="shoonya_api.trade.toggle_watch_closed_trade($(this))" style="cursor:pointer;padding:8px;margin-top:10px">Watch</span>`);
-            tr_elm.find('.exit').parent().html(`<button type="button" class="btn btn-dark btn-sm" onclick="$(this).parent().parent().remove();shoonya_api.trade.reset_max_profit_loss()">Delete</button>`);
+            tr_elm.find('.modify').parent().html(`CLOSED</br><span class="badge badge-pill badge-secondary" title="Watch live" onclick="client_api.trade.toggle_watch_closed_trade($(this))" style="cursor:pointer;padding:8px;margin-top:10px">Watch</span>`);
+            tr_elm.find('.exit').parent().html(`<button type="button" class="btn btn-dark btn-sm" onclick="$(this).parent().parent().remove();client_api.trade.reset_max_profit_loss()">Delete</button>`);
             tr_elm.find('.qty').attr('disabled', 'disabled');
             tr_elm.find('.exit').attr('disabled', 'disabled');
 
@@ -1567,8 +1891,8 @@ shoonya_api = function () {
                         <td><input type="text" disabled class="form-control sl" placeholder="" value="" ></td>
                         <td><input type="text" class="form-control exit-limit" placeholder="" ></td>
                         <td><input type="text" class="form-control qty" placeholder=""  value="${order.qty}"></td>
-                        <td><button type="button" class="btn btn-success modify" onclick="shoonya_api.trade.modify(this, $(this).text())">Edit</button></td>
-                        <td><button type="button" class="btn btn-danger exit" onclick="shoonya_api.trade.exit(this)">Exit</button></td>
+                        <td><button type="button" class="btn btn-success modify" onclick="client_api.trade.modify(this, $(this).text())">Edit</button></td>
+                        <td><button type="button" class="btn btn-danger exit" onclick="client_api.trade.exit(this)">Exit</button></td>
                 </tr>`);
 
             if(target != undefined && target != '' ) {
@@ -1695,19 +2019,20 @@ shoonya_api = function () {
                 let row_id = tr_elm.attr('id')
                 let token = tr_elm.attr('token')
                 let trtype = tr_elm.attr('trtype')
-
                 if(target != undefined && target != '' ) {
                     milestone_manager.add_target(row_id, token, ttype, milestone_manager.get_value_object(target))
-                } else milestone_manager.remove_target(row_id)
+                } else
+                    milestone_manager.remove_target(row_id)
 
                 if(sl != undefined && sl != '' ) {
                     milestone_manager.add_sl(row_id, token, ttype, milestone_manager.get_value_object(sl))
-                } else milestone_manager.remove_sl(row_id)
+                } else
+                    milestone_manager.remove_sl(row_id)
             }
         },
 
         exit : function(elm) {
-            shoonya_api.orderbook.exit_order(elm);
+            client_api.orderbook.exit_order(elm);
         },
 
         load_open_positions : function() {
@@ -1761,8 +2086,8 @@ shoonya_api = function () {
                             <td><input type="text" disabled class="form-control sl" placeholder="" ></td>
                             <td><input type="text" class="form-control exit-limit" placeholder="" ></td>
                             <td><input type="text" class="form-control qty" placeholder=""  value="${qty}"></td>
-                            <td><button type="button" class="btn btn-success modify" onclick="shoonya_api.trade.modify(this, $(this).text())">Edit</button></td>
-                            <td><button type="button" class="btn btn-danger exit" onclick="shoonya_api.trade.exit(this)">Exit</button></td>
+                            <td><button type="button" class="btn btn-success modify" onclick="client_api.trade.modify(this, $(this).text())">Edit</button></td>
+                            <td><button type="button" class="btn btn-danger exit" onclick="client_api.trade.exit(this)">Exit</button></td>
                         </tr>`);
                     }else {
                         console.log("Position is already present in active trades")
@@ -1801,7 +2126,7 @@ shoonya_api = function () {
             let watch_list_str = window.localStorage.getItem("watch_list");
             let stored_entries = JSON.parse(watch_list_str)
             for(const [key, value_str] of Object.entries(stored_entries)) {
-                shoonya_api.watch_list.add_row_to_watch(JSON.parse(value_str))
+                client_api.watch_list.add_row_to_watch(JSON.parse(value_str))
             }
         },
 
@@ -1872,15 +2197,14 @@ shoonya_api = function () {
 
             $('#watch_list_body').append(`<tr class="${class_name}" exch="${params.exch}" token="${params.token}" tsym="${params.tsym}" lot_size="${params.lot_size}" dname="${params.sym}">
     
-                <td> <input type="checkbox" class="select" value=""> </td>
                 <td class="dname">${params.sym}</td>
                 <th class="margin_req num"></th>
                 <th class="watch_${params.token} ltp" lot_size="${params.lot_size}"></th>
-                <td class="input_box"><input type="text" class="form-control entry" placeholder="" onclick="shoonya_api.watch_list.add_ltp(this)" ></td>
+                <td class="input_box"><input type="text" class="form-control entry" placeholder="" onclick="client_api.watch_list.add_ltp(this)" ></td>
                 <td class="input_box"><input type="text" class="form-control qty" placeholder="" value="${params.lot_size}"></td>
-                <td><button type="button" class="btn btn-success buy" onclick="shoonya_api.orderbook.buy(this)">BUY</button></td>
-                <td><button type="button" class="btn btn-danger sell" onclick="shoonya_api.orderbook.sell(this)">SELL</button></td>
-                <th class="del-icon" onclick="shoonya_api.watch_list.delete_item(this)">
+                <td><button type="button" class="btn btn-success buy" onclick="client_api.orderbook.buy(this)">BUY</button></td>
+                <td><button type="button" class="btn btn-danger sell" onclick="client_api.orderbook.sell(this)">SELL</button></td>
+                <th class="del-icon" onclick="client_api.watch_list.delete_item(this)">
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-trash" viewBox="0 0 16 16">
                         <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/>
                         <path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/>
@@ -1914,17 +2238,26 @@ shoonya_api = function () {
             values["actid"]     = user_id   ;
 
             let payload = get_payload(values)
-            $.ajax({
-                url: url.positions,
-                type: "POST",
+            $.get({
+                url: broker.url.positions,
+                // type: "GET",
                 dataType: "json",
-                data: payload,
+                headers : {
+                    "Authorization" : "enctoken " + session_token,
+                    //"Access-Control-Allow-Origin" : "https://kite.zerodha.com/positions",
+                    // "origin" : "https://kite.zerodha.com/positions",
+                    // "Referer": "https://kite.zerodha.com/positions",
+                    "Accept": "application/json"
+
+                },
+
                 success: function (data, textStatus, jqXHR) {
                     success_cb(data)
                 },
                 error: function (jqXHR, textStatus, errorThrown) {
-                    console.error("Ajax error")
-                    show_error_msg(JSON.parse(jqXHR.responseText).emsg)
+                    console.error("Ajax error " + errorThrown)
+                    show_error_msg(jqXHR.responseText)
+
                 }
             });
         },
@@ -1935,7 +2268,7 @@ shoonya_api = function () {
             this.get_positions(function(positions) {
                 let pnl = {unrealized_pnl : 0.0, realized_pnl:0.0 };
                 if (positions != undefined && positions.stat !== 'Not_Ok')
-                    positions.forEach((position)=> shoonya_api.positions.show_position(position, pnl))
+                    positions.forEach((position)=> client_api.positions.show_position(position, pnl))
 
                 $('#realized_pnl').html(pnl.realized_pnl.toFixed(2))
                 $('#unrealized_pnl').html(pnl.unrealized_pnl.toFixed(2))
@@ -2013,17 +2346,20 @@ shoonya_api = function () {
         }
     };
 
+    let broker = kite;
+
     /*Attach functions to connect, add to watch list button, etc*/
     $(document).ready(function() {
         hide_other_tabs('#open_orders')
         $('#connect_to_server').click(function () {
             user_id = $('#userId').val()
             session_token = $('#sessionToken').val()
-            connect()
-            setTimeout(orderbook.update_open_orders, 100);
+            broker.init()
+            broker.connect()
+/*            setTimeout(orderbook.update_open_orders, 100);
             setTimeout(trade.load_open_positions, 100);
             setTimeout(watch_list.restore_watch_list, 100);
-            setTimeout(trade.trigger, 1000);
+            setTimeout(trade.trigger, 1000);*/
             //Uncomment below line to enable spreads dynamic calculation
             // setTimeout(trade.calculate_spreads, 2000);
         });
@@ -2040,12 +2376,18 @@ shoonya_api = function () {
         other_tabs.forEach((tab) => {
             $(tab).hide();
         })
+    };
+
+    function toHexString(byteArray) {
+        return Array.from(byteArray, function(byte) {
+            return ('0' + (byte & 0xFF).toString(16)).slice(-2);
+        }).join('')
     }
 
     return {
         "search_instrument" :  search_instrument,
-        "connect" : connect,
-        "post_request": post_request,
+        "connect" : broker.connect,
+        "get_request": get_request,
         "watch_list": watch_list,
         "orderbook": orderbook,
         "trade" : trade,
@@ -2057,6 +2399,7 @@ shoonya_api = function () {
         "show_success_msg" : show_success_msg,
         "show_error_msg" : show_error_msg,
         "toggle_paper_trade": toggle_paper_trade,
+        "toHexString" : toHexString,
     }
 
 }();
