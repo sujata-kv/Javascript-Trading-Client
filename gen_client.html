@@ -13,30 +13,42 @@
         </div>
         <div class="list-group list-group-flush border-bottom scrollarea">
             <a href="#" class="list-group-item list-group-item-action py-3 lh-tight" aria-current="true">
+
+                <select class="form-select" id="select_broker">
+                    <option selected value="shoonya">Shoonya</option>
+                    <option value="kite">Kite</option>
+                </select>
+
                 <div class="form-row align-items-center">
                     <div class="col-auto">
                         <input type="text"  class="form-control form-control-sm" id="userId" placeholder="User" value="FA90807">
-
-<!--                   VC1177     -->
+<!--               FA90807    VC1177     -->
                     </div>
                     <div class="col-auto">
                         <input type="text" class="form-control form-control-sm" id="sessionToken" placeholder="Session Token"
                                value="54140ca1aea668506425be10697541b99f072cee4b15abbf5107ae490ac0bae9">
-
-<!--                       OPCHYasb7lopoDvhVBpu1wlre5pUJHM4+C52wKRwrL/S2niCv/HRkDL1jyvdEp6dDsHqwGmBmYszUNOKzyPeBJxalYo9YRhOAMtKM0Nc4UAcwMnwqzhyOw== -->
-                    </div>
-                    <div class="col-auto">
-                        <button type="submit" class="btn btn-sm btn-info" id="connect_to_server">Connect</button>
+<!--                        54140ca1aea668506425be10697541b99f072cee4b15abbf5107ae490ac0bae9
+OPCHYasb7lopoDvhVBpu1wlre5pUJHM4+C52wKRwrL/S2niCv/HRkDL1jyvdEp6dDsHqwGmBmYszUNOKzyPeBJxalYo9YRhOAMtKM0Nc4UAcwMnwqzhyOw==
+-->
                     </div>
 
-                    <div class="col">
-                        <div class="card-body conn-status" title="Connection Status">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-circle-fill" viewBox="0 0 16 16">
-                                <circle cx="8" cy="8" r="8" id="connection_status" color="grey"></circle>
-                            </svg>
+
+                    <div class="row">
+                        <div class="col-md-1">
+                            <button type="submit" class="btn btn-sm btn-info" id="connect_to_server" onclick="client_api.connect_to_server()">Connect</button>
                         </div>
+
+                        <div class="col-md-1">
+                            <div class="card-body conn-status" title="Connection Status">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-circle-fill" viewBox="0 0 16 16">
+                                    <circle cx="8" cy="8" r="8" id="connection_status" color="grey"></circle>
+                                </svg>
+                            </div>
+                        </div>
+
                     </div>
                 </div>
+
             </a>
             <div class="list-group-item list-group-item-action py-3 lh-tight">
                 <div class="col">

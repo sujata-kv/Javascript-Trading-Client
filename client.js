@@ -10,6 +10,16 @@ client_api = function () {
     let logged_in = false;
     let heartbeat_timeout = 7000;
     let live_data = {};
+    let broker = '';
+
+    function select_broker(broker_name) {
+        if (broker_name === "kite") {
+            broker = kite
+        } else if (broker_name === "shoonya") {
+            broker = shoonya
+        }
+        return broker
+    }
 
     let shoonya = {
 
@@ -101,7 +111,7 @@ client_api = function () {
                 if (ws.readyState != WebSocket.OPEN || !logged_in) {
                     console.log("Web socket not ready yet..")
                     setTimeout(function () {
-                        subscribe_token(token)
+                        shoonya.subscribe_token(token)
                     }, 100)
                 } else {
                     console.log("Web socket is ready.. Subscribing ", token)
@@ -213,7 +223,7 @@ client_api = function () {
                 if (ws.readyState !== WebSocket.OPEN || !logged_in) {
                     console.log("Web socket not ready yet..")
                     setTimeout(function () {
-                        subscribe_token(token)
+                        kite.subscribe_token(token)
                     }, 100)
                 } else {
                     let mesg = {"a": "subscribe", "v": [token]}
@@ -503,13 +513,6 @@ client_api = function () {
                 break;
         }
     }
-
-
-   
-
-    
-
-
 
     function get_payload(params) {
         let payload = 'jData=' + JSON.stringify(params);
@@ -964,7 +967,7 @@ client_api = function () {
             values["ret"]       = 'DAY';
             values["remarks"]   = remarks;
 
-            values["amo"] = "Yes";          // TODO - AMO ORDER
+            // values["amo"] = "Yes";          // TODO - AMO ORDER
 
             return values;
         },
@@ -2354,25 +2357,6 @@ client_api = function () {
         }
     };
 
-    let broker = shoonya
-
-    /*Attach functions to connect, add to watch list button, etc*/
-    $(document).ready(function() {
-        hide_other_tabs('#open_orders')
-        $('#connect_to_server').click(function () {
-            user_id = $('#userId').val()
-            session_token = $('#sessionToken').val()
-            broker.init()
-            broker.connect()
-/*            setTimeout(orderbook.update_open_orders, 100);
-            setTimeout(trade.load_open_positions, 100);
-            setTimeout(watch_list.restore_watch_list, 100);
-            setTimeout(trade.trigger, 1000);*/
-            //Uncomment below line to enable spreads dynamic calculation
-            // setTimeout(trade.calculate_spreads, 2000);
-        });
-    });
-
     function hide_other_tabs(cur_tab) {
         let other_tabs = []
         switch(cur_tab) {
@@ -2386,15 +2370,30 @@ client_api = function () {
         })
     };
 
-    function toHexString(byteArray) {
-        return Array.from(byteArray, function(byte) {
-            return ('0' + (byte & 0xFF).toString(16)).slice(-2);
-        }).join('')
+    function connect_to_server(){
+        user_id = $('#userId').val()
+        session_token = $('#sessionToken').val()
+        let broker_name = $('#select_broker')[0].value
+
+        broker = select_broker(broker_name);
+        broker.init();
+        broker.connect();
+        setTimeout(client_api.orderbook.update_open_orders, 100);
+        setTimeout(client_api.trade.load_open_positions, 100);
+        setTimeout(client_api.watch_list.restore_watch_list, 100);
+        setTimeout(client_api.trade.trigger, 1000);
+
+        //Uncomment below line to enable spreads dynamic calculation
+        // setTimeout(trade.calculate_spreads, 2000);
     }
+
+    /*Attach functions to connect, add to watch list button, etc*/
+    $(document).ready(function() {
+        hide_other_tabs('#open_orders')
+    });
 
     return {
         "search_instrument" :  search_instrument,
-        "connect" : broker.connect,
         "post_request": post_request,
         "watch_list": watch_list,
         "orderbook": orderbook,
@@ -2407,16 +2406,16 @@ client_api = function () {
         "show_success_msg" : show_success_msg,
         "show_error_msg" : show_error_msg,
         "toggle_paper_trade": toggle_paper_trade,
-        "toHexString" : toHexString,
+        "connect_to_server" : connect_to_server,
     }
 
 }();
 
-
-
-$(document).ready(function(){
+$(document).ready(function() {
     $('button.close-btn').on('click', function (event) {
         event.preventDefault();
         $(this).parent().hide();
     });
-})
+});
+
+
