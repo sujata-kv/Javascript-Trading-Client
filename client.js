@@ -12,13 +12,34 @@ client_api = function () {
     let live_data = {};
     let broker = '';
 
-    function select_broker(broker_name) {
+    function select_broker() {
+        let broker_name = $('#broker_option')[0].value
+
         if (broker_name === "kite") {
             broker = kite
+            user_id = $('#login-creds .kite-creds .user-id').val()
+            session_token = $('#login-creds .kite-creds .session-token').val()
+
+            $('#login-creds .kite-creds').removeClass('d-none')
+            $('#login-creds .shoonya-creds').addClass('d-none')
         } else if (broker_name === "shoonya") {
             broker = shoonya
+            user_id = $('#login-creds .shoonya-creds .user-id').val()
+            session_token = $('#login-creds .shoonya-creds .session-token').val()
+
+            $('#login-creds .shoonya-creds').removeClass('d-none')
+            $('#login-creds .kite-creds').addClass('d-none')
         }
-        return broker
+    }
+
+    function login_status(success) {
+        if(success) {
+            logged_in = true
+            $('#connection_status').css('color', 'green')
+        } else {
+            logged_in = false
+            $('#connection_status').css('color', 'red')
+        }
     }
 
     let shoonya = {
@@ -51,26 +72,27 @@ client_api = function () {
                 };
                 console.log("Socket opened")
                 ws.send(JSON.stringify(data));
-                $('#connection_status').css('color', 'green')
+
                 console.log("Session data sent")
 
                 setInterval(function () {
-                    var _hb_req = '{"t":"h"}';
-                    ws.send(_hb_req);
+                    if(ws.readyState == WebSocket.OPEN) {
+                        var _hb_req = '{"t":"h"}';
+                        ws.send(_hb_req);
+                    }
                 }, heartbeat_timeout);
             };
 
             ws.onmessage = function (event) {
                 result = JSON.parse(event.data)
                 if(result.t == 'ck') {
-                    // trigger("open", [result]);
                     if (result.s == 'OK') {
-                        console.log('Login successful')
-                        logged_in = true;
+                        console.log('On message : ck OK')
                         subscribed_symbols.forEach(shoonya.subscribe_token)
                     }
                 }
                 if( result.t == 'tk' || result.t == 'tf') {
+                    console.log('On message : ' + result.t)
                     if(result.lp != undefined) {
                         let instr_token = result.tk
                         let ltpf = parseFloat(result.lp).toFixed(2)
@@ -79,42 +101,47 @@ client_api = function () {
                     }
                 }
                 if( result.t == 'dk' || result.t == 'df') {
-                    console.log("..................  Another quote ...................")
+                    console.log('On message : ' + result.t)
                     // trigger("quote", [result]);
                 }
                 if(result.t == 'om') {
+                    console.log('On message : ' + result.t)
                     // console.log("..................  OM ...................")
                     // console.log(result)
                 }
             }
 
             ws.onclose = function (event) {
-                $('#connection_status').css('color', 'red')
+                login_status(false)
                 console.log('WebSocket is closed. Reconnect will be attempted in 1 second.', event.reason);
                 setTimeout(function () {
-                    connect();
+                    shoonya.connect();
                 }, 1000);
             };
 
             ws.onerror = function (event) {
+                login_status(false)
+                // $('#connection_status').css('color', 'red')
                 console.error("WebSocket error: ", event);
             };
         },
 
         subscribe_token: function(token) {
-            // if (!subscribed_symbols.includes(token)) {  // Subscribe only if not subscribed earlier
+
             pending_to_subscribe_tokens.add(token);
-            // }
+
             for(token of pending_to_subscribe_tokens.keys()) {
                 let symtoken = {"t": "t", "k": token.concat('#')}
-                // console.log(symtoken)
-                if (ws.readyState != WebSocket.OPEN || !logged_in) {
+                if (ws.readyState != WebSocket.OPEN) {
                     console.log("Web socket not ready yet..")
                     setTimeout(function () {
                         shoonya.subscribe_token(token)
-                    }, 100)
+                    }, 1000)
+
                 } else {
                     console.log("Web socket is ready.. Subscribing ", token)
+                    // if(!logged_in) login_status(true)
+
                     ws.send(JSON.stringify(symtoken));
                     if(!subscribed_symbols.includes(token))
                         subscribed_symbols.push(token);
@@ -174,10 +201,6 @@ client_api = function () {
             ws.binaryType = 'arraybuffer';
     
             ws.onopen = function (event) {
-                $('#connection_status').css('color', 'green')
-                logged_in = true;
-                console.log("Logged in..")
-    
                 if(subscribed_symbols.length > 0)
                     subscribed_symbols.forEach(kite.subscribe_token)
             };
@@ -201,35 +224,38 @@ client_api = function () {
                     kite.parseTextMessage(e.data)
                 }*/
             };
-    
+
             ws.onclose = function (event) {
-                $('#connection_status').css('color', 'red')
+                login_status(false)
                 console.log('WebSocket is closed. Reconnect will be attempted in 1 second.', event.reason);
                 setTimeout(function () {
-                    connect();
+                    kite.connect();
                 }, 1000);
             };
-    
+
             ws.onerror = function (event) {
+                login_status(false)
+                // $('#connection_status').css('color', 'red')
                 console.error("WebSocket error: ", event);
             };
+
         },
 
         subscribe_token : function(token) {
-            // if (!subscribed_symbols.includes(token)) {  // Subscribe only if not subscribed earlier
             pending_to_subscribe_tokens.add(token);
-            // }
             for(token of pending_to_subscribe_tokens.keys()) {
-                if (ws.readyState !== WebSocket.OPEN || !logged_in) {
+                if (ws.readyState !== WebSocket.OPEN) {
                     console.log("Web socket not ready yet..")
                     setTimeout(function () {
                         kite.subscribe_token(token)
                     }, 100)
                 } else {
+                    console.log("Web socket is open.. Trying to subscribe token, ", token)
+                    if(!logged_in) login_status(true)
+
                     let mesg = {"a": "subscribe", "v": [token]}
-                    console.log("Web socket is ready.. Subscribing ", token)
                     ws.send(JSON.stringify(mesg));
-                    // mesg = {"a": "mode", "v" : ["ltpc", [token]]}
+
                     mesg = {"a": "mode", "v" : ["ltp", [token]]}
                     ws.send(JSON.stringify(mesg));
 
@@ -772,10 +798,13 @@ client_api = function () {
                 dataType: "json",
                 data: payload,
                 success: function (data, textStatus, jqXHR) {
+                    if(jqXHR.status == 200) login_status(true)
                     success_cb(data)
                 },
                 error: function (jqXHR, textStatus, errorThrown) {
-                    console.log("Ajax error")
+                    console.log("Ajax error : ", JSON.stringify(jqXHR))
+                    if(jqXHR.status == 401)
+                        login_status(false)
                     show_error_msg(JSON.parse(jqXHR.responseText).emsg)
                 }
             });
@@ -1725,7 +1754,7 @@ client_api = function () {
                 }
             }
 
-            setTimeout(trade.trigger, 1000)
+            setTimeout(trade.trigger, 100)
 
             function check_entry_trigger(row_id, mile_stone) {
                 let cur_spot_value = 0;
@@ -2371,11 +2400,7 @@ client_api = function () {
     };
 
     function connect_to_server(){
-        user_id = $('#userId').val()
-        session_token = $('#sessionToken').val()
-        let broker_name = $('#select_broker')[0].value
-
-        broker = select_broker(broker_name);
+        select_broker()
         broker.init();
         broker.connect();
         setTimeout(client_api.orderbook.update_open_orders, 100);
@@ -2407,6 +2432,7 @@ client_api = function () {
         "show_error_msg" : show_error_msg,
         "toggle_paper_trade": toggle_paper_trade,
         "connect_to_server" : connect_to_server,
+        "select_broker" : select_broker,
     }
 
 }();

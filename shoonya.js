@@ -1362,7 +1362,7 @@ shoonya_api = function () {
                 }
             }
 
-            setTimeout(trade.trigger, 1000)
+            setTimeout(trade.trigger, 100)
 
             function check_entry_trigger(row_id, mile_stone) {
                 let cur_spot_value = 0;
