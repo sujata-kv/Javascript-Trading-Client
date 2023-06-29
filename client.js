@@ -43,6 +43,7 @@ client_api = function () {
     }
 
     let shoonya = {
+        name : "shoonya",
 
         url : {
             websocket : "wss://trade.shoonya.com/NorenWSWeb/",
@@ -121,7 +122,6 @@ client_api = function () {
 
             ws.onerror = function (event) {
                 login_status(false)
-                // $('#connection_status').css('color', 'red')
                 console.error("WebSocket error: ", event);
             };
         },
@@ -136,11 +136,10 @@ client_api = function () {
                     console.log("Web socket not ready yet..")
                     setTimeout(function () {
                         shoonya.subscribe_token(token)
-                    }, 1000)
+                    }, 100)
 
                 } else {
                     console.log("Web socket is ready.. Subscribing ", token)
-                    // if(!logged_in) login_status(true)
 
                     ws.send(JSON.stringify(symtoken));
                     if(!subscribed_symbols.includes(token))
@@ -156,9 +155,9 @@ client_api = function () {
             values["uid"]       = user_id   ;
             values["actid"]     = user_id   ;
 
-            let payload = get_payload(values)
+            let payload = shoonya.get_payload(values)
             $.ajax({
-                url: this.url.positions,
+                url: broker.url.positions,
                 type: "POST",
                 dataType: "json",
                 data: payload,
@@ -171,20 +170,78 @@ client_api = function () {
                 }
             });
         },
+
+        get_orderbook : function(success_cb) {
+            let values          = {};
+            values["uid"]       = user_id ;
+            let payload = shoonya.get_payload(values)
+            $.ajax({
+                url: broker.url.order_book,
+                type: "POST",
+                dataType: "json",
+                data: payload,
+                success: function (data, textStatus, jqXHR) {
+                    if(jqXHR.status == 200)
+                        login_status(true)
+                    for(const[key, order] of Object.entries(data)) {
+                        order['subscribe_token'] = order.exch + "|" + order.token;
+                    }
+                    success_cb(data)
+                },
+                error: function (jqXHR, textStatus, errorThrown) {
+                    console.log("Ajax error : ", JSON.stringify(jqXHR))
+                    if(jqXHR.status == 401)
+                        login_status(false)
+                    show_error_msg(JSON.parse(jqXHR.responseText).emsg)
+                }
+            });
+        },
+
+        get_payload : function(params) {
+            let payload = 'jData=' + JSON.stringify(params);
+            payload = payload + "&jKey=" + session_token;
+            return payload
+        },
+
+        post_request : function(url, params, success_cb, failure_cb) {
+            let payload = shoonya.get_payload(params)
+            $.ajax({
+                url: url,
+                type: "POST",
+                dataType: "json",
+                data: payload,
+                success: function (data, textStatus, jqXHR) {
+                    console.log(url + " : params = ", JSON.stringify(params))
+                    console.log("Post request success: Resp = ", JSON.stringify(data))
+                    if (success_cb != undefined) {
+                        success_cb(data)
+                    }
+                },
+                error: function (jqXHR, textStatus, errorThrown) {
+                    console.error("Ajax failed")
+                    console.error(errorThrown)
+                    console.error(jqXHR)
+                    console.error(textStatus)
+                    if (failure_cb != undefined) {
+                        failure_cb(jqXHR, textStatus, errorThrown)
+                    }
+                }
+            });
+        }
     }
     
     let kite = {
+        name : "kite",
         
         url : {
             websocket : "wss://ws.zerodha.com/",
-            search_instrument : "https://kite.zerodha.com/NorenWClientWeb/SearchScrip",
-            order_book : "https://kite.zerodha.com/NorenWClientWeb/OrderBook",
-            place_order : "https://kite.zerodha.com/NorenWClientWeb/PlaceOrder",
-            modify_order : "https://kite.zerodha.com/NorenWClientWeb/ModifyOrder",
-            cancel_order : "https://kite.zerodha.com/NorenWClientWeb/CancelOrder",
-            exit_order : "https://kite.zerodha.com/NorenWClientWeb/ExitOrder",
+            search_instrument : "https://kite.zerodha.com/oms/",
+            order_book : "https://kite.zerodha.com/oms/orders",
+            place_order : "https://kite.zerodha.com/oms/",
+            modify_order : "https://kite.zerodha.com/oms/",
+            cancel_order : "https://kite.zerodha.com/oms/",
+            exit_order : "https://kite.zerodha.com/oms/",
             positions : "https://kite.zerodha.com/oms/portfolio/positions",
-
         },
         
         init : function() {
@@ -235,7 +292,6 @@ client_api = function () {
 
             ws.onerror = function (event) {
                 login_status(false)
-                // $('#connection_status').css('color', 'red')
                 console.error("WebSocket error: ", event);
             };
 
@@ -250,7 +306,7 @@ client_api = function () {
                         kite.subscribe_token(token)
                     }, 100)
                 } else {
-                    console.log("Web socket is open.. Trying to subscribe token, ", token)
+                    console.log("Web socket is open.. Subscribing ", token)
                     if(!logged_in) login_status(true)
 
                     let mesg = {"a": "subscribe", "v": [token]}
@@ -473,16 +529,11 @@ client_api = function () {
 
         get_positions : function (success_cb) {
 
-            let values          = {};
-            values["uid"]       = user_id   ;
-            values["actid"]     = user_id   ;
-
             $.get({
-                url: this.url.positions,
+                url: broker.url.positions,
                 dataType: "json",
                 headers : {
                     "Authorization" : "enctoken " + session_token,
-                    // "Accept": "application/json"
                 },
 
                 success: function (data, textStatus, jqXHR) {
@@ -491,26 +542,90 @@ client_api = function () {
                 error: function (jqXHR, textStatus, errorThrown) {
                     console.error("Ajax error " + errorThrown)
                     show_error_msg(jqXHR.responseText)
-
                 }
             });
         },
+
+        get_orderbook : function(success_cb) {
+            $.get({
+                url: broker.url.order_book,
+                dataType: "json",
+                headers : {
+                    "Authorization" : "enctoken " + session_token,
+                },
+                success: function (data, textStatus, jqXHR) {
+                    let orders = kite.map_orders(data.data)
+                    success_cb(orders)
+                },
+                error: function (jqXHR, textStatus, errorThrown) {
+                    console.log("Ajax error : ", JSON.stringify(jqXHR))
+                    if(jqXHR.status == 401)
+                        login_status(false)
+                    show_error_msg(JSON.parse(jqXHR.responseText).emsg)
+                }
+            });
+        },
+
+        map_orders : function(kite_orders) {
+            let std_orders = []
+            for(const [key, kite_order] of Object.entries(kite_orders)) {
+                let std_order = {
+                    'subscribe_token' : kite_order.instrument_token,
+                    'status' : kite.get_std_order_status(kite_order.status),
+                    'exch' : kite_order.exchange,
+                    'token' : kite_order.instrument_token,
+                    'timestamp' : kite_order.order_timestamp.split(' ')[1],
+                    'tsym' : kite_order.tradingsymbol,
+                    'amo' : kite_order.variety == "amo"? "YES" : "NO",
+                    'trantype' : kite_order.transaction_type == "BUY" ? "B" : "S",
+                    'qty' : kite_order.quantity,
+                    'prc' : kite_order.price,
+                    'norenordno' : kite_order.order_id,
+                    'dname' : kite_order.tradingsymbol,
+
+                    'prctyp' : kite_order.order_type,
+                    'noren_time' : kite_order.exchange_timestamp,
+                    'exch_time' : kite_order.exchange_timestamp,
+                    'reject_reason' : kite_order.status_message,
+                    'remarks': undefined,
+                    'prd': kite_order.product,
+                    'exch_order_id': kite_order.exchange_order_id
+                }
+                std_orders.push(std_order)
+            }
+            return std_orders;
+        },
+
+        get_std_order_status : function(stat) {
+            let std = ''
+            if(stat.includes('OPEN')){
+                std = "OPEN"
+            } else if(stat.includes('CANCELLED')) {
+                std = "CANCELLED"
+            } else if(stat.includes('COMPLETE')) {
+                std = "COMPLETE"
+            } else if(stat.includes('REJECTED')) {
+                std = "REJECTED"
+            } else if(stat.includes('REQ RECEIVED')) {
+                std = "OPEN"
+            }
+            return std;
+        }
     }
 
-    function update_ltp(selector) {
+    function update_ltp(selector, ltp) {
         $(selector).each(function(i, ltp_elm) {
-            $(ltp_elm).text(result.lp)
-
+            $(ltp_elm).text(ltp)
 
             if(selector.startsWith('#active_trade') || selector.startsWith("#active_paper_trade")) {
-                $(ltp_elm).text(result.lp)
+                $(ltp_elm).text(ltp)
                 let tr_elm = $(ltp_elm).parent();
                 if(tr_elm.attr('trade') == 'active') {
                     trade.update_pnl(tr_elm)
                     trade.update_total_pnl()
                 }
             } else if(selector.startsWith('#watch_list')) {
-                let margin = parseInt($(ltp_elm).attr('lot_size')) * result.lp
+                let margin = parseInt($(ltp_elm).attr('lot_size')) * ltp
                 if(!isNaN(margin))
                     $(ltp_elm).parent().find('.margin_req').text(margin.toFixed(0))
             }
@@ -532,44 +647,12 @@ client_api = function () {
                 $('#fin_nifty').html(ltp)
                 break;
             default:
-                update_ltp('#watch_list_body .watch_' + instr_token);   //In watch list
-                update_ltp("#open_orders .open_order_" + instr_token)  // In Open Order table
-                update_ltp("#active_trades_table .trade_" + instr_token)  // In Active Trades table
-                update_ltp("#active_paper_trades .trade_" + instr_token)  // In Active Trades table
+                update_ltp('#watch_list_body .watch_' + instr_token, ltp);   //In watch list
+                update_ltp("#open_orders .open_order_" + instr_token, ltp)  // In Open Order table
+                update_ltp("#active_trades_table .trade_" + instr_token, ltp)  // In Active Trades table
+                update_ltp("#active_paper_trades .trade_" + instr_token, ltp)  // In Active Trades table
                 break;
         }
-    }
-
-    function get_payload(params) {
-        let payload = 'jData=' + JSON.stringify(params);
-        payload = payload + "&jKey=" + session_token;
-        return payload
-    }
-
-    function post_request(url, params, success_cb, failure_cb) {
-        let payload = get_payload(params)
-        $.ajax({
-            url: url,
-            type: "POST",
-            dataType: "json",
-            data: payload,
-            success: function (data, textStatus, jqXHR) {
-                console.log(url + " : params = ", JSON.stringify(params))
-                console.log("Post request success: Resp = ", JSON.stringify(data))
-                if (success_cb != undefined) {
-                    success_cb(data)
-                }
-            },
-            error: function (jqXHR, textStatus, errorThrown) {
-                console.error("Ajax failed")
-                console.error(errorThrown)
-                console.error(jqXHR)
-                console.error(textStatus)
-                if (failure_cb != undefined) {
-                    failure_cb(jqXHR, textStatus, errorThrown)
-                }
-            }
-        });
     }
 
     let search_instrument = function(stext) {
@@ -788,28 +871,6 @@ client_api = function () {
             }
         },
 
-        get_orderbook : function(success_cb) {
-            let values          = {};
-            values["uid"]       = user_id ;
-            let payload = get_payload(values)
-            $.ajax({
-                url: broker.url.order_book,
-                type: "POST",
-                dataType: "json",
-                data: payload,
-                success: function (data, textStatus, jqXHR) {
-                    if(jqXHR.status == 200) login_status(true)
-                    success_cb(data)
-                },
-                error: function (jqXHR, textStatus, errorThrown) {
-                    console.log("Ajax error : ", JSON.stringify(jqXHR))
-                    if(jqXHR.status == 401)
-                        login_status(false)
-                    show_error_msg(JSON.parse(jqXHR.responseText).emsg)
-                }
-            });
-        },
-
         update_open_order_list : function(orders) {
             $('#open_order_list').html('')
             if(orders!=undefined && Array.isArray(orders))
@@ -820,9 +881,8 @@ client_api = function () {
 
         add_open_order : function(order) {
             if (order.status == "OPEN") {
-
-                let token = order.exch + "|" + order.token
-                broker.subscribe_token(token)
+                // let token = order.exch + "|" + order.token
+                broker.subscribe_token(order.subscribe_token)
 
                 let type = order.amo == "Yes"? "AMO ": "";
                 let buy_sell = '';
@@ -948,7 +1008,7 @@ client_api = function () {
 
         update_open_orders : function() {
             hide_other_tabs('#open_orders')
-            orderbook.get_orderbook(function(data) {orderbook.update_open_order_list(data);})
+            broker.get_orderbook(function(data) {orderbook.update_open_order_list(data);})
         },
 
         get_order_params: function(elm, buy_or_sell, entry, qty) {
@@ -1015,14 +1075,14 @@ client_api = function () {
                 values["uid"]         = user_id;
                 values["norenordno"]  = orderno;
 
-                post_request(broker.url.cancel_order, values, function (data) {
+                broker.post_request(broker.url.cancel_order, values, function (data) {
                     if (data.stat.toUpperCase() === "OK")
                         tr_elm.remove();
 
                     if ( data.result != undefined) {
                         let orderno = data.result;  //For cancel order, order-id is contained in result variable
 
-                        orderbook.get_orderbook(function(orders) {
+                        broker.get_orderbook(function(orders) {
                             let matching_order = orders.find(order => order.norenordno === orderno)
                             if (matching_order != undefined) {
                                 orderbook.display_order_exec_msg(matching_order);
@@ -1266,7 +1326,7 @@ client_api = function () {
 
             if(open_order_mgr.exec_permission(orderno, action)) {
                 console.log(action + ": get_order_status : " + orderno + " Making get_orderbook post req")
-                orderbook.get_orderbook(function (orders) {
+                broker.get_orderbook(function (orders) {
                     let matching_order = orders.find(order => order.norenordno === orderno)
                     if (matching_order != undefined) {
                         console.log(orderno + " : Found matching order ")
@@ -1303,7 +1363,7 @@ client_api = function () {
         show_orderbook : function() {
             $('#order_book_table').html("")
             hide_other_tabs('#order_book')
-            this.get_orderbook(function(orders) {
+            broker.get_orderbook(function(orders) {
                 if(orders!=undefined && Array.isArray(orders))
                     orders.forEach((order)=> orderbook.show_order(order))
             })
@@ -1347,7 +1407,7 @@ client_api = function () {
                         <td>${buy_sell}</td>
                         <td>${item.avgprc === undefined? item.prc : item.avgprc}</td>
                         <td>${item.prctyp}</td>
-                        <td>${item.norentm}</td>
+                        <td>${item.norentm === undefined? "": item.norentm}</td>
                         <td>${rej_reason}</td>
                         <td>${item.remarks === undefined? "" : item.remarks}</td>
                         <td>${item.exch_tm === undefined? "": item.exch_tm}</td>
@@ -2419,7 +2479,7 @@ client_api = function () {
 
     return {
         "search_instrument" :  search_instrument,
-        "post_request": post_request,
+        // "post_request": post_request,
         "watch_list": watch_list,
         "orderbook": orderbook,
         "trade" : trade,
