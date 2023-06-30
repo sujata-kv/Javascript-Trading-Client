@@ -183,8 +183,9 @@ client_api = function () {
                 success: function (data, textStatus, jqXHR) {
                     if(jqXHR.status == 200)
                         login_status(true)
+
                     for(const[key, order] of Object.entries(data)) {
-                        order['subscribe_token'] = order.exch + "|" + order.token;
+                        order['subscribe_token'] = order.exch + "|" + order.token;      //Add subscribe_token field.. specific to shoonya
                     }
                     success_cb(data)
                 },
@@ -234,7 +235,7 @@ client_api = function () {
             values["uid"]         = user_id;
             values["norenordno"]  = orderno;
 
-            broker.post_request(broker.url.cancel_order, values, function (data) {
+            shoonya.post_request(broker.url.cancel_order, values, function (data) {
                 if (data.stat.toUpperCase() === "OK")
                     tr_elm.remove();
 
@@ -250,6 +251,36 @@ client_api = function () {
                     })
                 }
             });
+        },
+
+        modify_order : function(tr_elm, entry_obj, success_call_bk) {
+            let prctyp = 'LMT', price = "0.0";
+            if (entry_obj.value == '') {
+                prctyp = 'MKT'
+            } else price = entry_obj.value;
+
+            let qty = tr_elm.find('.qty').val()
+            let order_id = tr_elm.find('.order-num').html()
+
+            let values = {'ordersource': 'WEB'};
+            values["uid"] = user_id;
+            values["actid"] = user_id;
+            values["exch"] = tr_elm.attr('exch');
+            values["tsym"] = tr_elm.attr('tsym');
+            values["qty"] = qty;
+            values["prctyp"] = prctyp;
+            values["prc"] = price;
+
+            values["norenordno"] = order_id;
+
+            shoonya.post_request(broker.url.modify_order, values, function(data) {
+                if(data.stat == "Ok") {
+                    let orderno = data.result;  // In case of modify and cancel order 'result' contains order ID.
+                    data.orderno = orderno
+                    success_call_bk(data)
+                    show_success_msg("Order with order num : " + orderno + " modified successfully")
+                } else show_error_msg(data.emsg)
+            })
         },
     }
     
@@ -599,7 +630,7 @@ client_api = function () {
                     'token' : kite_order.instrument_token,
                     'timestamp' : kite_order.order_timestamp.split(' ')[1],
                     'tsym' : kite_order.tradingsymbol,
-                    'amo' : kite_order.variety == "amo"? "YES" : "NO",
+                    'amo' : kite_order.variety == "amo"? "Yes" : "No",
                     'trantype' : kite_order.transaction_type == "BUY" ? "B" : "S",
                     'qty' : kite_order.quantity,
                     'prc' : kite_order.price,
@@ -607,12 +638,15 @@ client_api = function () {
                     'dname' : kite_order.tradingsymbol,
 
                     'prctyp' : kite_order.order_type,
-                    'noren_time' : kite_order.exchange_timestamp,
+                    'norentm' : kite_order.exchange_timestamp,
                     'exch_time' : kite_order.exchange_timestamp,
                     'reject_reason' : kite_order.status_message,
                     'remarks': undefined,
                     'prd': kite_order.product,
-                    'exch_order_id': kite_order.exchange_order_id
+                    'exch_order_id': kite_order.exchange_order_id,
+
+                    //Kite specific
+                    'variety' : kite_order.variety,
                 }
                 std_orders.push(std_order)
             }
@@ -636,8 +670,9 @@ client_api = function () {
         },
 
         cancel_order : function(tr_elm, orderno) {
-            let url = broker.url.cancel_order + "regular/" + orderno + "?order_id=" + orderno + "&parent_order_id=&variety=regular"
-            // let url = broker.url.cancel_order + "amo/" + orderno + "?order_id=" + orderno + "&parent_order_id=&variety=amo"
+            let variety = tr_elm.attr('variety')
+            // let url = broker.url.cancel_order + "regular/" + orderno + "?order_id=" + orderno + "&parent_order_id=&variety=regular"
+            let url = broker.url.cancel_order + variety + "/" + orderno + "?order_id=" + orderno + "&parent_order_id=&variety=" + variety
             $.ajax( {
                 url: url,
                 type: "DELETE",
@@ -645,13 +680,14 @@ client_api = function () {
                     "Authorization" : "enctoken " + session_token,
                 },
                 success : function (data) {
-                    if (data.stat.toUpperCase() === "OK")
+                    if (data.status === "success")
                         tr_elm.remove();
 
-                    if ( data.result != undefined) {
-                        let orderno = data.result;  //For cancel order, order-id is contained in result variable
+                    if ( data.data.order_id != undefined) {
+                        let orderno = data.data.order_id;  //For cancel order, order-id is contained in result variable
 
-                        broker.get_orderbook(function(orders) {
+                        broker.get_orderbook(function(data) {
+                            let orders = kite.map_orders(data.data)
                             let matching_order = orders.find(order => order.norenordno === orderno)
                             if (matching_order != undefined) {
                                 orderbook.display_order_exec_msg(matching_order);
@@ -714,7 +750,7 @@ client_api = function () {
 
     let search_instrument = function(stext) {
         let params = {"uid": user_id, "stext": stext}
-        post_request(broker.url.search_instrument, params);
+        shoonya.post_request(broker.url.search_instrument, params);
     }
 
     /* Search instrument autocomplete */
@@ -728,7 +764,7 @@ client_api = function () {
                             url: broker.url.search_instrument,
                             type: "POST",
                             dataType: "json",
-                            data: get_payload(params),
+                            data: shoonya.get_payload(params),
                             success: function (data, textStatus, jqXHR) {
                                 // console.log("Ajax success")
                                 response($.map(data.values, function (item) {
@@ -954,7 +990,7 @@ client_api = function () {
                 ++unique_row_id;
                 let row_id = "row_id_" + unique_row_id;
                 $('#open_order_list').append(`<tr id="${row_id}" ordid="${order.norenordno}" exch="${order.exch}" tsym="${order.tsym}" 
-                                    qty="${order.qty}" token="${order.token}" ttype="${ttype}" trtype="${order.trantype}"">
+                                    qty="${order.qty}" token="${order.token}" ttype="${ttype}" trtype="${order.trantype}" variety="${order.variety}"">
                         <td>${buy_sell}</td>
                         <td class="order-num">${order.norenordno}</td>
                         <td>${dname}</td>
@@ -1011,7 +1047,7 @@ client_api = function () {
             } else {
                 console.log("Going to place order " + JSON.stringify(params))
                 if(!is_paper_trade()) {
-                    post_request(broker.url.place_order, params, function (data) {
+                    shoonya.post_request(broker.url.place_order, params, function (data) {
                         if (success_cb != undefined) {  // Call custom function provided.. In case of exit, it needs to remove tr
                             console.log("Success call back is provided. Will be called")
                             success_cb(data)
@@ -1168,57 +1204,38 @@ client_api = function () {
                 milestone_manager.add_entry(row_id, token, ttype, trtype, entry_obj)
             } else {
                 milestone_manager.remove_entry(row_id); // Entry should be present in milestone_mgr only if it is spot based. Else LIMIT & MKT order should be placed immediately
-                let prctyp = 'LMT', price = "0.0";
-                if (entry_obj.value == '') {
-                    prctyp = 'MKT'
-                } else price = entry_obj.value;
-
-                let qty = tr_elm.find('.qty').val()
-
-                let values = {'ordersource': 'WEB'};
-                values["uid"] = user_id;
-                values["actid"] = user_id;
-                values["exch"] = tr_elm.attr('exch');
-                values["tsym"] = tr_elm.attr('tsym');
-                values["qty"] = qty;
-                values["prctyp"] = prctyp;
-                values["prc"] = price;
 
                 if(!order_id.includes("Spot")) {  // Modify value order.. Not spot based order
-                    values["norenordno"] = order_id;
-                    post_request(url.modify_order, values, function(data) {
-                        if(data.stat == "Ok") {
-                                let orderno = data.result;  // In case of modify and cancel order 'result' contains order ID.
-                                let monitored = open_order_mgr.add_modify(orderno)
 
-                                if(!monitored) {
-                                    orderbook.get_order_status(order_id, ACTION.modify, (function (row_id) {
-                                        return function (matching_order, orders) {
-                                            let order_id = matching_order.norenordno;
-                                            console.log("Modified Order status = completed.. " + order_id + " row_id = " + row_id)
-                                            console.log(open_order_mgr.open_orders[order_id])
-                                            /*if (row_id == undefined)
-                                                row_id = orderbook.get_row_id_by_order_id(order_id);*/
+                    broker.modify_order(tr_elm, entry_obj, function(data) {
+                        let monitored = open_order_mgr.add_modify(data.orderno)
 
-                                            milestone_manager.add_order_id(row_id, order_id);
+                        if(!monitored) {
+                            orderbook.get_order_status(order_id, ACTION.modify, (function (row_id) {
+                                return function (matching_order, orders) {
+                                    let order_id = matching_order.norenordno;
+                                    console.log("Modified Order status = completed.. " + order_id + " row_id = " + row_id)
+                                    console.log(open_order_mgr.open_orders[order_id])
+                                    /*if (row_id == undefined)
+                                        row_id = orderbook.get_row_id_by_order_id(order_id);*/
 
-                                            matching_order.prc = matching_order.avgprc; // When order status is COMPLETE avgprc field contains the correct price
-                                            const ms_obj = milestone_manager.get_milestone(order_id);
-                                            let target = '';
-                                            let sl = '';
-                                            if (ms_obj != undefined) {
-                                                const old_row_id = ms_obj.row_id;
-                                                target = milestone_manager.get_value_string(ms_obj.milestone.target)
-                                                sl = milestone_manager.get_value_string(ms_obj.milestone.sl)
-                                                milestone_manager.remove_milestone(old_row_id); //Target and SL have been taken into Active Trade Row
-                                            }
-                                            trade.display_active_trade(matching_order, target, sl);
-                                            orderbook.update_open_order_list(orders);
-                                        }
-                                    })(row_id));
+                                    milestone_manager.add_order_id(row_id, order_id);
+
+                                    matching_order.prc = matching_order.avgprc; // When order status is COMPLETE avgprc field contains the correct price
+                                    const ms_obj = milestone_manager.get_milestone(order_id);
+                                    let target = '';
+                                    let sl = '';
+                                    if (ms_obj != undefined) {
+                                        const old_row_id = ms_obj.row_id;
+                                        target = milestone_manager.get_value_string(ms_obj.milestone.target)
+                                        sl = milestone_manager.get_value_string(ms_obj.milestone.sl)
+                                        milestone_manager.remove_milestone(old_row_id); //Target and SL have been taken into Active Trade Row
+                                    }
+                                    trade.display_active_trade(matching_order, target, sl);
+                                    orderbook.update_open_order_list(orders);
                                 }
+                            })(row_id));
                         }
-                        else show_error_msg(data.emsg)
                     });
                 } else { // Place fresh order as spot entry value has been removed as orderno contains "Spot based entry"
                     orderbook.place_buy_sell_order(tr_elm, tr_elm.attr('trtype'), function(data) {
@@ -1308,7 +1325,7 @@ client_api = function () {
             let values = orderbook.get_order_params(tr_elm, buy_sell, exit_limit, qty)
 
             if(!is_paper_trade()) {
-                post_request(url.place_order, values, function (data) {
+                shoonya.post_request(broker.url.place_order, values, function (data) {
                     if (data.stat.toUpperCase() === "OK") {
                         let orderno = data.norenordno;
                         orderbook.update_open_orders();
