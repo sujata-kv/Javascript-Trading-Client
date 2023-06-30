@@ -486,7 +486,10 @@ shoonya_api = function () {
             tr_elm.find('.buy').attr('disabled', 'disabled');
             tr_elm.find('.sell').attr('disabled', 'disabled');
 
-            let entry_val = tr_elm.find('.entry').val()
+            let entry_elm = tr_elm.find('.entry')
+            let entry_val = entry_elm.val()
+            entry_elm.val('') //Reset once used
+
             console.log("Inside place order : " + entry_val)
             if(entry_val == undefined) entry_val = 0.0;
             let entry_obj = milestone_manager.get_value_object(entry_val);
@@ -1862,9 +1865,13 @@ shoonya_api = function () {
         selection_is_valid : function() {
             let item = $('input.watch_item')
             let name = item.val().trim()
-            let dname = item.attr('dname').trim()
-
-            return name === dname
+            let dname = item.attr('dname')
+            if(dname != undefined) {
+                dname = dname.trim()
+                return name === dname
+            } else {
+                return true
+            }
         },
 
         fin_nifty_dname_fix : function(tsym, dname) {
