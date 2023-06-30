@@ -230,7 +230,7 @@ client_api = function () {
             });
         },
 
-        cancel_order : function(tr_elm, orderno) {
+        cancel_order : function(tr_elm, orderno, success_cb) {
             let values            = {'ordersource':'WEB'};
             values["uid"]         = user_id;
             values["norenordno"]  = orderno;
@@ -241,14 +241,7 @@ client_api = function () {
 
                 if ( data.result != undefined) {
                     let orderno = data.result;  //For cancel order, order-id is contained in result variable
-
-                    broker.get_orderbook(function(orders) {
-                        let matching_order = orders.find(order => order.norenordno === orderno)
-                        if (matching_order != undefined) {
-                            orderbook.display_order_exec_msg(matching_order);
-                        }
-                        orderbook.update_open_order_list(orders);
-                    })
+                    broker.get_orderbook(success_cb)
                 }
             });
         },
@@ -292,7 +285,7 @@ client_api = function () {
             search_instrument : "https://kite.zerodha.com/oms/",
             order_book : "https://kite.zerodha.com/oms/orders",
             place_order : "https://kite.zerodha.com/oms/",
-            modify_order : "https://kite.zerodha.com/oms/",
+            modify_order : "https://kite.zerodha.com/oms/orders/",
             cancel_order : "https://kite.zerodha.com/oms/orders/",
             exit_order : "https://kite.zerodha.com/oms/",
             positions : "https://kite.zerodha.com/oms/portfolio/positions",
@@ -584,7 +577,7 @@ client_api = function () {
         get_positions : function (success_cb) {
 
             $.get({
-                url: broker.url.positions,
+                url: kite.url.positions,
                 dataType: "json",
                 headers : {
                     "Authorization" : "enctoken " + session_token,
@@ -602,7 +595,7 @@ client_api = function () {
 
         get_orderbook : function(success_cb) {
             $.get({
-                url: broker.url.order_book,
+                url: kite.url.order_book,
                 dataType: "json",
                 headers : {
                     "Authorization" : "enctoken " + session_token,
@@ -621,6 +614,8 @@ client_api = function () {
         },
 
         map_orders : function(kite_orders) {
+            if(kite_orders == undefined)
+                return undefined
             let std_orders = []
             for(const [key, kite_order] of Object.entries(kite_orders)) {
                 let std_order = {
@@ -669,10 +664,10 @@ client_api = function () {
             return std;
         },
 
-        cancel_order : function(tr_elm, orderno) {
+        cancel_order : function(tr_elm, orderno, success_cb) {
             let variety = tr_elm.attr('variety')
-            // let url = broker.url.cancel_order + "regular/" + orderno + "?order_id=" + orderno + "&parent_order_id=&variety=regular"
-            let url = broker.url.cancel_order + variety + "/" + orderno + "?order_id=" + orderno + "&parent_order_id=&variety=" + variety
+            // let url = kite.url.cancel_order + "regular/" + orderno + "?order_id=" + orderno + "&parent_order_id=&variety=regular"
+            let url = kite.url.cancel_order + variety + "/" + orderno + "?order_id=" + orderno + "&parent_order_id=&variety=" + variety
             $.ajax( {
                 url: url,
                 type: "DELETE",
@@ -681,18 +676,14 @@ client_api = function () {
                 },
                 success : function (data) {
                     if (data.status === "success")
-                        tr_elm.remove();
+                        tr_elm.remove()
 
                     if ( data.data.order_id != undefined) {
-                        let orderno = data.data.order_id;  //For cancel order, order-id is contained in result variable
+                        let orderno = data.data.order_id
 
-                        broker.get_orderbook(function(data) {
+                        kite.get_orderbook(function(data) {
                             let orders = kite.map_orders(data.data)
-                            let matching_order = orders.find(order => order.norenordno === orderno)
-                            if (matching_order != undefined) {
-                                orderbook.display_order_exec_msg(matching_order);
-                            }
-                            orderbook.update_open_order_list(orders);
+                            success_cb(orders)
                         })
                     }
                 },
@@ -703,6 +694,64 @@ client_api = function () {
                     show_error_msg(JSON.parse(jqXHR.responseText).emsg)
                 }
             });
+        },
+
+        modify_order : function(tr_elm, entry_obj, success_call_bk) {
+            let prctyp = 'LIMIT', price = "0.0";
+            if (entry_obj.value == '') {
+                prctyp = 'MARKET'
+            } else price = entry_obj.value;
+
+            let qty = tr_elm.find('.qty').val()
+            let order_id = tr_elm.find('.order-num').html()
+
+            let variety = tr_elm.attr('variety')
+            let url = kite.url.modify_order + variety + "/" + order_id
+
+            let payload = {
+                variety : variety,
+                exchange : tr_elm.attr('exch'),
+                tradingsymbol : tr_elm.attr('tsym'),
+                transaction_type: tr_elm.attr('trtype') == 'B'? 'BUY' : 'SELL',
+                order_type: prctyp,
+                quantity: qty,
+                price: price,
+                product: 'CNC',
+                validity: 'DAY',
+                disclosed_quantity: 0,
+                trigger_price: 0,
+                squareoff: 0,
+                stoploss: 0,
+                trailing_stoploss: 0,
+                user_id: user_id,
+                order_id: order_id,
+            }
+
+            $.ajax({
+                url: url,
+                type: "PUT",
+                dataType: "json",
+                data: payload,
+                headers: {
+                    "Authorization": "enctoken " + session_token,
+                },
+                success: function (data) {
+                    if (data.status === "success") {
+                        if (data.data.order_id != undefined) {
+                            let orderno = data.data.order_id
+                            data.data.orderno = orderno
+                            success_call_bk(data)
+                            show_success_msg("Order with order num : " + orderno + " modified successfully")
+                        }
+                    } else show_error_msg(data.emsg)
+                },
+                error: function (jqXHR, textStatus, errorThrown) {
+                    console.log("Ajax error : ", JSON.stringify(jqXHR))
+                    if(jqXHR.status == 401)
+                        login_status(false)
+                    show_error_msg(JSON.parse(jqXHR.responseText).emsg)
+                }
+            })
         },
     }
 
@@ -750,7 +799,7 @@ client_api = function () {
 
     let search_instrument = function(stext) {
         let params = {"uid": user_id, "stext": stext}
-        shoonya.post_request(broker.url.search_instrument, params);
+        shoonya.post_request(shoonya.url.search_instrument, params);
     }
 
     /* Search instrument autocomplete */
@@ -761,7 +810,7 @@ client_api = function () {
             source:  function(request, response){
                         params = {"uid": user_id, "stext": request.term}
                         $.ajax({
-                            url: broker.url.search_instrument,
+                            url: shoonya.url.search_instrument,
                             type: "POST",
                             dataType: "json",
                             data: shoonya.get_payload(params),
@@ -1047,7 +1096,7 @@ client_api = function () {
             } else {
                 console.log("Going to place order " + JSON.stringify(params))
                 if(!is_paper_trade()) {
-                    shoonya.post_request(broker.url.place_order, params, function (data) {
+                    shoonya.post_request(shoonya.url.place_order, params, function (data) {
                         if (success_cb != undefined) {  // Call custom function provided.. In case of exit, it needs to remove tr
                             console.log("Success call back is provided. Will be called")
                             success_cb(data)
@@ -1152,7 +1201,7 @@ client_api = function () {
             values["ret"]       = 'DAY';
             values["remarks"]   = remarks;
 
-            // values["amo"] = "Yes";          // TODO - AMO ORDER
+            values["amo"] = "Yes";          // TODO - AMO ORDER
 
             return values;
         },
@@ -1166,7 +1215,13 @@ client_api = function () {
                 milestone_manager.remove_milestone(row_id);
                 tr_elm.remove();
             } else {
-                broker.cancel_order(tr_elm, orderno)
+                broker.cancel_order(tr_elm, orderno, function(orders) {
+                    let matching_order = orders.find(order => order.norenordno === orderno)
+                    if (matching_order != undefined) {
+                        orderbook.display_order_exec_msg(matching_order);
+                    }
+                    orderbook.update_open_order_list(orders);
+                })
             }
         },
 
@@ -1325,7 +1380,7 @@ client_api = function () {
             let values = orderbook.get_order_params(tr_elm, buy_sell, exit_limit, qty)
 
             if(!is_paper_trade()) {
-                shoonya.post_request(broker.url.place_order, values, function (data) {
+                shoonya.post_request(shoonya.url.place_order, values, function (data) {
                     if (data.stat.toUpperCase() === "OK") {
                         let orderno = data.norenordno;
                         orderbook.update_open_orders();
