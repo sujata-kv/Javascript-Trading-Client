@@ -227,7 +227,30 @@ client_api = function () {
                     }
                 }
             });
-        }
+        },
+
+        cancel_order : function(tr_elm, orderno) {
+            let values            = {'ordersource':'WEB'};
+            values["uid"]         = user_id;
+            values["norenordno"]  = orderno;
+
+            broker.post_request(broker.url.cancel_order, values, function (data) {
+                if (data.stat.toUpperCase() === "OK")
+                    tr_elm.remove();
+
+                if ( data.result != undefined) {
+                    let orderno = data.result;  //For cancel order, order-id is contained in result variable
+
+                    broker.get_orderbook(function(orders) {
+                        let matching_order = orders.find(order => order.norenordno === orderno)
+                        if (matching_order != undefined) {
+                            orderbook.display_order_exec_msg(matching_order);
+                        }
+                        orderbook.update_open_order_list(orders);
+                    })
+                }
+            });
+        },
     }
     
     let kite = {
@@ -239,7 +262,7 @@ client_api = function () {
             order_book : "https://kite.zerodha.com/oms/orders",
             place_order : "https://kite.zerodha.com/oms/",
             modify_order : "https://kite.zerodha.com/oms/",
-            cancel_order : "https://kite.zerodha.com/oms/",
+            cancel_order : "https://kite.zerodha.com/oms/orders/",
             exit_order : "https://kite.zerodha.com/oms/",
             positions : "https://kite.zerodha.com/oms/portfolio/positions",
         },
@@ -610,7 +633,41 @@ client_api = function () {
                 std = "OPEN"
             }
             return std;
-        }
+        },
+
+        cancel_order : function(tr_elm, orderno) {
+            let url = broker.url.cancel_order + "regular/" + orderno + "?order_id=" + orderno + "&parent_order_id=&variety=regular"
+            // let url = broker.url.cancel_order + "amo/" + orderno + "?order_id=" + orderno + "&parent_order_id=&variety=amo"
+            $.ajax( {
+                url: url,
+                type: "DELETE",
+                headers : {
+                    "Authorization" : "enctoken " + session_token,
+                },
+                success : function (data) {
+                    if (data.stat.toUpperCase() === "OK")
+                        tr_elm.remove();
+
+                    if ( data.result != undefined) {
+                        let orderno = data.result;  //For cancel order, order-id is contained in result variable
+
+                        broker.get_orderbook(function(orders) {
+                            let matching_order = orders.find(order => order.norenordno === orderno)
+                            if (matching_order != undefined) {
+                                orderbook.display_order_exec_msg(matching_order);
+                            }
+                            orderbook.update_open_order_list(orders);
+                        })
+                    }
+                },
+                error: function (jqXHR, textStatus, errorThrown) {
+                    console.log("Ajax error : ", JSON.stringify(jqXHR))
+                    if(jqXHR.status == 401)
+                        login_status(false)
+                    show_error_msg(JSON.parse(jqXHR.responseText).emsg)
+                }
+            });
+        },
     }
 
     function update_ltp(selector, ltp) {
@@ -1073,27 +1130,7 @@ client_api = function () {
                 milestone_manager.remove_milestone(row_id);
                 tr_elm.remove();
             } else {
-
-                let values            = {'ordersource':'WEB'};
-                values["uid"]         = user_id;
-                values["norenordno"]  = orderno;
-
-                broker.post_request(broker.url.cancel_order, values, function (data) {
-                    if (data.stat.toUpperCase() === "OK")
-                        tr_elm.remove();
-
-                    if ( data.result != undefined) {
-                        let orderno = data.result;  //For cancel order, order-id is contained in result variable
-
-                        broker.get_orderbook(function(orders) {
-                            let matching_order = orders.find(order => order.norenordno === orderno)
-                            if (matching_order != undefined) {
-                                orderbook.display_order_exec_msg(matching_order);
-                            }
-                            orderbook.update_open_order_list(orders);
-                        })
-                    }
-                });
+                broker.cancel_order(tr_elm, orderno)
             }
         },
 
