@@ -1082,8 +1082,8 @@ kite_api = function () {
             //Remove SL and Target set on Total row, if there are no active trades
             let table_id = is_paper_trade()? "#active_paper_trades" : "active_trades_table"
             if($(`${table_id} tr[trade="active"]`).length < 1) {
-                milestone_manager.remove_milestone("all_rows");
-                $('#all_rows th input.target, #all_rows th input.sl').val("")  //Reset UI
+                milestone_manager.remove_milestone("total_row");
+                $('#total_row th input.target, #total_row th input.sl').val("")  //Reset UI
             }
         },
 
@@ -1482,7 +1482,7 @@ kite_api = function () {
             $('#max_profit_seen').text('')
             $('#max_loss_seen').text('')
             $('#total_pnl').text('')
-            let row_id='all_rows'
+            let row_id='total_row'
             this.max_profit_seen[row_id] = 0
             this.max_loss_seen[row_id] = 0
         },
@@ -1498,7 +1498,7 @@ kite_api = function () {
 
             if (!isNaN(total)) {
                 let total_pnl_elm = $('#total_pnl')
-                const row_id = 'all_rows';
+                const row_id = 'total_row';
                 if (total < 0) {
                     total_pnl_elm.css('color', 'red')
                 } else {
@@ -1636,7 +1636,7 @@ kite_api = function () {
                 tbody_elm.find('tr').each(function (index, tr_elm) {
                     $(tr_elm).find('.exit').click()
                 })
-                milestone_manager.remove_milestone('all_rows');
+                milestone_manager.remove_milestone('total_row');
             }
 
             function check_target_trigger(row_id, mile_stone) {
@@ -1652,8 +1652,8 @@ kite_api = function () {
                         default : console.error(row_id + " .. Something is wrong .. " + mile_stone.token); break;
                     }
                 } else { // Price based
-                    if(row_id === "all_rows") { // Use total P & L value in case of cumulative target and SL
-                        cur_spot_value = $('#all_rows').find('.pnl').text()
+                    if(row_id === "total_row") { // Use total P & L value in case of cumulative target and SL
+                        cur_spot_value = $('#total_row').find('.pnl').text()
                         if(cur_spot_value!=undefined)
                             cur_spot_value = parseFloat(cur_spot_value)
                     }
@@ -1682,7 +1682,7 @@ kite_api = function () {
                 function target_triggered() {
                     show_success_msg("Target triggered for row_id : " + row_id + " Trigger value = " + trig_value + " Spot value = " + cur_spot_value)
                     console.log("Target triggered for row_id : " + row_id + " Trigger value = " + trig_value + " Spot value = " + cur_spot_value)
-                    if(row_id === "all_rows") {
+                    if(row_id === "total_row") {
                         //Close all trades
                         close_all_trades();
                     }
@@ -1707,8 +1707,8 @@ kite_api = function () {
                         case "fin_nifty" : cur_spot_value = live_data[fin_nifty_tk]; break;
                     }
                 } else { // Price based
-                    if(row_id === "all_rows") { // Use total P & L value in case of cumulative target and SL
-                        cur_spot_value = $('#all_rows').find('.pnl').text()
+                    if(row_id === "total_row") { // Use total P & L value in case of cumulative target and SL
+                        cur_spot_value = $('#total_row').find('.pnl').text()
                         if(cur_spot_value!=undefined)
                             cur_spot_value = parseFloat(cur_spot_value)
                     }
@@ -1736,7 +1736,7 @@ kite_api = function () {
                 function sl_triggered() {
                     show_error_msg("SL triggered for row_id : " + row_id + " Trigger value = " + trig_value + " Spot value = " + cur_spot_value)
                     console.log("SL triggered for row_id : " + row_id + " Trigger value = " + trig_value + " Spot value = " + cur_spot_value)
-                    if(row_id === "all_rows") {
+                    if(row_id === "total_row") {
                         //Close all trades
                         close_all_trades()
                     }
