@@ -345,6 +345,62 @@ client_api = function () {
                 });
             }
         },
+
+        get_order_params: function(elm, buy_or_sell, entry, qty) {
+
+            let prctyp = 'LMT', price = "0.0";
+            let remarks = "";
+            let tsym = elm.attr('tsym');
+            let dname = elm.attr('dname');
+            let token = elm.attr('token');
+            let instrument_token = elm.attr('instrument_token');
+            if(entry.value == '') {
+                prctyp = 'MKT'
+            }
+            else
+                price = entry.value.toString()
+            let exch = elm.attr('exch');
+            /* "C" For CNC, "M" FOR NRML, "I" FOR MIS, "B" FOR BRACKET ORDER, "H" FOR COVER ORDER*/
+            if(exch == "NSE" || exch == "BSE") {
+                prd = "I";
+            } else {
+                prd = "M";
+                if( tsym != undefined) {
+                    if (tsym.startsWith("NIFTY"))
+                        remarks = "N-" + Math.round(live_data[nifty_tk])
+                    else if (tsym.startsWith("BANKNIFTY"))
+                        remarks = "B-" + Math.round(live_data[bank_nifty_tk])
+                    else if (tsym.startsWith("FINNIFTY"))
+                        remarks = "F-" + Math.round(live_data[fin_nifty_tk])
+                    remarks += " Vix " + live_data[vix_tk]
+                }
+            }
+
+            let values          =  {'ordersource':'WEB'};
+            values["uid"]       = user_id;
+            values["actid"]     = user_id;
+            values["trantype"]  = buy_or_sell;
+            values["prd"]       = prd;
+            values["exch"]      = exch;
+            values["tsym"]      = tsym;
+            values["dname"]      = dname;
+            values["token"]      = token;
+            values["instrument_token"]      = instrument_token;
+            values["qty"]       = qty;
+            values["dscqty"]    = qty;
+            values["prctyp"]    = prctyp       /*  LMT / MKT / SL-LMT / SL-MKT / DS / 2L / 3L */
+            values["prc"]       = price;
+            values["ret"]       = 'DAY';
+            values["remarks"]   = remarks;
+
+            values["amo"] = "Yes";          // TODO - AMO ORDER
+
+            return values;
+        },
+
+        place_order : function(params, success_cb) {
+            shoonya.post_request(shoonya.url.place_order, params, success_cb);
+        },
     }
     
     let kite = {
@@ -352,12 +408,11 @@ client_api = function () {
         
         url : {
             websocket : "wss://ws.zerodha.com/",
-            search_instrument : "https://kite.zerodha.com/oms/",
             order_book : "https://kite.zerodha.com/oms/orders",
-            place_order : "https://kite.zerodha.com/oms/",
+            place_order : "https://kite.zerodha.com/oms/orders/",
             modify_order : "https://kite.zerodha.com/oms/orders/",
             cancel_order : "https://kite.zerodha.com/oms/orders/",
-            exit_order : "https://kite.zerodha.com/oms/",
+            exit_order : "https://kite.zerodha.com/oms/orders/",
             positions : "https://kite.zerodha.com/oms/portfolio/positions",
         },
         
@@ -969,6 +1024,91 @@ client_api = function () {
                 }
             })
         },
+
+        get_order_params: function(tr_elm, buy_or_sell, entry_obj, qty) {
+
+            let prctyp = 'LIMIT', price = "0.0";
+            if (entry_obj.value == '') {
+                prctyp = 'MARKET'
+            } else price = entry_obj.value;
+
+            let remarks = "";
+            let tsym = tr_elm.attr('tsym');
+            let dname = tr_elm.attr('dname');
+            let token = tr_elm.attr('token');
+            let instrument_token = tr_elm.attr('instrument_token');
+            if(entry_obj.value == '') {
+                prctyp = 'MKT'
+            }
+            else
+                price = entry_obj.value.toString()
+            let exch = tr_elm.attr('exch');
+
+            if(exch == "NSE" || exch == "BSE") {
+                prd = "CNC";
+            } else {
+                prd = "MIS";
+                if( tsym != undefined) {
+                    if (tsym.startsWith("NIFTY"))
+                        remarks = "N-" + Math.round(live_data[nifty_tk])
+                    else if (tsym.startsWith("BANKNIFTY"))
+                        remarks = "B-" + Math.round(live_data[bank_nifty_tk])
+                    else if (tsym.startsWith("FINNIFTY"))
+                        remarks = "F-" + Math.round(live_data[fin_nifty_tk])
+                    remarks += " Vix " + live_data[vix_tk]
+                }
+            }
+
+            let payload = {
+                variety : 'amo',
+                exchange : exch,
+                tradingsymbol : tsym,
+                transaction_type: buy_or_sell == 'B'? 'BUY' : 'SELL',
+                order_type: prctyp,
+                quantity: qty,
+                price: price,
+                product: prd,
+                validity: 'DAY',
+                disclosed_quantity: 0,
+                trigger_price: 0,
+                squareoff: 0,
+                stoploss: 0,
+                trailing_stoploss: 0,
+                user_id: user_id,
+                // tag : remarks,
+            }
+
+            return payload;
+        },
+
+        place_order : function(pay_load, success_cb) {
+
+            let url = kite.url.place_order + pay_load.variety
+
+            $.ajax({
+                url: url,
+                // dataType: "json",
+                method: "POST",
+                data: pay_load,
+                headers : {
+                    "Authorization" : "enctoken " + session_token,
+                },
+                success: function (data, textStatus, jqXHR) {
+                    let dt = {}
+                    if(data.status === "success") {
+                        dt.stat = "OK";
+                        dt.norenordno = data.data.order_id;
+                    }
+                    success_cb(dt);
+                },
+                error: function (jqXHR, textStatus, errorThrown) {
+                    console.log("Ajax error : ", JSON.stringify(jqXHR))
+                    if(jqXHR.status == 401)
+                        login_status(false)
+                    show_error_msg(JSON.parse(jqXHR.responseText).emsg)
+                }
+            });
+        },
     }
 
     function update_ltp(selector, ltp) {
@@ -1005,7 +1145,6 @@ client_api = function () {
                 $('#fin_nifty').html(ltp)
                 break;
             default:
-                console.log(instr_token)
                 update_ltp('#watch_list_body .watch_' + instr_token, ltp);   //In watch list
                 update_ltp("#open_orders .open_order_" + instr_token, ltp)  // In Open Order table
                 update_ltp("#active_trades_table .trade_" + instr_token, ltp)  // In Active Trades table
@@ -1244,14 +1383,14 @@ client_api = function () {
             let entry_obj = milestone_manager.get_value_object(entry_val);
             let qty = tr_elm.find('.qty').val()
 
-            let params = this.get_order_params(tr_elm, buy_sell, entry_obj, qty)
+            let params = broker.get_order_params(tr_elm, buy_sell, entry_obj, qty)
             if (entry_obj.spot_based) {
                 params.dname = tr_elm.attr('dname')
                 this.add_to_spot_order_list(params, entry_val)
             } else {
                 console.log("Going to place order " + JSON.stringify(params))
                 if(!is_paper_trade()) {
-                    shoonya.post_request(shoonya.url.place_order, params, function (data) {
+                    broker.place_order(params, function (data) {
                         if (success_cb != undefined) {  // Call custom function provided.. In case of exit, it needs to remove tr
                             console.log("Success call back is provided. Will be called")
                             success_cb(data)
@@ -1311,57 +1450,7 @@ client_api = function () {
             broker.get_orderbook(function(data) {orderbook.update_open_order_list(data);})
         },
 
-        get_order_params: function(elm, buy_or_sell, entry, qty) {
 
-            let prctyp = 'LMT', price = "0.0";
-            let remarks = "";
-            let tsym = elm.attr('tsym');
-            let dname = elm.attr('dname');
-            let token = elm.attr('token');
-            let instrument_token = elm.attr('instrument_token');
-            if(entry.value == '') {
-                prctyp = 'MKT'
-            }
-            else
-                price = entry.value.toString()
-            let exch = elm.attr('exch');
-            /* "C" For CNC, "M" FOR NRML, "I" FOR MIS, "B" FOR BRACKET ORDER, "H" FOR COVER ORDER*/
-            if(exch == "NSE" || exch == "BSE") {
-                prd = "I";
-            } else {
-                prd = "M";
-                if( tsym != undefined) {
-                    if (tsym.startsWith("NIFTY"))
-                        remarks = "N-" + Math.round(live_data[nifty_tk])
-                    else if (tsym.startsWith("BANKNIFTY"))
-                        remarks = "B-" + Math.round(live_data[bank_nifty_tk])
-                    else if (tsym.startsWith("FINNIFTY"))
-                        remarks = "F-" + Math.round(live_data[fin_nifty_tk])
-                    remarks += " Vix " + live_data[vix_tk]
-                }
-            }
-
-            let values          =  {'ordersource':'WEB'};
-            values["uid"]       = user_id;
-            values["actid"]     = user_id;
-            values["trantype"]  = buy_or_sell;
-            values["prd"]       = prd;
-            values["exch"]      = exch;
-            values["tsym"]      = tsym;
-            values["dname"]      = dname;
-            values["token"]      = token;
-            values["instrument_token"]      = instrument_token;
-            values["qty"]       = qty;
-            values["dscqty"]    = qty;
-            values["prctyp"]    = prctyp       /*  LMT / MKT / SL-LMT / SL-MKT / DS / 2L / 3L */
-            values["prc"]       = price;
-            values["ret"]       = 'DAY';
-            values["remarks"]   = remarks;
-
-            values["amo"] = "Yes";          // TODO - AMO ORDER
-
-            return values;
-        },
 
         cancel_order : function(td_elm) {
             let tr_elm = $(td_elm).parent().parent();
