@@ -1090,6 +1090,7 @@ client_api = function () {
                     trailing_stoploss: 0,
                     user_id: user_id,
                     tag : remarks,
+                    token: token,
                 }
 
                 return payload;
@@ -1648,6 +1649,8 @@ client_api = function () {
             order.exch = (order.exch === undefined)? order.exchange : order.exch
             order.trantype = (order.trantype === undefined)? (order.transaction_type=="BUY"? "B": "S") : order.trantype
             order.qty = (order.qty === undefined)? order.quantity : order.qty
+            order.remarks = (order.remarks === undefined)? order.tag : order.remarks
+            order.tsym = (order.tsym === undefined)? order.tradingsymbol : order.tsym
 
             ++unique_row_id;
             let row_id = "row_id_" + unique_row_id;
@@ -1689,6 +1692,7 @@ client_api = function () {
             } else {
                 values.avgprc = tr_elm.find('.ltp').text()
                 values.norentm = new Date().toLocaleTimeString()
+                values.remarks = values.remarks == undefined? values.tag : values.remarks
                 orderbook.exit_order_cb(values, null, tr_elm);
             }
         },
