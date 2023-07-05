@@ -43,25 +43,25 @@ client_api = function () {
     }
 
     let shoonya = {
-        name : "shoonya",
+        name: "shoonya",
 
-        url : {
-            websocket : "wss://trade.shoonya.com/NorenWSWeb/",
-            search_instrument : "https://trade.shoonya.com/NorenWClientWeb/SearchScrip",
-            order_book : "https://trade.shoonya.com/NorenWClientWeb/OrderBook",
-            place_order : "https://trade.shoonya.com/NorenWClientWeb/PlaceOrder",
-            modify_order : "https://trade.shoonya.com/NorenWClientWeb/ModifyOrder",
-            cancel_order : "https://trade.shoonya.com/NorenWClientWeb/CancelOrder",
-            exit_order : "https://trade.shoonya.com/NorenWClientWeb/ExitOrder",
-            positions : "https://trade.shoonya.com/NorenWClientWeb/PositionBook",
+        url: {
+            websocket: "wss://trade.shoonya.com/NorenWSWeb/",
+            search_instrument: "https://trade.shoonya.com/NorenWClientWeb/SearchScrip",
+            order_book: "https://trade.shoonya.com/NorenWClientWeb/OrderBook",
+            place_order: "https://trade.shoonya.com/NorenWClientWeb/PlaceOrder",
+            modify_order: "https://trade.shoonya.com/NorenWClientWeb/ModifyOrder",
+            cancel_order: "https://trade.shoonya.com/NorenWClientWeb/CancelOrder",
+            exit_order: "https://trade.shoonya.com/NorenWClientWeb/ExitOrder",
+            positions: "https://trade.shoonya.com/NorenWClientWeb/PositionBook",
         },
 
-        init : function() {
+        init: function () {
             vix_tk = '26017', nifty_tk = '26000', bank_nifty_tk = '26009', fin_nifty_tk = '26037';
             subscribed_symbols = ["NSE|26017", "NSE|26000", "NSE|26009", "NSE|26037"];
         },
 
-        connect: function() {
+        connect: function () {
             ws = new WebSocket(this.url.websocket);
             ws.onopen = function (event) {
                 let data = {
@@ -77,7 +77,7 @@ client_api = function () {
                 console.log("Session data sent")
 
                 setInterval(function () {
-                    if(ws.readyState == WebSocket.OPEN) {
+                    if (ws.readyState == WebSocket.OPEN) {
                         var _hb_req = '{"t":"h"}';
                         ws.send(_hb_req);
                     }
@@ -86,26 +86,26 @@ client_api = function () {
 
             ws.onmessage = function (event) {
                 result = JSON.parse(event.data)
-                if(result.t == 'ck') {
+                if (result.t == 'ck') {
                     if (result.s == 'OK') {
                         // console.log('On message : ck OK')
                         subscribed_symbols.forEach(shoonya.subscribe_token)
                     }
                 }
-                if( result.t == 'tk' || result.t == 'tf') {
+                if (result.t == 'tk' || result.t == 'tf') {
                     // console.log('On message : ' + result.t)
-                    if(result.lp != undefined) {
+                    if (result.lp != undefined) {
                         let instr_token = result.tk
                         let ltpf = parseFloat(result.lp).toFixed(2)
                         live_data[instr_token] = ltpf
                         update_ltps(instr_token, ltpf)
                     }
                 }
-                if( result.t == 'dk' || result.t == 'df') {
+                if (result.t == 'dk' || result.t == 'df') {
                     console.log('On message : ' + result.t)
                     // trigger("quote", [result]);
                 }
-                if(result.t == 'om') {
+                if (result.t == 'om') {
                     console.log('On message : ' + result.t)
                     // console.log("..................  OM ...................")
                     // console.log(result)
@@ -126,19 +126,19 @@ client_api = function () {
             };
         },
 
-        get_subscribe_token : function(params) {
+        get_subscribe_token: function (params) {
             return params.exch + '|' + params.token
         },
 
-        get_ticker : function(params) {
+        get_ticker: function (params) {
             return params.token;
         },
 
-        subscribe_token: function(token) {
+        subscribe_token: function (token) {
 
             pending_to_subscribe_tokens.add(token);
 
-            for(token of pending_to_subscribe_tokens.keys()) {
+            for (token of pending_to_subscribe_tokens.keys()) {
                 let symtoken = {"t": "t", "k": token.concat('#')}
                 if (ws.readyState != WebSocket.OPEN) {
                     console.log("Web socket not ready yet.. ", token)
@@ -150,18 +150,18 @@ client_api = function () {
                     console.log("Web socket is ready.. Subscribing ", token)
 
                     ws.send(JSON.stringify(symtoken));
-                    if(!subscribed_symbols.includes(token))
+                    if (!subscribed_symbols.includes(token))
                         subscribed_symbols.push(token);
                     pending_to_subscribe_tokens.delete(token);
                 }
             }
         },
 
-        get_positions : function (success_cb) {
+        get_positions: function (success_cb) {
 
-            let values          = {};
-            values["uid"]       = user_id   ;
-            values["actid"]     = user_id   ;
+            let values = {};
+            values["uid"] = user_id;
+            values["actid"] = user_id;
 
             let payload = shoonya.get_payload(values)
             $.ajax({
@@ -179,40 +179,13 @@ client_api = function () {
             });
         },
 
-        get_orderbook : function(success_cb) {
-            let values          = {};
-            values["uid"]       = user_id ;
-            let payload = shoonya.get_payload(values)
-            $.ajax({
-                url: broker.url.order_book,
-                type: "POST",
-                dataType: "json",
-                data: payload,
-                success: function (data, textStatus, jqXHR) {
-                    if(jqXHR.status == 200)
-                        login_status(true)
-
-                    for(const[key, order] of Object.entries(data)) {
-                        order['subscribe_token'] = shoonya.get_subscribe_token(order)      //Add subscribe_token field.. specific to shoonya
-                    }
-                    success_cb(data)
-                },
-                error: function (jqXHR, textStatus, errorThrown) {
-                    console.log("Ajax error : ", JSON.stringify(jqXHR))
-                    if(jqXHR.status == 401)
-                        login_status(false)
-                    show_error_msg(JSON.parse(jqXHR.responseText).emsg)
-                }
-            });
-        },
-
-        get_payload : function(params) {
+        get_payload: function (params) {
             let payload = 'jData=' + JSON.stringify(params);
             payload = payload + "&jKey=" + session_token;
             return payload
         },
 
-        post_request : function(url, params, success_cb, failure_cb) {
+        post_request: function (url, params, success_cb, failure_cb) {
             let payload = shoonya.get_payload(params)
             $.ajax({
                 url: url,
@@ -238,53 +211,7 @@ client_api = function () {
             });
         },
 
-        cancel_order : function(tr_elm, orderno, success_cb) {
-            let values            = {'ordersource':'WEB'};
-            values["uid"]         = user_id;
-            values["norenordno"]  = orderno;
-
-            shoonya.post_request(broker.url.cancel_order, values, function (data) {
-                if (data.stat.toUpperCase() === "OK")
-                    tr_elm.remove();
-
-                if ( data.result != undefined) {
-                    let orderno = data.result;  //For cancel order, order-id is contained in result variable
-                    broker.get_orderbook(success_cb)
-                }
-            });
-        },
-
-        modify_order : function(tr_elm, entry_obj, success_call_bk) {
-            let prctyp = 'LMT', price = "0.0";
-            if (entry_obj.value == '') {
-                prctyp = 'MKT'
-            } else price = entry_obj.value;
-
-            let qty = tr_elm.find('.qty').val()
-            let order_id = tr_elm.find('.order-num').html()
-
-            let values = {'ordersource': 'WEB'};
-            values["uid"] = user_id;
-            values["actid"] = user_id;
-            values["exch"] = tr_elm.attr('exch');
-            values["tsym"] = tr_elm.attr('tsym');
-            values["qty"] = qty;
-            values["prctyp"] = prctyp;
-            values["prc"] = price;
-
-            values["norenordno"] = order_id;
-
-            shoonya.post_request(broker.url.modify_order, values, function(data) {
-                if(data.stat == "Ok") {
-                    let orderno = data.result;  // In case of modify and cancel order 'result' contains order ID.
-                    data.orderno = orderno
-                    success_call_bk(data)
-                    show_success_msg("Order with order num : " + orderno + " modified successfully")
-                } else show_error_msg(data.emsg)
-            })
-        },
-
-        search : {
+        search: {
             attach_search_autocomplete: function () {
                 /* Search instrument autocomplete */
                 $("input.search-instrument").autocomplete({
@@ -346,61 +273,136 @@ client_api = function () {
             }
         },
 
-        get_order_params: function(elm, buy_or_sell, entry, qty) {
+        order : {
+            get_order_params: function (elm, buy_or_sell, entry, qty) {
 
-            let prctyp = 'LMT', price = "0.0";
-            let remarks = "";
-            let tsym = elm.attr('tsym');
-            let dname = elm.attr('dname');
-            let token = elm.attr('token');
-            let instrument_token = elm.attr('instrument_token');
-            if(entry.value == '') {
-                prctyp = 'MKT'
-            }
-            else
-                price = entry.value.toString()
-            let exch = elm.attr('exch');
-            /* "C" For CNC, "M" FOR NRML, "I" FOR MIS, "B" FOR BRACKET ORDER, "H" FOR COVER ORDER*/
-            if(exch == "NSE" || exch == "BSE") {
-                prd = "I";
-            } else {
-                prd = "M";
-                if( tsym != undefined) {
-                    if (tsym.startsWith("NIFTY"))
-                        remarks = "N-" + Math.round(live_data[nifty_tk])
-                    else if (tsym.startsWith("BANKNIFTY"))
-                        remarks = "B-" + Math.round(live_data[bank_nifty_tk])
-                    else if (tsym.startsWith("FINNIFTY"))
-                        remarks = "F-" + Math.round(live_data[fin_nifty_tk])
-                    remarks += " Vix " + live_data[vix_tk]
+                let prctyp = 'LMT', price = "0.0";
+                let remarks = "";
+                let tsym = elm.attr('tsym');
+                let dname = elm.attr('dname');
+                let token = elm.attr('token');
+                let instrument_token = elm.attr('instrument_token');
+                if (entry.value == '') {
+                    prctyp = 'MKT'
+                } else
+                    price = entry.value.toString()
+                let exch = elm.attr('exch');
+                /* "C" For CNC, "M" FOR NRML, "I" FOR MIS, "B" FOR BRACKET ORDER, "H" FOR COVER ORDER*/
+                if (exch == "NSE" || exch == "BSE") {
+                    prd = "I";
+                } else {
+                    prd = "M";
+                    if (tsym != undefined) {
+                        if (tsym.startsWith("NIFTY"))
+                            remarks = "N-" + Math.round(live_data[nifty_tk])
+                        else if (tsym.startsWith("BANKNIFTY"))
+                            remarks = "B-" + Math.round(live_data[bank_nifty_tk])
+                        else if (tsym.startsWith("FINNIFTY"))
+                            remarks = "F-" + Math.round(live_data[fin_nifty_tk])
+                        remarks += " Vix " + live_data[vix_tk]
+                    }
                 }
-            }
 
-            let values          =  {'ordersource':'WEB'};
-            values["uid"]       = user_id;
-            values["actid"]     = user_id;
-            values["trantype"]  = buy_or_sell;
-            values["prd"]       = prd;
-            values["exch"]      = exch;
-            values["tsym"]      = tsym;
-            values["dname"]      = dname;
-            values["token"]      = token;
-            values["instrument_token"]      = instrument_token;
-            values["qty"]       = qty;
-            values["dscqty"]    = qty;
-            values["prctyp"]    = prctyp       /*  LMT / MKT / SL-LMT / SL-MKT / DS / 2L / 3L */
-            values["prc"]       = price;
-            values["ret"]       = 'DAY';
-            values["remarks"]   = remarks;
+                let values = {'ordersource': 'WEB'};
+                values["uid"] = user_id;
+                values["actid"] = user_id;
+                values["trantype"] = buy_or_sell;
+                values["prd"] = prd;
+                values["exch"] = exch;
+                values["tsym"] = tsym;
+                values["dname"] = dname;
+                values["token"] = token;
+                values["instrument_token"] = instrument_token;
+                values["qty"] = qty;
+                values["dscqty"] = qty;
+                values["prctyp"] = prctyp       /*  LMT / MKT / SL-LMT / SL-MKT / DS / 2L / 3L */
+                values["prc"] = price;
+                values["ret"] = 'DAY';
+                values["remarks"] = remarks;
 
-            values["amo"] = "Yes";          // TODO - AMO ORDER
+                values["amo"] = "Yes";          // TODO - AMO ORDER
 
-            return values;
-        },
+                return values;
+            },
 
-        place_order : function(params, success_cb) {
-            shoonya.post_request(shoonya.url.place_order, params, success_cb);
-        },
+            place_order: function (params, success_cb) {
+                shoonya.post_request(shoonya.url.place_order, params, success_cb);
+            },
+
+            cancel_order: function (tr_elm, orderno, success_cb) {
+                let values = {'ordersource': 'WEB'};
+                values["uid"] = user_id;
+                values["norenordno"] = orderno;
+
+                shoonya.post_request(broker.url.cancel_order, values, function (data) {
+                    if (data.stat.toUpperCase() === "OK")
+                        tr_elm.remove();
+
+                    if (data.result != undefined) {
+                        let orderno = data.result;  //For cancel order, order-id is contained in result variable
+                        broker.get_orderbook(success_cb)
+                    }
+                });
+            },
+
+            modify_order: function (tr_elm, entry_obj, success_call_bk) {
+                let prctyp = 'LMT', price = "0.0";
+                if (entry_obj.value == '') {
+                    prctyp = 'MKT'
+                } else price = entry_obj.value;
+
+                let qty = tr_elm.find('.qty').val()
+                let order_id = tr_elm.find('.order-num').html()
+
+                let values = {'ordersource': 'WEB'};
+                values["uid"] = user_id;
+                values["actid"] = user_id;
+                values["exch"] = tr_elm.attr('exch');
+                values["tsym"] = tr_elm.attr('tsym');
+                values["qty"] = qty;
+                values["prctyp"] = prctyp;
+                values["prc"] = price;
+
+                values["norenordno"] = order_id;
+
+                shoonya.post_request(broker.url.modify_order, values, function (data) {
+                    if (data.stat == "Ok") {
+                        let orderno = data.result;  // In case of modify and cancel order 'result' contains order ID.
+                        data.orderno = orderno
+                        success_call_bk(data)
+                        show_success_msg("Order with order num : " + orderno + " modified successfully")
+                    } else show_error_msg(data.emsg)
+                })
+            },
+
+            get_orderbook: function (success_cb) {
+                let values = {};
+                values["uid"] = user_id;
+                let payload = shoonya.get_payload(values)
+                $.ajax({
+                    url: broker.url.order_book,
+                    type: "POST",
+                    dataType: "json",
+                    data: payload,
+                    success: function (data, textStatus, jqXHR) {
+                        if (jqXHR.status == 200)
+                            login_status(true)
+
+                        for (const [key, order] of Object.entries(data)) {
+                            order['subscribe_token'] = shoonya.get_subscribe_token(order)      //Add subscribe_token field.. specific to shoonya
+                        }
+                        success_cb(data)
+                    },
+                    error: function (jqXHR, textStatus, errorThrown) {
+                        console.log("Ajax error : ", JSON.stringify(jqXHR))
+                        if (jqXHR.status == 401)
+                            login_status(false)
+                        show_error_msg(JSON.parse(jqXHR.responseText).emsg)
+                    }
+                });
+            },
+        }
+
     }
     
     let kite = {
@@ -731,7 +733,7 @@ client_api = function () {
                     if (columns[i_instrument_type] === "FUT") {
                         return name + " " + month + " FUT";
                     } else if (columns[i_instrument_type] === "CE" || columns[i_instrument_type] === "PE")
-                        return name + " " + (columns[i_strike] == 0 ? '' : columns[i_strike] + " ") + columns[i_instrument_type] + " " + expiry[2] + " " + month + " " + expiry[0]
+                        return name + " " + expiry[2] + " " + month + " " + expiry[0]+ " " + (columns[i_strike] == 0 ? '' : columns[i_strike] + " ") + columns[i_instrument_type]
                 }
 
                 const rows = data.split("\n");
@@ -856,26 +858,6 @@ client_api = function () {
             });
         },
 
-        get_orderbook : function(success_cb) {
-            $.get({
-                url: kite.url.order_book,
-                dataType: "json",
-                headers : {
-                    "Authorization" : "enctoken " + session_token,
-                },
-                success: function (data, textStatus, jqXHR) {
-                    let orders = kite.map_orders(data.data)
-                    success_cb(orders)
-                },
-                error: function (jqXHR, textStatus, errorThrown) {
-                    console.log("Ajax error : ", JSON.stringify(jqXHR))
-                    if(jqXHR.status == 401)
-                        login_status(false)
-                    show_error_msg(JSON.parse(jqXHR.responseText).emsg)
-                }
-            });
-        },
-
         get_subscribe_token : function(params) {
             return parseInt(params.instrument_token);
         },
@@ -884,230 +866,260 @@ client_api = function () {
             return params.instrument_token;
         },
 
-        map_orders : function(kite_orders) {
-            if(kite_orders == undefined)
-                return undefined
-            let std_orders = []
-            for(const [key, kite_order] of Object.entries(kite_orders)) {
-                let std_order = {
-                    'subscribe_token' : kite_order.instrument_token,
-                    'status' : kite.get_std_order_status(kite_order.status),
-                    'exch' : kite_order.exchange,
-                    'token' : kite_order.instrument_token,
-                    'timestamp' : kite_order.order_timestamp.split(' ')[1],
-                    'tsym' : kite_order.tradingsymbol,
-                    'amo' : kite_order.variety == "amo"? "Yes" : "No",
-                    'trantype' : kite_order.transaction_type == "BUY" ? "B" : "S",
-                    'qty' : kite_order.quantity,
-                    'prc' : kite_order.price,
-                    'norenordno' : kite_order.order_id,
-                    'dname' : kite_order.tradingsymbol,
+        order : {
+            map_orders: function (kite_orders) {
+                if (kite_orders == undefined)
+                    return undefined
+                let std_orders = []
+                for (const [key, kite_order] of Object.entries(kite_orders)) {
+                    let std_order = this.map_order(kite_order);
+                    std_orders.push(std_order);
+                }
+                return std_orders;
+            },
 
-                    'prctyp' : kite_order.order_type,
-                    'norentm' : kite_order.exchange_timestamp,
-                    'exch_time' : kite_order.exchange_timestamp,
-                    'reject_reason' : kite_order.status_message,
+            map_order: function (kite_order) {
+                let std_order = {
+                    'subscribe_token': kite_order.instrument_token,
+                    'status': kite.order.get_std_order_status(kite_order.status),
+                    'exch': kite_order.exchange,
+                    'token': kite_order.instrument_token,
+                    'timestamp': kite_order.order_timestamp.split(' ')[1],
+                    'tsym': kite_order.tradingsymbol,
+                    'amo': kite_order.variety == "amo" ? "Yes" : "No",
+                    'trantype': kite_order.transaction_type == "BUY" ? "B" : "S",
+                    'qty': kite_order.quantity,
+                    'prc': kite_order.price,
+                    'norenordno': kite_order.order_id,
+                    'dname': kite_order.tradingsymbol,
+
+                    'prctyp': kite_order.order_type,
+                    'norentm': kite_order.exchange_timestamp,
+                    'exch_time': kite_order.exchange_timestamp,
+                    'reject_reason': kite_order.status_message,
                     'remarks': undefined,
                     'prd': kite_order.product,
                     'exch_order_id': kite_order.exchange_order_id,
 
                     //Kite specific
-                    'variety' : kite_order.variety,
+                    'variety': kite_order.variety,
                 }
-                std_orders.push(std_order)
-            }
-            return std_orders;
-        },
+                return std_order;
+            },
 
-        get_std_order_status : function(stat) {
-            let std = ''
-            if(stat.includes('OPEN')){
-                std = "OPEN"
-            } else if(stat.includes('CANCELLED')) {
-                std = "CANCELLED"
-            } else if(stat.includes('COMPLETE')) {
-                std = "COMPLETE"
-            } else if(stat.includes('REJECTED')) {
-                std = "REJECTED"
-            } else if(stat.includes('REQ RECEIVED')) {
-                std = "OPEN"
-            }
-            return std;
-        },
-
-        cancel_order : function(tr_elm, orderno, success_cb) {
-            let variety = tr_elm.attr('variety')
-            // let url = kite.url.cancel_order + "regular/" + orderno + "?order_id=" + orderno + "&parent_order_id=&variety=regular"
-            let url = kite.url.cancel_order + variety + "/" + orderno + "?order_id=" + orderno + "&parent_order_id=&variety=" + variety
-            $.ajax( {
-                url: url,
-                type: "DELETE",
-                headers : {
-                    "Authorization" : "enctoken " + session_token,
-                },
-                success : function (data) {
-                    if (data.status === "success")
-                        tr_elm.remove()
-
-                    if ( data.data.order_id != undefined) {
-                        let orderno = data.data.order_id
-
-                        kite.get_orderbook(function(data) {
-                            let orders = kite.map_orders(data.data)
-                            success_cb(orders)
-                        })
+            get_std_order_status: function (stat) {
+                let std = ''
+                if(stat != undefined) {
+                    if (stat.includes('OPEN')) {
+                        std = "OPEN"
+                    } else if (stat.includes('CANCELLED')) {
+                        std = "CANCELED"    // Matching shoonya status
+                    } else if (stat.includes('COMPLETE')) {
+                        std = "COMPLETE"
+                    } else if (stat.includes('REJECTED')) {
+                        std = "REJECTED"
+                    } else if (stat.includes('REQ RECEIVED')) {
+                        std = "OPEN"
                     }
-                },
-                error: function (jqXHR, textStatus, errorThrown) {
-                    console.log("Ajax error : ", JSON.stringify(jqXHR))
-                    if(jqXHR.status == 401)
-                        login_status(false)
-                    show_error_msg(JSON.parse(jqXHR.responseText).emsg)
                 }
-            });
-        },
+                return std;
+            },
 
-        modify_order : function(tr_elm, entry_obj, success_call_bk) {
-            let prctyp = 'LIMIT', price = "0.0";
-            if (entry_obj.value == '') {
-                prctyp = 'MARKET'
-            } else price = entry_obj.value;
+            get_orderbook : function(success_cb) {
+                $.get({
+                    url: kite.url.order_book,
+                    dataType: "json",
+                    headers : {
+                        "Authorization" : "enctoken " + session_token,
+                    },
+                    success: function (data, textStatus, jqXHR) {
+                        let orders = kite.order.map_orders(data.data)
+                        success_cb(orders)
+                    },
+                    error: function (jqXHR, textStatus, errorThrown) {
+                        console.log("Ajax error : ", JSON.stringify(jqXHR))
+                        if(jqXHR.status == 401)
+                            login_status(false)
+                        show_error_msg(JSON.parse(jqXHR.responseText).emsg)
+                    }
+                });
+            },
 
-            let qty = tr_elm.find('.qty').val()
-            let order_id = tr_elm.find('.order-num').html()
+            cancel_order: function (tr_elm, orderno, success_cb) {
+                let variety = tr_elm.attr('variety')
+                // let url = kite.url.cancel_order + "regular/" + orderno + "?order_id=" + orderno + "&parent_order_id=&variety=regular"
+                let url = kite.url.cancel_order + variety + "/" + orderno + "?order_id=" + orderno + "&parent_order_id=&variety=" + variety
+                $.ajax({
+                    url: url,
+                    type: "DELETE",
+                    headers: {
+                        "Authorization": "enctoken " + session_token,
+                    },
+                    success: function (data) {
+                        if (data.status === "success")
+                            tr_elm.remove()
 
-            let variety = tr_elm.attr('variety')
-            let url = kite.url.modify_order + variety + "/" + order_id
-
-            let payload = {
-                variety : variety,
-                exchange : tr_elm.attr('exch'),
-                tradingsymbol : tr_elm.attr('tsym'),
-                transaction_type: tr_elm.attr('trtype') == 'B'? 'BUY' : 'SELL',
-                order_type: prctyp,
-                quantity: qty,
-                price: price,
-                product: 'CNC',
-                validity: 'DAY',
-                disclosed_quantity: 0,
-                trigger_price: 0,
-                squareoff: 0,
-                stoploss: 0,
-                trailing_stoploss: 0,
-                user_id: user_id,
-                order_id: order_id,
-            }
-
-            $.ajax({
-                url: url,
-                type: "PUT",
-                dataType: "json",
-                data: payload,
-                headers: {
-                    "Authorization": "enctoken " + session_token,
-                },
-                success: function (data) {
-                    if (data.status === "success") {
                         if (data.data.order_id != undefined) {
                             let orderno = data.data.order_id
-                            data.data.orderno = orderno
-                            success_call_bk(data)
-                            show_success_msg("Order with order num : " + orderno + " modified successfully")
+
+                            kite.get_orderbook(function (data) {
+                                // let orders = kite.map_orders(data)
+                                success_cb(data)
+                            })
                         }
-                    } else show_error_msg(data.emsg)
-                },
-                error: function (jqXHR, textStatus, errorThrown) {
-                    console.log("Ajax error : ", JSON.stringify(jqXHR))
-                    if(jqXHR.status == 401)
-                        login_status(false)
-                    show_error_msg(JSON.parse(jqXHR.responseText).emsg)
-                }
-            })
-        },
-
-        get_order_params: function(tr_elm, buy_or_sell, entry_obj, qty) {
-
-            let prctyp = 'LIMIT', price = "0.0";
-            if (entry_obj.value == '') {
-                prctyp = 'MARKET'
-            } else price = entry_obj.value;
-
-            let remarks = "";
-            let tsym = tr_elm.attr('tsym');
-            let dname = tr_elm.attr('dname');
-            let token = tr_elm.attr('token');
-            let instrument_token = tr_elm.attr('instrument_token');
-            if(entry_obj.value == '') {
-                prctyp = 'MKT'
-            }
-            else
-                price = entry_obj.value.toString()
-            let exch = tr_elm.attr('exch');
-
-            if(exch == "NSE" || exch == "BSE") {
-                prd = "CNC";
-            } else {
-                prd = "MIS";
-                if( tsym != undefined) {
-                    if (tsym.startsWith("NIFTY"))
-                        remarks = "N-" + Math.round(live_data[nifty_tk])
-                    else if (tsym.startsWith("BANKNIFTY"))
-                        remarks = "B-" + Math.round(live_data[bank_nifty_tk])
-                    else if (tsym.startsWith("FINNIFTY"))
-                        remarks = "F-" + Math.round(live_data[fin_nifty_tk])
-                    remarks += " Vix " + live_data[vix_tk]
-                }
-            }
-
-            let payload = {
-                variety : 'amo',
-                exchange : exch,
-                tradingsymbol : tsym,
-                transaction_type: buy_or_sell == 'B'? 'BUY' : 'SELL',
-                order_type: prctyp,
-                quantity: qty,
-                price: price,
-                product: prd,
-                validity: 'DAY',
-                disclosed_quantity: 0,
-                trigger_price: 0,
-                squareoff: 0,
-                stoploss: 0,
-                trailing_stoploss: 0,
-                user_id: user_id,
-                // tag : remarks,
-            }
-
-            return payload;
-        },
-
-        place_order : function(pay_load, success_cb) {
-
-            let url = kite.url.place_order + pay_load.variety
-
-            $.ajax({
-                url: url,
-                // dataType: "json",
-                method: "POST",
-                data: pay_load,
-                headers : {
-                    "Authorization" : "enctoken " + session_token,
-                },
-                success: function (data, textStatus, jqXHR) {
-                    let dt = {}
-                    if(data.status === "success") {
-                        dt.stat = "OK";
-                        dt.norenordno = data.data.order_id;
+                    },
+                    error: function (jqXHR, textStatus, errorThrown) {
+                        console.log("Ajax error : ", JSON.stringify(jqXHR))
+                        if (jqXHR.status == 401)
+                            login_status(false)
+                        show_error_msg(jqXHR.responseJSON.message)
                     }
-                    success_cb(dt);
-                },
-                error: function (jqXHR, textStatus, errorThrown) {
-                    console.log("Ajax error : ", JSON.stringify(jqXHR))
-                    if(jqXHR.status == 401)
-                        login_status(false)
-                    show_error_msg(JSON.parse(jqXHR.responseText).emsg)
+                });
+            },
+
+            modify_order: function (tr_elm, entry_obj, success_call_bk) {
+                let prctyp = 'LIMIT', price = "0.0";
+                if (entry_obj.value == '') {
+                    prctyp = 'MARKET'
+                } else price = entry_obj.value;
+
+                let qty = tr_elm.find('.qty').val()
+                let order_id = tr_elm.find('.order-num').html()
+
+                let variety = tr_elm.attr('variety')
+                let url = kite.url.modify_order + variety + "/" + order_id
+
+                let payload = {
+                    variety: variety,
+                    exchange: tr_elm.attr('exch'),
+                    tradingsymbol: tr_elm.attr('tsym'),
+                    transaction_type: tr_elm.attr('trtype') == 'B' ? 'BUY' : 'SELL',
+                    order_type: prctyp,
+                    quantity: qty,
+                    price: price,
+                    product: 'CNC',
+                    validity: 'DAY',
+                    disclosed_quantity: 0,
+                    trigger_price: 0,
+                    squareoff: 0,
+                    stoploss: 0,
+                    trailing_stoploss: 0,
+                    user_id: user_id,
+                    order_id: order_id,
                 }
-            });
+
+                $.ajax({
+                    url: url,
+                    type: "PUT",
+                    dataType: "json",
+                    data: payload,
+                    headers: {
+                        "Authorization": "enctoken " + session_token,
+                    },
+                    success: function (data) {
+                        if (data.status === "success") {
+                            if (data.data.order_id != undefined) {
+                                let orderno = data.data.order_id
+                                data.data.orderno = orderno
+                                success_call_bk(data)
+                                show_success_msg("Order with order num : " + orderno + " modified successfully")
+                            }
+                        } else show_error_msg(data.emsg)
+                    },
+                    error: function (jqXHR, textStatus, errorThrown) {
+                        console.log("Ajax error : ", JSON.stringify(jqXHR))
+                        if (jqXHR.status == 401)
+                            login_status(false)
+                        show_error_msg(JSON.parse(jqXHR.responseText).emsg)
+                    }
+                })
+            },
+
+            get_order_params: function (tr_elm, buy_or_sell, entry_obj, qty) {
+
+                let prctyp = 'LIMIT', price = "0.0";
+                if (entry_obj.value == '') {
+                    prctyp = 'MARKET'
+                } else price = entry_obj.value;
+
+                let remarks = "";
+                let tsym = tr_elm.attr('tsym');
+                let dname = tr_elm.attr('dname');
+                let token = tr_elm.attr('token');
+                let instrument_token = tr_elm.attr('instrument_token');
+                if (entry_obj.value == '') {
+                    prctyp = 'MARKET'
+                } else
+                    price = entry_obj.value.toString()
+                let exch = tr_elm.attr('exch');
+
+                if (exch == "NSE" || exch == "BSE") {
+                    prd = "CNC";
+                } else {
+                    prd = "MIS";
+                    if (tsym != undefined) {
+                        if (tsym.startsWith("NIFTY"))
+                            remarks = "N-" + Math.round(live_data[nifty_tk])
+                        else if (tsym.startsWith("BANKNIFTY"))
+                            remarks = "B-" + Math.round(live_data[bank_nifty_tk])
+                        else if (tsym.startsWith("FINNIFTY"))
+                            remarks = "F-" + Math.round(live_data[fin_nifty_tk])
+                        remarks += " Vix " + live_data[vix_tk]
+                    }
+                }
+
+                let payload = {
+                    variety: 'amo',     //TODO - amo to regular
+                    exchange: exch,
+                    tradingsymbol: tsym,
+                    instrument_token : instrument_token,
+                    dname: dname,
+                    transaction_type: buy_or_sell == 'B' ? 'BUY' : 'SELL',
+                    order_type: prctyp,
+                    quantity: qty,
+                    price: price,
+                    product: prd,
+                    validity: 'DAY',
+                    disclosed_quantity: 0,
+                    trigger_price: 0,
+                    squareoff: 0,
+                    stoploss: 0,
+                    trailing_stoploss: 0,
+                    user_id: user_id,
+                    tag : remarks,
+                }
+
+                return payload;
+            },
+
+            place_order: function (pay_load, success_cb) {
+
+                let url = kite.url.place_order + pay_load.variety
+
+                $.ajax({
+                    url: url,
+                    // dataType: "json",
+                    method: "POST",
+                    data: pay_load,
+                    headers: {
+                        "Authorization": "enctoken " + session_token,
+                    },
+                    success: function (data, textStatus, jqXHR) {
+                        let dt = {}
+                        if (data.status === "success") {
+                            dt.stat = "OK";
+                            dt.norenordno = data.data.order_id;
+                        }
+                        success_cb(dt);
+                    },
+                    error: function (jqXHR, textStatus, errorThrown) {
+                        console.log("Ajax error : ", JSON.stringify(jqXHR))
+                        if (jqXHR.status == 401)
+                            login_status(false)
+                        show_error_msg(jqXHR.responseJSON.message)
+                    }
+                });
+            },
         },
     }
 
@@ -1298,7 +1310,7 @@ client_api = function () {
                 case "REJECTED" :
                     show_error_msg("Order " + order.norenordno + " rejected. Reason : " + order.rejreason  + "   Symbol: " + order.tsym + " Qty: " + order.qty, false );
                     break;
-                case "CANCELED":
+                case "CANCELED": // Matching shoonya status
                     show_success_msg("Order " + order.norenordno + " cancelled. Symbol: " + order.tsym + " Qty: " + order.qty );
                     break;
                 default:
@@ -1383,14 +1395,14 @@ client_api = function () {
             let entry_obj = milestone_manager.get_value_object(entry_val);
             let qty = tr_elm.find('.qty').val()
 
-            let params = broker.get_order_params(tr_elm, buy_sell, entry_obj, qty)
+            let params = broker.order.get_order_params(tr_elm, buy_sell, entry_obj, qty)
             if (entry_obj.spot_based) {
                 params.dname = tr_elm.attr('dname')
                 this.add_to_spot_order_list(params, entry_val)
             } else {
                 console.log("Going to place order " + JSON.stringify(params))
                 if(!is_paper_trade()) {
-                    broker.place_order(params, function (data) {
+                    broker.order.place_order(params, function (data) {
                         if (success_cb != undefined) {  // Call custom function provided.. In case of exit, it needs to remove tr
                             console.log("Success call back is provided. Will be called")
                             success_cb(data)
@@ -1447,10 +1459,8 @@ client_api = function () {
 
         update_open_orders : function() {
             hide_other_tabs('#open_orders')
-            broker.get_orderbook(function(data) {orderbook.update_open_order_list(data);})
+            broker.order.get_orderbook(function(data) {orderbook.update_open_order_list(data);})
         },
-
-
 
         cancel_order : function(td_elm) {
             let tr_elm = $(td_elm).parent().parent();
@@ -1461,7 +1471,7 @@ client_api = function () {
                 milestone_manager.remove_milestone(row_id);
                 tr_elm.remove();
             } else {
-                broker.cancel_order(tr_elm, orderno, function(orders) {
+                broker.order.cancel_order(tr_elm, orderno, function(orders) {
                     let matching_order = orders.find(order => order.norenordno === orderno)
                     if (matching_order != undefined) {
                         orderbook.display_order_exec_msg(matching_order);
@@ -1508,7 +1518,7 @@ client_api = function () {
 
                 if(!order_id.includes("Spot")) {  // Modify value order.. Not spot based order
 
-                    broker.modify_order(tr_elm, entry_obj, function(data) {
+                    broker.order.modify_order(tr_elm, entry_obj, function(data) {
                         let monitored = open_order_mgr.add_modify(data.orderno)
 
                         if(!monitored) {
@@ -1600,10 +1610,16 @@ client_api = function () {
 
         place_paper_trade : function(order, ltp) {
 
+            /*if(broker.name === "kite")
+                order = kite.order.map_order(order)*/
+
             let order_id = "paper" + Date.now()
             order.norenordno = order_id
             order.prc = ltp
             order.norentm = new Date().toLocaleTimeString()
+            order.exch = (order.exch === undefined)? order.exchange : order.exch
+            order.trantype = (order.trantype === undefined)? (order.transaction_type=="BUY"? "B": "S") : order.trantype
+            order.qty = (order.qty === undefined)? order.quantity : order.qty
 
             ++unique_row_id;
             let row_id = "row_id_" + unique_row_id;
@@ -1685,7 +1701,7 @@ client_api = function () {
 
             if(open_order_mgr.exec_permission(orderno, action)) {
                 console.log(action + ": get_order_status : " + orderno + " Making get_orderbook post req")
-                broker.get_orderbook(function (orders) {
+                broker.order.get_orderbook(function (orders) {
                     let matching_order = orders.find(order => order.norenordno === orderno)
                     if (matching_order != undefined) {
                         console.log(orderno + " : Found matching order ")
@@ -1722,7 +1738,7 @@ client_api = function () {
         show_orderbook : function() {
             $('#order_book_table').html("")
             hide_other_tabs('#order_book')
-            broker.get_orderbook(function(orders) {
+            broker.order.get_orderbook(function(orders) {
                 if(orders!=undefined && Array.isArray(orders))
                     orders.forEach((order)=> orderbook.show_order(order))
             })
@@ -1784,11 +1800,11 @@ client_api = function () {
                     let dname = order.dname.trim()
                     if (dname.endsWith("PE")) {
                         if(order.trantype === "B") trade_type = "bear"
-                        if(order.trantype === "S") trade_type = "bull"
+                        else if(order.trantype === "S") trade_type = "bull"
                     }
                     else if (dname.endsWith("CE")) {
                         if(order.trantype === "B") trade_type = "bull"
-                        if(order.trantype === "S") trade_type = "bear"
+                        else if(order.trantype === "S") trade_type = "bear"
                     } else {
                         if(order.trantype === "S") trade_type = "bear"
                     }
@@ -2396,8 +2412,9 @@ client_api = function () {
                 tbody_elm = $('#active_trades_table')
 
             let ticker = broker.get_ticker(order)
+            let className= (ttype==="bear")?"table-danger":" ";
 
-            tbody_elm.append(`<tr id="${row_id}" ordid="${order.norenordno}"  exch="${order.exch}" token="${order.token}" instrument_token="${order.instrument_token}" qty="${order.qty}" tsym="${order.tsym}" ttype="${ttype}" trtype="${order.trantype}" trade="active">
+            tbody_elm.append(`<tr id="${row_id}" class="${className}" ordid="${order.norenordno}"  exch="${order.exch}" token="${order.token}" instrument_token="${order.instrument_token}" qty="${order.qty}" tsym="${order.tsym}" ttype="${ttype}" trtype="${order.trantype}" trade="active">
                         <td>${buy_sell}</td>
                         <td class="instrument">${dname}</td>
                         <td class="entry" title="Margin Used : ${(order.prc * order.qty).toFixed(2)}">
