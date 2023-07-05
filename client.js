@@ -141,7 +141,7 @@ client_api = function () {
             for(token of pending_to_subscribe_tokens.keys()) {
                 let symtoken = {"t": "t", "k": token.concat('#')}
                 if (ws.readyState != WebSocket.OPEN) {
-                    console.log("Web socket not ready yet..")
+                    console.log("Web socket not ready yet.. ", token)
                     setTimeout(function () {
                         shoonya.subscribe_token(token)
                     }, 100)
@@ -363,7 +363,7 @@ client_api = function () {
         
         init : function() {
             vix_tk = 264969, nifty_tk = 256265, bank_nifty_tk = 260105, fin_nifty_tk = 257801;
-            subscribed_symbols = [256265, 260105, 257801, 264969];
+            subscribed_symbols = [256265, 260105, 257801, 264969, 11040770, 12064770];
         },
 
         connect : function() {
@@ -418,7 +418,7 @@ client_api = function () {
             pending_to_subscribe_tokens.add(token);
             for (token of pending_to_subscribe_tokens.keys()) {
                 if (ws.readyState !== WebSocket.OPEN) {
-                    console.log("Web socket not ready yet..")
+                    console.log("Web socket not ready yet.. " + token)
                     setTimeout(function () {
                         kite.subscribe_token(token)
                     }, 100)
@@ -1005,6 +1005,7 @@ client_api = function () {
                 $('#fin_nifty').html(ltp)
                 break;
             default:
+                console.log(instr_token)
                 update_ltp('#watch_list_body .watch_' + instr_token, ltp);   //In watch list
                 update_ltp("#open_orders .open_order_" + instr_token, ltp)  // In Open Order table
                 update_ltp("#active_trades_table .trade_" + instr_token, ltp)  // In Active Trades table
@@ -1317,6 +1318,7 @@ client_api = function () {
             let tsym = elm.attr('tsym');
             let dname = elm.attr('dname');
             let token = elm.attr('token');
+            let instrument_token = elm.attr('instrument_token');
             if(entry.value == '') {
                 prctyp = 'MKT'
             }
@@ -1348,6 +1350,7 @@ client_api = function () {
             values["tsym"]      = tsym;
             values["dname"]      = dname;
             values["token"]      = token;
+            values["instrument_token"]      = instrument_token;
             values["qty"]       = qty;
             values["dscqty"]    = qty;
             values["prctyp"]    = prctyp       /*  LMT / MKT / SL-LMT / SL-MKT / DS / 2L / 3L */
@@ -2303,7 +2306,9 @@ client_api = function () {
             else
                 tbody_elm = $('#active_trades_table')
 
-            tbody_elm.append(`<tr id="${row_id}" ordid="${order.norenordno}"  exch="${order.exch}" token="${order.token}" qty="${order.qty}" tsym="${order.tsym}" ttype="${ttype}" trtype="${order.trantype}" trade="active">
+            let ticker = broker.get_ticker(order)
+
+            tbody_elm.append(`<tr id="${row_id}" ordid="${order.norenordno}"  exch="${order.exch}" token="${order.token}" instrument_token="${order.instrument_token}" qty="${order.qty}" tsym="${order.tsym}" ttype="${ttype}" trtype="${order.trantype}" trade="active">
                         <td>${buy_sell}</td>
                         <td class="instrument">${dname}</td>
                         <td class="entry" title="Margin Used : ${(order.prc * order.qty).toFixed(2)}">
@@ -2311,7 +2316,7 @@ client_api = function () {
                             </br><span class="badge badge-info">${order.remarks}</span>
                             <span class="price">${order.prc}</span></br>
                         </td>
-                        <td class="trade_${order.token} ltp">${live_data[order.token]}</td>
+                        <td class="trade_${ticker} ltp">${live_data[ticker]}</td>
                         <td class="pnl"></td>
                         <td><input type="text" disabled class="form-control target" placeholder="" value=""></td>
                         <td><input type="text" disabled class="form-control sl" placeholder="" value="" ></td>
@@ -2614,9 +2619,9 @@ client_api = function () {
         },
 
         add_row_to_watch : function(params) {
-            console.log("Add row to watch .. ", params.token)
-
             let sym_token = broker.get_subscribe_token(params);
+
+            console.log("Add row to watch .. ", sym_token)
             broker.subscribe_token(sym_token);
 
             //Add to watched items
@@ -2630,13 +2635,13 @@ client_api = function () {
 
             let ticker = broker.get_ticker(params);
 
-            $('#watch_list_body').append(`<tr class="${class_name}" exch="${params.exch}" token="${params.token}" tsym="${params.tsym}" lot_size="${params.lot_size}" dname="${params.sym}">
+            $('#watch_list_body').append(`<tr class="${class_name}" exch="${params.exch}" token="${params.token}" instrument_token="${params.instrument_token}" tsym="${params.tsym}" lot_size="${params.lot_size}" dname="${params.sym}">
     
                 <td> <input type="checkbox" class="select" value=""> </td>
                 <td class="dname">${params.sym}</td>
                 <th class="margin_req num"></th>
                 <th class="watch_${ticker} ltp" lot_size="${params.lot_size}"></th>
-                <td class="input_box"><input type="text" class="form-control entry" placeholder=""></td>  <!--onclick="client_api.watch_list.add_ltp(this)"-->
+                <td class="input_box"><input type="text" class="form-control entry" placeholder="" onclick="client_api.watch_list.add_ltp(this); $(this).unbind('click');"></td>  
                 <td class="input_box"><input type="text" class="form-control qty" placeholder="" value="${params.lot_size}"></td>
                 <td><button type="button" class="btn btn-success buy" onclick="client_api.orderbook.buy(this)">BUY</button></td>
                 <td><button type="button" class="btn btn-danger sell" onclick="client_api.orderbook.sell(this)">SELL</button></td>
