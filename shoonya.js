@@ -204,11 +204,12 @@ shoonya_api = function () {
                                 // console.log("Ajax success")
                                 response($.map(data.values, function (item) {
                                     item.dname = watch_list.fin_nifty_dname_fix(item.tsym, item.dname)
+                                    let dname = item.dname != undefined? item.dname : item.tsym;
                                     return {
-                                        label: item.dname != undefined? item.dname : item.tsym,
-                                        value: item.dname != undefined? item.dname : item.tsym,
+                                        label: dname,
+                                        value: dname,
                                         tsym: item.tsym,
-                                        dname: item.dname,
+                                        dname: dname,
                                         lot_size: item.ls,
                                         exch: item.exch,
                                         token: item.token,
