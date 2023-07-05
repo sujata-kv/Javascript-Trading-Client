@@ -12,67 +12,140 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/fetch/2.0.3/fetch.min.js"></script>
 
     <script>
-        const url_nfo = "https://api.kite.trade/instruments/NFO";
-        // const url_nse = "https://api.kite.trade/instruments/NSE";
+        const kite = {
+            search : {
+                url_nfo: "https://api.kite.trade/instruments/NFO",
+                url_nse: "https://api.kite.trade/instruments/NSE",
 
-        const fetchData = async (url) => {
-            const response = await fetch(url);
-            const data = await response.text();
-            return data;
-        };
+                parsedData: [],
 
+                parseNfoData: function (data) {
+                    const i_instrument_token = 0;
+                    const i_exchange_token = 1;
+                    const i_tradingsymbol = 2;
+                    const i_name = 3;
+                    const i_last_price = 4;
+                    const i_expiry = 5;
+                    const i_strike = 6;
+                    const i_tick_size = 7;
+                    const i_lot_size = 8;
+                    const i_instrument_type = 9;
+                    const i_segment = 10;
+                    const i_exchange = 11;
 
-        const parseNfoData = (data) => {
-            const i_instrument_token = 0;
-            const i_exchange_token = 1;
-            const i_tradingsymbol = 2;
-            const i_name = 3;
-            const i_last_price = 4;
-            const i_expiry = 5;
-            const i_strike = 6;
-            const i_tick_size = 7;
-            const i_lot_size = 8;
-            const i_instrument_type = 9;
-            const i_segment=10;
-            const i_exchange = 11;
+                    const parsedData = [];
+                    const months = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"]
 
-
-            const parsedData = [];
-            const months = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"]
-
-            function getDname(name, columns) {
-                let expiry = columns[i_expiry].split('-')
-                let month = months[parseInt(expiry[1])-1]
-                if(columns[i_instrument_type] === "FUT") {
-                    return name + " " + month  + " FUT";
-                } else if(columns[i_instrument_type] === "CE" || columns[i_instrument_type] === "PE")
-                    return name + " " + (columns[i_strike]==0? '': columns[i_strike] + " ") + columns[i_instrument_type] + " " + expiry[2] + " " + month + " " + expiry[0]
-            }
-
-            const rows = data.split("\n");
-            for (const row of rows) {
-                const columns = row.split(",");
-                if (columns[i_name] != undefined) {
-                    const name = columns[i_name].replace(/"/g, '');
-                    const dname = getDname(name, columns)
-                    if (name === "NIFTY" || name === "BANKNIFTY" || name === "FINNIFTY" || columns[i_instrument_type] === "FUT") {
-                        let obj = {
-                            'value':  dname,
-                            // 'label' : columns[i_tradingsymbol],
-                            'name': name,
-                            'lot_size' : columns[i_lot_size],
-                            'instrument_token' : columns[i_instrument_token],
-                            'exch': columns[i_exchange],
-                            'token': columns[i_exchange_token],
-                            'tsym': columns[i_tradingsymbol],
-                            'dname': dname,
-                            'optt': columns[i_instrument_type],
-                        }
-                        parsedData.push(obj);
+                    function getDname(name, columns) {
+                        let expiry = columns[i_expiry].split('-')
+                        let month = months[parseInt(expiry[1]) - 1]
+                        if (columns[i_instrument_type] === "FUT") {
+                            return name + " " + month + " FUT";
+                        } else if (columns[i_instrument_type] === "CE" || columns[i_instrument_type] === "PE")
+                            return name + " " + (columns[i_strike] == 0 ? '' : columns[i_strike] + " ") + columns[i_instrument_type] + " " + expiry[2] + " " + month + " " + expiry[0]
                     }
-                }
+
+                    const rows = data.split("\n");
+                    for (const row of rows) {
+                        const columns = row.split(",");
+                        if (columns[i_name] != undefined) {
+                            const name = columns[i_name].replace(/"/g, '');
+                            const dname = getDname(name, columns)
+                            if (name === "NIFTY" || name === "BANKNIFTY" || name === "FINNIFTY" || columns[i_instrument_type] === "FUT") {
+                                let obj = {
+                                    'value': dname,
+                                    // 'label' : columns[i_tradingsymbol],
+                                    'name': name,
+                                    'lot_size': columns[i_lot_size],
+                                    'instrument_token': columns[i_instrument_token],
+                                    'exch': columns[i_exchange],
+                                    'token': columns[i_exchange_token],
+                                    'tsym': columns[i_tradingsymbol],
+                                    'dname': dname,
+                                    'optt': columns[i_instrument_type],
+                                    'expiry': columns[i_expiry],
+                                }
+                                parsedData.push(obj);
+                            }
+                        }
+                    }
+                    console.log("Total instrument entries loaded : " + parsedData.length)
+                    return parsedData;
+                },
+
+                search_for_key: function (term) {
+                    let results = []
+                    for (const row of this.parsedData) {
+                        var filterstrings = term.trim().toLowerCase().split(" ");
+                        let str = row['dname'].toLowerCase();
+                        let found = true
+                        for (const key of filterstrings) {
+                            if (!str.includes(key)) {
+                                found = false;
+                                break;
+                            }
+                        }
+                        if (found) results.push(row);
+                        if (results.length == 50) break;
+                    }
+                    console.log(results.length + " number of results")
+                    if (results.length > 0) {
+                        let res = results.map(obj => {
+                            return {...obj, date: new Date(obj.expiry)};
+                        });
+                        results = res.sort(
+                            (objA, objB) => Number(objA.date) - Number(objB.date),
+                        );
+                    }
+                    return results;
+                },
+
+                load_data: async function () {
+
+                    const fetchData = async (url) => {
+                        const response = await fetch(url);
+                        const data = await response.text();
+                        return data;
+                    };
+
+                    const data_nfo = await fetchData(this.url_nfo);
+                    this.parsedData = this.parseNfoData(data_nfo);
+                },
+
+                attach_search_autocomplete: function () {
+                    /* Search instrument autocomplete */
+                    $("input.search-instrument").autocomplete({
+                        minLength: 2,
+                        autoFocus: true,
+                        appendTo: '#instr-drop-down',
+                        source: function (request, response) {
+                            const results = kite.search.search_for_key(request.term)
+                            response(results)
+                        },
+
+                        select: function (event, ui) {
+                            // when item is selected
+                            $(this).val(ui.item.value);
+                            $(this).attr('lot_size', ui.item.lot_size)
+                            $(this).attr('exch', ui.item.exch)
+                            $(this).attr('token', ui.item.token)
+                            $(this).attr('tsym', ui.item.tsym)
+                            $(this).attr('dname', ui.item.dname)
+                            $(this).attr('optt', ui.item.optt)
+                            console.log("Selected item : ", ui.item)
+                        },
+
+                        create: function () {
+                            $(this).data('ui-autocomplete')._renderItem = function (ul, item) {
+                                return $('<li class="dropdown-item">')
+                                    .append(item.label)
+                                    .append('</li>')
+                                    .appendTo(ul); // customize your HTML
+                            };
+                        }
+                    });
+                },
             }
-            return parsedData;
         };
 
         const renderDataToHTML = (data) => {
@@ -88,64 +161,11 @@
             }
         };
 
-        const search_for_key = (term) => {
-            let results = []
-            for(const row of parsedData) {
-                var filterstrings = term.trim().toLowerCase().split(" ");
-                let str = row['dname'].toLowerCase();
-                let found = true
-                for(const key of filterstrings) {
-                    if(!str.includes(key)) {
-                        found = false;
-                        break;
-                    }
-                }
-                if(found) results.push(row) ;
-                if(results.length == 50) break;
-            }
-            console.log(results.length + " number of results")
-            return results;
-        };
-
         const main = async () => {
-            parsedData = []
-            const data_nfo = await fetchData(url_nfo);
-            parsedData = parseNfoData(data_nfo);
+            await kite.search.load_data();
+            kite.search.attach_search_autocomplete();
 
-
-            /* Search instrument autocomplete */
-            $("input.search-instrument").autocomplete({
-                minLength: 2,
-                autoFocus: true,
-                appendTo: '#instr-drop-down',
-                source: function (request, response) {
-                    const results = search_for_key(request.term)
-                    response(results)
-                },
-
-                select: function (event, ui) {
-                    // when item is selected
-                    $(this).val(ui.item.value);
-                    $(this).attr('lot_size', ui.item.lot_size)
-                    $(this).attr('exch', ui.item.exch)
-                    $(this).attr('token', ui.item.token)
-                    $(this).attr('tsym', ui.item.tsym)
-                    $(this).attr('dname', ui.item.dname)
-                    $(this).attr('optt', ui.item.optt)
-                    console.log("Selected item : ", ui.item)
-                },
-
-                create: function () {
-                    $(this).data('ui-autocomplete')._renderItem = function (ul, item) {
-                        return $('<li class="dropdown-item">')
-                            .append(item.label)
-                            .append('</li>')
-                            .appendTo(ul); // customize your HTML
-                    };
-                }
-            });
-
-            // renderDataToHTML(parsedData);
+            // renderDataToHTML(search.parsedData);
         };
 
         main();

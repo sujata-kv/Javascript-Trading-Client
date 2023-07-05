@@ -88,12 +88,12 @@ client_api = function () {
                 result = JSON.parse(event.data)
                 if(result.t == 'ck') {
                     if (result.s == 'OK') {
-                        console.log('On message : ck OK')
+                        // console.log('On message : ck OK')
                         subscribed_symbols.forEach(shoonya.subscribe_token)
                     }
                 }
                 if( result.t == 'tk' || result.t == 'tf') {
-                    console.log('On message : ' + result.t)
+                    // console.log('On message : ' + result.t)
                     if(result.lp != undefined) {
                         let instr_token = result.tk
                         let ltpf = parseFloat(result.lp).toFixed(2)
@@ -124,6 +124,14 @@ client_api = function () {
                 login_status(false)
                 console.error("WebSocket error: ", event);
             };
+        },
+
+        get_subscribe_token : function(params) {
+            return params.exch + '|' + params.token
+        },
+
+        get_ticker : function(params) {
+            return params.token;
         },
 
         subscribe_token: function(token) {
@@ -185,7 +193,7 @@ client_api = function () {
                         login_status(true)
 
                     for(const[key, order] of Object.entries(data)) {
-                        order['subscribe_token'] = order.exch + "|" + order.token;      //Add subscribe_token field.. specific to shoonya
+                        order['subscribe_token'] = shoonya.get_subscribe_token(order)      //Add subscribe_token field.. specific to shoonya
                     }
                     success_cb(data)
                 },
@@ -689,11 +697,13 @@ client_api = function () {
                                 'tsym': columns[i_tradingsymbol],
                                 'dname': dname,
                                 'optt': columns[i_instrument_type],
+                                'expiry': columns[i_expiry],
                             }
                             parsedData.push(obj);
                         }
                     }
                 }
+                console.log("Total instrument entries loaded : " + parsedData.length)
                 return parsedData;
             },
 
@@ -713,6 +723,14 @@ client_api = function () {
                     if (results.length == 50) break;
                 }
                 console.log(results.length + " number of results")
+                if(results.length > 0) {
+                    let res = results.map(obj => {
+                        return {...obj, date: new Date(obj.expiry)};
+                    });
+                    results = res.sort(
+                        (objA, objB) => Number(objA.date) - Number(objB.date),
+                    );
+                }
                 return results;
             },
 
@@ -748,6 +766,7 @@ client_api = function () {
                         $(this).attr('tsym', ui.item.tsym)
                         $(this).attr('dname', ui.item.dname)
                         $(this).attr('optt', ui.item.optt)
+                        $(this).attr('instrument_token', ui.item.instrument_token)
                         console.log("Selected item : ", ui.item)
                     },
 
@@ -800,6 +819,14 @@ client_api = function () {
                     show_error_msg(JSON.parse(jqXHR.responseText).emsg)
                 }
             });
+        },
+
+        get_subscribe_token : function(params) {
+            return params.instrument_token;
+        },
+
+        get_ticker : function(params) {
+            return params.instrument_token;
         },
 
         map_orders : function(kite_orders) {
@@ -1151,7 +1178,6 @@ client_api = function () {
 
         add_open_order : function(order) {
             if (order.status == "OPEN") {
-                // let token = order.exch + "|" + order.token
                 broker.subscribe_token(order.subscribe_token)
 
                 let type = order.amo == "Yes"? "AMO ": "";
@@ -2536,6 +2562,7 @@ client_api = function () {
             if(this.selection_is_valid()) {
                 let params = {}
                 params.sym = $('input.watch_item').val()
+                params.instrument_token = $('input.watch_item').attr('instrument_token')
                 params.lot_size = $('input.watch_item').attr('lot_size')
                 params.exch = $('input.watch_item').attr('exch')
                 params.token = $('input.watch_item').attr('token')
@@ -2589,8 +2616,8 @@ client_api = function () {
         add_row_to_watch : function(params) {
             console.log("Add row to watch .. ", params.token)
 
-            let sym_token = params.exch + '|' + params.token
-            broker.subscribe_token(sym_token)
+            let sym_token = broker.get_subscribe_token(params);
+            broker.subscribe_token(sym_token);
 
             //Add to watched items
             watch_list.watched_items[`${params.exch}_${params.token}`] = JSON.stringify(params)
@@ -2601,12 +2628,14 @@ client_api = function () {
                 class_name = 'table-danger'
             }
 
+            let ticker = broker.get_ticker(params);
+
             $('#watch_list_body').append(`<tr class="${class_name}" exch="${params.exch}" token="${params.token}" tsym="${params.tsym}" lot_size="${params.lot_size}" dname="${params.sym}">
     
                 <td> <input type="checkbox" class="select" value=""> </td>
                 <td class="dname">${params.sym}</td>
                 <th class="margin_req num"></th>
-                <th class="watch_${params.token} ltp" lot_size="${params.lot_size}"></th>
+                <th class="watch_${ticker} ltp" lot_size="${params.lot_size}"></th>
                 <td class="input_box"><input type="text" class="form-control entry" placeholder=""></td>  <!--onclick="client_api.watch_list.add_ltp(this)"-->
                 <td class="input_box"><input type="text" class="form-control qty" placeholder="" value="${params.lot_size}"></td>
                 <td><button type="button" class="btn btn-success buy" onclick="client_api.orderbook.buy(this)">BUY</button></td>
