@@ -574,6 +574,130 @@ client_api = function () {
             return val;
         },
 
+        const url1 = "https://api.kite.trade/instruments/NFO";
+
+        const fetchData = async (url) => {
+            const response = await fetch(url);
+            const data = await response.text();
+            return data;
+        };
+
+
+        const parseCSVData = (data) => {
+            const i_instrument_token = 0;
+            const i_exchange_token = 1;
+            const i_tradingsymbol = 2;
+            const i_name = 3;
+            const i_last_price = 4;
+            const i_expiry = 5;
+            const i_strike = 6;
+            const i_tick_size = 7;
+            const i_lot_size = 8;
+            const i_instrument_type = 9;
+            const i_segment=10;
+            const i_exchange = 11;
+
+            const rows = data.split("\n");
+            console.log(rows[0])
+            console.log(rows[1])
+            const parsedData = [];
+
+            for (const row of rows) {
+                const columns = row.split(",");
+                if (columns[i_name] != undefined) {
+                    const name = columns[i_name].replace(/"/g, '');
+                    if (name === "NIFTY" || name === "BANKNIFTY" || name === "FINNIFTY" || columns[i_instrument_type] === "FUT") {
+                        let obj = {
+                            'value': name + " " + (columns[i_strike]==0? '': columns[i_strike] + " ") + columns[i_instrument_type] + " " + columns[i_expiry] ,
+                            // 'value' : columns[i_tradingsymbol],
+                            'name': name,
+                            'lot_size' : columns[i_lot_size],
+                            'instrument_token' : columns[i_instrument_token],
+                            'exch': columns[i_exchange],
+                            'token': columns[i_exchange_token],
+                            'tsym': columns[i_tradingsymbol],
+                            'dname': name + " " + columns[i_expiry] + " " + columns[i_instrument_type],
+                            'optt': columns[i_instrument_type],
+                        }
+                        parsedData.push(obj);
+                    }
+                }
+            }
+            // console.log(parsedData[0])
+            return parsedData;
+        };
+
+        const renderDataToHTML = (data) => {
+            const table = document.getElementById("table");
+            for (const row of data) {
+                const tr = document.createElement("tr");
+                for (const column of row) {
+                    const td = document.createElement("td");
+                    td.innerHTML = column;
+                    tr.appendChild(td);
+                }
+                table.appendChild(tr);
+            }
+        };
+
+        const search_for_key = (term) => {
+            let results = []
+            for(const row of parsedData) {
+                var filterstrings = term.trim().toLowerCase().split(" ");
+                let str = row['tsym'].toLowerCase();
+                let found = true
+                for(const key of filterstrings) {
+                    if(!str.includes(key)) {
+                        found = false;
+                        break;
+                    }
+                }
+                if(found) results.push(row) ;
+                if(results.length == 50) break;
+            }
+            console.log(results.length + " number of results")
+            return results;
+        };
+
+        const main = async () => {
+            const data = await fetchData(url1);
+            parsedData = parseCSVData(data);
+
+            /* Search instrument autocomplete */
+            $("input.search-instrument").autocomplete({
+                minLength: 2,
+                autoFocus: true,
+                appendTo: '#instr-drop-down',
+                source: function (request, response) {
+                    const results = search_for_key(request.term)
+                    response(results)
+                },
+
+                select: function (event, ui) {
+                    // when item is selected
+                    $(this).val(ui.item.value);
+                    $(this).attr('lot_size', ui.item.lot_size)
+                    $(this).attr('exch', ui.item.exch)
+                    $(this).attr('token', ui.item.token)
+                    $(this).attr('tsym', ui.item.tsym)
+                    $(this).attr('dname', ui.item.dname)
+                    $(this).attr('optt', ui.item.optt)
+                    console.log("Selected item : ", ui.item)
+                },
+
+                create: function () {
+                    $(this).data('ui-autocomplete')._renderItem = function (ul, item) {
+                        return $('<li class="dropdown-item">')
+                            .append(item.label)
+                            .append('</li>')
+                            .appendTo(ul); // customize your HTML
+                    };
+                }
+            });
+
+            // renderDataToHTML(parsedData);
+        };
+
         get_positions : function (success_cb) {
 
             $.get({
@@ -818,11 +942,12 @@ client_api = function () {
                                 // console.log("Ajax success")
                                 response($.map(data.values, function (item) {
                                     item.dname = watch_list.fin_nifty_dname_fix(item.tsym, item.dname)
+                                    let dname = item.dname != undefined? item.dname : item.tsym;
                                     return {
-                                        label: item.dname != undefined? item.dname : item.tsym,
-                                        value: item.dname != undefined? item.dname : item.tsym,
+                                        label: dname,
+                                        value: dname,
                                         tsym: item.tsym,
-                                        dname: item.dname,
+                                        dname: dname,
                                         lot_size: item.ls,
                                         exch: item.exch,
                                         token: item.token,
