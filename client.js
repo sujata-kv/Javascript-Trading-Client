@@ -699,7 +699,7 @@ client_api = function () {
 
             search_for_key: function (term) {
                 let results = []
-                for (const row of parsedData) {
+                for (const row of this.parsedData) {
                     var filterstrings = term.trim().toLowerCase().split(" ");
                     let str = row['dname'].toLowerCase();
                     let found = true
@@ -715,12 +715,6 @@ client_api = function () {
                 console.log(results.length + " number of results")
                 return results;
             },
-
-   /*         fetchData : async (url) => {
-                const response = await fetch(url);
-                const data = await response.text();
-                return data;
-            },*/
 
             load_data : async function() {
 
@@ -741,7 +735,7 @@ client_api = function () {
                     autoFocus: true,
                     appendTo: '#instr-drop-down',
                     source: function (request, response) {
-                        const results = search_for_key(request.term)
+                        const results = kite.search.search_for_key(request.term)
                         response(results)
                     },
 
@@ -2730,7 +2724,7 @@ client_api = function () {
         }
     };
 
-    const function hide_other_tabs(cur_tab) {
+    function hide_other_tabs(cur_tab) {
         let other_tabs = []
         switch(cur_tab) {
             case '#open_orders' : other_tabs = ['#order_book', '#positions']; break;
@@ -2743,7 +2737,7 @@ client_api = function () {
         })
     };
 
-    const function connect_to_server(){
+    function connect_to_server(){
         select_broker()
         broker.init();
         broker.connect();
