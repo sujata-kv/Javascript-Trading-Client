@@ -144,7 +144,7 @@ client_api = function () {
                     console.log("Web socket not ready yet.. ", token)
                     setTimeout(function () {
                         shoonya.subscribe_token(token)
-                    }, 100)
+                    }, 1000)
 
                 } else {
                     console.log("Web socket is ready.. Subscribing ", token)
@@ -363,7 +363,7 @@ client_api = function () {
         
         init : function() {
             vix_tk = 264969, nifty_tk = 256265, bank_nifty_tk = 260105, fin_nifty_tk = 257801;
-            subscribed_symbols = [256265, 260105, 257801, 264969, 11040770, 12064770];
+            subscribed_symbols = [256265, 260105, 257801, 264969];
         },
 
         connect : function() {
@@ -421,7 +421,7 @@ client_api = function () {
                     console.log("Web socket not ready yet.. " + token)
                     setTimeout(function () {
                         kite.subscribe_token(token)
-                    }, 100)
+                    }, 1000)
                 } else {
                     console.log("Web socket is open.. Subscribing ", token)
                     if (!logged_in) login_status(true)
@@ -822,7 +822,7 @@ client_api = function () {
         },
 
         get_subscribe_token : function(params) {
-            return params.instrument_token;
+            return parseInt(params.instrument_token);
         },
 
         get_ticker : function(params) {
