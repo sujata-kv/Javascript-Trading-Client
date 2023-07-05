@@ -275,6 +275,68 @@ client_api = function () {
                 } else show_error_msg(data.emsg)
             })
         },
+
+        search : {
+            attach_search_autocomplete: function () {
+                /* Search instrument autocomplete */
+                $("input.search-instrument").autocomplete({
+                    minLength: 2,
+                    autoFocus: true,
+                    appendTo: '#instr-drop-down',
+                    source: function (request, response) {
+                        params = {"uid": user_id, "stext": request.term}
+                        $.ajax({
+                            url: shoonya.url.search_instrument,
+                            type: "POST",
+                            dataType: "json",
+                            data: shoonya.get_payload(params),
+                            success: function (data, textStatus, jqXHR) {
+                                // console.log("Ajax success")
+                                response($.map(data.values, function (item) {
+                                    item.dname = watch_list.fin_nifty_dname_fix(item.tsym, item.dname)
+                                    let dname = item.dname != undefined ? item.dname : item.tsym;
+                                    return {
+                                        label: dname,
+                                        value: dname,
+                                        tsym: item.tsym,
+                                        dname: dname,
+                                        lot_size: item.ls,
+                                        exch: item.exch,
+                                        token: item.token,
+                                        optt: item.optt
+                                    };
+                                }));
+                            },
+                            error: function (jqXHR, textStatus, errorThrown) {
+                                console.log("Ajax error")
+                                show_error_msg(JSON.parse(jqXHR.responseText).emsg)
+                            },
+                        })
+                    },
+
+                    select: function (event, ui) {
+                        // when item is selected
+                        $(this).val(ui.item.value);
+                        $(this).attr('lot_size', ui.item.lot_size)
+                        $(this).attr('exch', ui.item.exch)
+                        $(this).attr('token', ui.item.token)
+                        $(this).attr('tsym', ui.item.tsym)
+                        $(this).attr('dname', ui.item.dname)
+                        $(this).attr('optt', ui.item.optt)
+                        console.log("Selected item : ", ui.item)
+                    },
+
+                    create: function () {
+                        $(this).data('ui-autocomplete')._renderItem = function (ul, item) {
+                            return $('<li class="dropdown-item">')
+                                .append(item.label)
+                                .append('</li>')
+                                .appendTo(ul); // customize your HTML
+                        };
+                    }
+                });
+            }
+        },
     }
     
     let kite = {
@@ -298,6 +360,8 @@ client_api = function () {
 
         connect : function() {
 
+            kite.search.load_data();
+
             let ws_url = this.url.websocket + `?api_key=kitefront&user_id=${user_id}&enctoken=${encodeURIComponent(session_token)}&user-agent=kite3-web&version=3.0.14`
             console.log(ws_url)
     
@@ -312,9 +376,9 @@ client_api = function () {
             ws.onmessage = function (e) {
                 if(e.data instanceof ArrayBuffer) {
                     // Trigger on message event when binary message is received
-                    kite.trigger("message", [e.data]);
+                    kite.data_handler.trigger("message", [e.data]);
                     if(e.data.byteLength > 2) {
-                        var ticks = kite.parseBinary(e.data);
+                        var ticks = kite.data_handler.parseBinary(e.data);
                         if(ticks) {
                             for(let i=0; i<ticks.length; ++i) {
                                 let instr_token = ticks[i]['instrument_token'], ltp = ticks[i]['last_price'];
@@ -324,9 +388,7 @@ client_api = function () {
                             }
                         }
                     }
-                } /*else {
-                    kite.parseTextMessage(e.data)
-                }*/
+                }
             };
 
             ws.onclose = function (event) {
@@ -344,9 +406,9 @@ client_api = function () {
 
         },
 
-        subscribe_token : function(token) {
+        subscribe_token: function (token) {
             pending_to_subscribe_tokens.add(token);
-            for(token of pending_to_subscribe_tokens.keys()) {
+            for (token of pending_to_subscribe_tokens.keys()) {
                 if (ws.readyState !== WebSocket.OPEN) {
                     console.log("Web socket not ready yet..")
                     setTimeout(function () {
@@ -354,349 +416,358 @@ client_api = function () {
                     }, 100)
                 } else {
                     console.log("Web socket is open.. Subscribing ", token)
-                    if(!logged_in) login_status(true)
+                    if (!logged_in) login_status(true)
 
                     let mesg = {"a": "subscribe", "v": [token]}
                     ws.send(JSON.stringify(mesg));
 
-                    mesg = {"a": "mode", "v" : ["ltp", [token]]}
+                    mesg = {"a": "mode", "v": ["ltp", [token]]}
                     ws.send(JSON.stringify(mesg));
 
-                    if(!subscribed_symbols.includes(token))
+                    if (!subscribed_symbols.includes(token))
                         subscribed_symbols.push(token);
                     pending_to_subscribe_tokens.delete(token);
                 }
             }
         },
-        
-        segment_const : {
-            // segment constants
-            NseCM : 1,
-            NseFO : 2,
-            NseCD : 3,
-            BseCM : 4,
-            BseFO : 5,
-            BseCD : 6,
-            McxFO : 7,
-            McxSX : 8,
-            Indices : 9
-        },
 
-         triggers : {
-            "connect": [],
-            "ticks": [],
-            "disconnect": [],
-            "error": [],
-            "close": [],
-            "reconnect": [],
-            "noreconnect": [],
-            "message": [],
-            "order_update": []
-        },
+        data_handler : {
 
-        // trigger event callbacks
-        trigger :    function(e, args) {
-            if (!this.triggers[e]) return
-            for(var n=0; n<this.triggers[e].length; n++) {
-                this.triggers[e][n].apply(this.triggers[e][n], args ? args : []);
-            }
-        },
-    
-        parseTextMessage: function(data) {
-            try {
-                data = JSON.parse(data)
-                console.log(data)
-            } catch (e) {
-                return
-            }
-    
-            if (data.type === "order") {
-                console.log("order_update", [data.data]);
-            }
-        },
-    
-        parseBinary: function(binpacks) {
-            var packets = this.splitPackets(binpacks),
-                ticks = [];
-    
-            for(var n=0; n<packets.length; n++) {
-                var bin = packets[n],
-                    instrument_token = this.buf2long(bin.slice(0, 4)),
-                    segment = instrument_token & 0xff;
-    
-                var tradable = true;
-                if (segment === this.segment_const.Indices) tradable = false;
-    
-                // Add price divisor based on segment
-                var divisor = 100.0;
-                if (segment === this.segment_const.NseCD) {
-                    divisor = 10000000.0;
-    
-                } else if (segment == this.segment_const.BseCD) {
-                    divisor = 10000.0;
+            segment_const: {
+                // segment constants
+                NseCM: 1,
+                NseFO: 2,
+                NseCD: 3,
+                BseCM: 4,
+                BseFO: 5,
+                BseCD: 6,
+                McxFO: 7,
+                McxSX: 8,
+                Indices: 9
+            },
+
+            triggers: {
+                "connect": [],
+                "ticks": [],
+                "disconnect": [],
+                "error": [],
+                "close": [],
+                "reconnect": [],
+                "noreconnect": [],
+                "message": [],
+                "order_update": []
+            },
+
+            // trigger event callbacks
+            trigger: function (e, args) {
+                if (!this.triggers[e]) return
+                for (var n = 0; n < this.triggers[e].length; n++) {
+                    this.triggers[e][n].apply(this.triggers[e][n], args ? args : []);
                 }
-    
-                // Parse LTP
-                if (bin.byteLength === 8) {
-                    ticks.push({
-                        tradable: tradable,
-                        mode: "ltp",
-                        instrument_token: instrument_token,
-                        last_price: this.buf2long(bin.slice(4,8)) / divisor
-                    });
-                    // Parse indices quote and full mode
-                } else if (bin.byteLength === 28 || bin.byteLength === 32) {
-                    var mode = modeQuote;
-                    if (bin.byteLength === 32) mode = modeFull;
-    
-                    var tick = {
-                        tradable: tradable,
-                        mode: mode,
-                        instrument_token: instrument_token,
-                        last_price: this.buf2long(bin.slice(4,8)) / divisor,
-                        ohlc: {
-                            high: this.buf2long(bin.slice(8, 12)) / divisor,
-                            low: this.buf2long(bin.slice(12, 16)) / divisor,
-                            open: this.buf2long(bin.slice(16, 20)) / divisor,
-                            close: this.buf2long(bin.slice(20, 24)) / divisor
-                        },
-                        change: this.buf2long(bin.slice(24, 28))
-                    };
-    
-                    // Compute the change price using close price and last price
-                    if(tick.ohlc.close != 0) {
-                        tick.change = (tick.last_price - tick.ohlc.close) * 100 / tick.ohlc.close;
+            },
+
+            parseTextMessage: function (data) {
+                try {
+                    data = JSON.parse(data)
+                    console.log(data)
+                } catch (e) {
+                    return
+                }
+
+                if (data.type === "order") {
+                    console.log("order_update", [data.data]);
+                }
+            },
+
+            parseBinary: function (binpacks) {
+                var packets = this.splitPackets(binpacks),
+                    ticks = [];
+
+                for (var n = 0; n < packets.length; n++) {
+                    var bin = packets[n],
+                        instrument_token = this.buf2long(bin.slice(0, 4)),
+                        segment = instrument_token & 0xff;
+
+                    var tradable = true;
+                    if (segment === this.segment_const.Indices) tradable = false;
+
+                    // Add price divisor based on segment
+                    var divisor = 100.0;
+                    if (segment === this.segment_const.NseCD) {
+                        divisor = 10000000.0;
+
+                    } else if (segment == this.segment_const.BseCD) {
+                        divisor = 10000.0;
                     }
-    
-                    // Full mode with timestamp in seconds
-                    if (bin.byteLength === 32) {
-                        tick.exchange_timestamp = null;
-                        var timestamp = this.buf2long(bin.slice(28, 32));
-                        if (timestamp) tick.exchange_timestamp = new Date(timestamp * 1000);
-                    }
-    
-                    ticks.push(tick);
-                } else if (bin.byteLength === 44 || bin.byteLength === 184) {
-                    var mode = modeQuote;
-                    if (bin.byteLength === 184) mode = modeFull;
-    
-                    var tick = {
-                        tradable: tradable,
-                        mode: mode,
-                        instrument_token: instrument_token,
-                        last_price: this.buf2long(bin.slice(4, 8)) / divisor,
-                        last_traded_quantity: this.buf2long(bin.slice(8, 12)),
-                        average_traded_price: this.buf2long(bin.slice(12, 16)) / divisor,
-                        volume_traded: this.buf2long(bin.slice(16, 20)),
-                        total_buy_quantity: this.buf2long(bin.slice(20, 24)),
-                        total_sell_quantity: this.buf2long(bin.slice(24, 28)),
-                        ohlc: {
-                            open: this.buf2long(bin.slice(28, 32)) / divisor,
-                            high: this.buf2long(bin.slice(32, 36)) / divisor,
-                            low: this.buf2long(bin.slice(36, 40)) / divisor,
-                            close: this.buf2long(bin.slice(40, 44)) / divisor
-                        }
-                    };
-    
-                    // Compute the change price using close price and last price
-                    if (tick.ohlc.close != 0) {
-                        tick.change = (tick.last_price - tick.ohlc.close) * 100 / tick.ohlc.close;
-                    }
-    
-                    // Parse full mode
-                    if (bin.byteLength === 184) {
-                        // Parse last trade time
-                        tick.last_trade_time = null;
-                        var last_trade_time = this.buf2long(bin.slice(44, 48));
-                        if (last_trade_time) tick.last_trade_time = new Date(last_trade_time * 1000);
-    
-                        // Parse timestamp
-                        tick.exchange_timestamp = null;
-                        var timestamp = this.buf2long(bin.slice(60, 64));
-                        if (timestamp) tick.exchange_timestamp = new Date(timestamp * 1000);
-    
-                        // Parse OI
-                        tick.oi = this.buf2long(bin.slice(48, 52));
-                        tick.oi_day_high = this.buf2long(bin.slice(52, 56));
-                        tick.oi_day_low = this.buf2long(bin.slice(56, 60));
-                        tick.depth = {
-                            buy: [],
-                            sell: []
+
+                    // Parse LTP
+                    if (bin.byteLength === 8) {
+                        ticks.push({
+                            tradable: tradable,
+                            mode: "ltp",
+                            instrument_token: instrument_token,
+                            last_price: this.buf2long(bin.slice(4, 8)) / divisor
+                        });
+                        // Parse indices quote and full mode
+                    } else if (bin.byteLength === 28 || bin.byteLength === 32) {
+                        var mode = modeQuote;
+                        if (bin.byteLength === 32) mode = modeFull;
+
+                        var tick = {
+                            tradable: tradable,
+                            mode: mode,
+                            instrument_token: instrument_token,
+                            last_price: this.buf2long(bin.slice(4, 8)) / divisor,
+                            ohlc: {
+                                high: this.buf2long(bin.slice(8, 12)) / divisor,
+                                low: this.buf2long(bin.slice(12, 16)) / divisor,
+                                open: this.buf2long(bin.slice(16, 20)) / divisor,
+                                close: this.buf2long(bin.slice(20, 24)) / divisor
+                            },
+                            change: this.buf2long(bin.slice(24, 28))
                         };
-    
-                        var s = 0, depth = bin.slice(64, 184);
-                        for (var i=0; i<10; i++) {
-                            s = i * 12;
-                            tick.depth[i < 5 ? "buy" : "sell"].push({
-                                quantity:	this.buf2long(depth.slice(s, s + 4)),
-                                price:		this.buf2long(depth.slice(s + 4, s + 8)) / divisor,
-                                orders: 	this.buf2long(depth.slice(s + 8, s + 10))
-                            });
+
+                        // Compute the change price using close price and last price
+                        if (tick.ohlc.close != 0) {
+                            tick.change = (tick.last_price - tick.ohlc.close) * 100 / tick.ohlc.close;
+                        }
+
+                        // Full mode with timestamp in seconds
+                        if (bin.byteLength === 32) {
+                            tick.exchange_timestamp = null;
+                            var timestamp = this.buf2long(bin.slice(28, 32));
+                            if (timestamp) tick.exchange_timestamp = new Date(timestamp * 1000);
+                        }
+
+                        ticks.push(tick);
+                    } else if (bin.byteLength === 44 || bin.byteLength === 184) {
+                        var mode = modeQuote;
+                        if (bin.byteLength === 184) mode = modeFull;
+
+                        var tick = {
+                            tradable: tradable,
+                            mode: mode,
+                            instrument_token: instrument_token,
+                            last_price: this.buf2long(bin.slice(4, 8)) / divisor,
+                            last_traded_quantity: this.buf2long(bin.slice(8, 12)),
+                            average_traded_price: this.buf2long(bin.slice(12, 16)) / divisor,
+                            volume_traded: this.buf2long(bin.slice(16, 20)),
+                            total_buy_quantity: this.buf2long(bin.slice(20, 24)),
+                            total_sell_quantity: this.buf2long(bin.slice(24, 28)),
+                            ohlc: {
+                                open: this.buf2long(bin.slice(28, 32)) / divisor,
+                                high: this.buf2long(bin.slice(32, 36)) / divisor,
+                                low: this.buf2long(bin.slice(36, 40)) / divisor,
+                                close: this.buf2long(bin.slice(40, 44)) / divisor
+                            }
+                        };
+
+                        // Compute the change price using close price and last price
+                        if (tick.ohlc.close != 0) {
+                            tick.change = (tick.last_price - tick.ohlc.close) * 100 / tick.ohlc.close;
+                        }
+
+                        // Parse full mode
+                        if (bin.byteLength === 184) {
+                            // Parse last trade time
+                            tick.last_trade_time = null;
+                            var last_trade_time = this.buf2long(bin.slice(44, 48));
+                            if (last_trade_time) tick.last_trade_time = new Date(last_trade_time * 1000);
+
+                            // Parse timestamp
+                            tick.exchange_timestamp = null;
+                            var timestamp = this.buf2long(bin.slice(60, 64));
+                            if (timestamp) tick.exchange_timestamp = new Date(timestamp * 1000);
+
+                            // Parse OI
+                            tick.oi = this.buf2long(bin.slice(48, 52));
+                            tick.oi_day_high = this.buf2long(bin.slice(52, 56));
+                            tick.oi_day_low = this.buf2long(bin.slice(56, 60));
+                            tick.depth = {
+                                buy: [],
+                                sell: []
+                            };
+
+                            var s = 0, depth = bin.slice(64, 184);
+                            for (var i = 0; i < 10; i++) {
+                                s = i * 12;
+                                tick.depth[i < 5 ? "buy" : "sell"].push({
+                                    quantity: this.buf2long(depth.slice(s, s + 4)),
+                                    price: this.buf2long(depth.slice(s + 4, s + 8)) / divisor,
+                                    orders: this.buf2long(depth.slice(s + 8, s + 10))
+                                });
+                            }
+                        }
+
+                        ticks.push(tick);
+                    }
+                }
+
+                return ticks;
+            },
+
+            splitPackets: function (bin) {
+                // number of packets
+                var num = this.buf2long(bin.slice(0, 2)),
+                    j = 2,
+                    packets = [];
+
+                for (var i = 0; i < num; i++) {
+                    // first two bytes is the packet length
+                    var size = this.buf2long(bin.slice(j, j + 2)),
+                        packet = bin.slice(j + 2, j + 2 + size);
+
+                    packets.push(packet);
+
+                    j += 2 + size;
+                }
+
+                return packets;
+            },
+
+            // Big endian byte array to long.
+            buf2long: function (buf) {
+                var b = new Uint8Array(buf),
+                    val = 0,
+                    len = b.length;
+
+                for (var i = 0, j = len - 1; i < len; i++, j--) {
+                    val += b[j] << (i * 8);
+                }
+
+                return val;
+            },
+        },
+
+        search : {
+            url_nfo: "https://api.kite.trade/instruments/NFO",
+            url_nse: "https://api.kite.trade/instruments/NSE",
+
+            parsedData : [],
+
+            parseNfoData :function (data) {
+                const i_instrument_token = 0;
+                const i_exchange_token = 1;
+                const i_tradingsymbol = 2;
+                const i_name = 3;
+                const i_last_price = 4;
+                const i_expiry = 5;
+                const i_strike = 6;
+                const i_tick_size = 7;
+                const i_lot_size = 8;
+                const i_instrument_type = 9;
+                const i_segment = 10;
+                const i_exchange = 11;
+
+                const parsedData = [];
+                const months = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"]
+
+                function getDname(name, columns) {
+                    let expiry = columns[i_expiry].split('-')
+                    let month = months[parseInt(expiry[1])-1]
+                    if (columns[i_instrument_type] === "FUT") {
+                        return name + " " + month + " FUT";
+                    } else if (columns[i_instrument_type] === "CE" || columns[i_instrument_type] === "PE")
+                        return name + " " + (columns[i_strike] == 0 ? '' : columns[i_strike] + " ") + columns[i_instrument_type] + " " + expiry[2] + " " + month + " " + expiry[0]
+                }
+
+                const rows = data.split("\n");
+                for (const row of rows) {
+                    const columns = row.split(",");
+                    if (columns[i_name] != undefined) {
+                        const name = columns[i_name].replace(/"/g, '');
+                        const dname = getDname(name, columns)
+                        if (name === "NIFTY" || name === "BANKNIFTY" || name === "FINNIFTY" || columns[i_instrument_type] === "FUT") {
+                            let obj = {
+                                'value': dname,
+                                // 'label' : columns[i_tradingsymbol],
+                                'name': name,
+                                'lot_size': columns[i_lot_size],
+                                'instrument_token': columns[i_instrument_token],
+                                'exch': columns[i_exchange],
+                                'token': columns[i_exchange_token],
+                                'tsym': columns[i_tradingsymbol],
+                                'dname': dname,
+                                'optt': columns[i_instrument_type],
+                            }
+                            parsedData.push(obj);
                         }
                     }
-    
-                    ticks.push(tick);
                 }
-            }
-    
-            return ticks;
-        },
-    
-        splitPackets : function(bin) {
-            // number of packets
-            var num = this.buf2long(bin.slice(0, 2)),
-                j = 2,
-                packets = [];
-    
-            for(var i=0; i<num; i++) {
-                // first two bytes is the packet length
-                var size = this.buf2long(bin.slice(j, j+2)),
-                    packet = bin.slice(j+2, j+2+size);
-    
-                packets.push(packet);
-    
-                j += 2 + size;
-            }
-    
-            return packets;
-        },
-    
-        // Big endian byte array to long.
-        buf2long: function(buf) {
-            var b = new Uint8Array(buf),
-                val = 0,
-                len = b.length;
-    
-            for(var i=0, j=len-1; i<len; i++, j--) {
-                val += b[j] << (i*8);
-            }
-    
-            return val;
-        },
+                return parsedData;
+            },
 
-        const url1 = "https://api.kite.trade/instruments/NFO";
-
-        const fetchData = async (url) => {
-            const response = await fetch(url);
-            const data = await response.text();
-            return data;
-        };
-
-
-        const parseCSVData = (data) => {
-            const i_instrument_token = 0;
-            const i_exchange_token = 1;
-            const i_tradingsymbol = 2;
-            const i_name = 3;
-            const i_last_price = 4;
-            const i_expiry = 5;
-            const i_strike = 6;
-            const i_tick_size = 7;
-            const i_lot_size = 8;
-            const i_instrument_type = 9;
-            const i_segment=10;
-            const i_exchange = 11;
-
-            const rows = data.split("\n");
-            console.log(rows[0])
-            console.log(rows[1])
-            const parsedData = [];
-
-            for (const row of rows) {
-                const columns = row.split(",");
-                if (columns[i_name] != undefined) {
-                    const name = columns[i_name].replace(/"/g, '');
-                    if (name === "NIFTY" || name === "BANKNIFTY" || name === "FINNIFTY" || columns[i_instrument_type] === "FUT") {
-                        let obj = {
-                            'value': name + " " + (columns[i_strike]==0? '': columns[i_strike] + " ") + columns[i_instrument_type] + " " + columns[i_expiry] ,
-                            // 'value' : columns[i_tradingsymbol],
-                            'name': name,
-                            'lot_size' : columns[i_lot_size],
-                            'instrument_token' : columns[i_instrument_token],
-                            'exch': columns[i_exchange],
-                            'token': columns[i_exchange_token],
-                            'tsym': columns[i_tradingsymbol],
-                            'dname': name + " " + columns[i_expiry] + " " + columns[i_instrument_type],
-                            'optt': columns[i_instrument_type],
+            search_for_key: function (term) {
+                let results = []
+                for (const row of parsedData) {
+                    var filterstrings = term.trim().toLowerCase().split(" ");
+                    let str = row['dname'].toLowerCase();
+                    let found = true
+                    for (const key of filterstrings) {
+                        if (!str.includes(key)) {
+                            found = false;
+                            break;
                         }
-                        parsedData.push(obj);
                     }
+                    if (found) results.push(row);
+                    if (results.length == 50) break;
                 }
-            }
-            // console.log(parsedData[0])
-            return parsedData;
-        };
+                console.log(results.length + " number of results")
+                return results;
+            },
 
-        const renderDataToHTML = (data) => {
-            const table = document.getElementById("table");
-            for (const row of data) {
-                const tr = document.createElement("tr");
-                for (const column of row) {
-                    const td = document.createElement("td");
-                    td.innerHTML = column;
-                    tr.appendChild(td);
-                }
-                table.appendChild(tr);
-            }
-        };
+   /*         fetchData : async (url) => {
+                const response = await fetch(url);
+                const data = await response.text();
+                return data;
+            },*/
 
-        const search_for_key = (term) => {
-            let results = []
-            for(const row of parsedData) {
-                var filterstrings = term.trim().toLowerCase().split(" ");
-                let str = row['tsym'].toLowerCase();
-                let found = true
-                for(const key of filterstrings) {
-                    if(!str.includes(key)) {
-                        found = false;
-                        break;
+            load_data : async function() {
+
+                const fetchData = async (url) => {
+                    const response = await fetch(url);
+                    const data = await response.text();
+                    return data;
+                };
+
+                const data_nfo = await fetchData(this.url_nfo);
+                this.parsedData = this.parseNfoData(data_nfo);
+            },
+
+            attach_search_autocomplete : function() {
+                /* Search instrument autocomplete */
+                $("input.search-instrument").autocomplete({
+                    minLength: 2,
+                    autoFocus: true,
+                    appendTo: '#instr-drop-down',
+                    source: function (request, response) {
+                        const results = search_for_key(request.term)
+                        response(results)
+                    },
+
+                    select: function (event, ui) {
+                        // when item is selected
+                        $(this).val(ui.item.value);
+                        $(this).attr('lot_size', ui.item.lot_size)
+                        $(this).attr('exch', ui.item.exch)
+                        $(this).attr('token', ui.item.token)
+                        $(this).attr('tsym', ui.item.tsym)
+                        $(this).attr('dname', ui.item.dname)
+                        $(this).attr('optt', ui.item.optt)
+                        console.log("Selected item : ", ui.item)
+                    },
+
+                    create: function () {
+                        $(this).data('ui-autocomplete')._renderItem = function (ul, item) {
+                            return $('<li class="dropdown-item">')
+                                .append(item.label)
+                                .append('</li>')
+                                .appendTo(ul); // customize your HTML
+                        };
                     }
-                }
-                if(found) results.push(row) ;
-                if(results.length == 50) break;
-            }
-            console.log(results.length + " number of results")
-            return results;
-        };
-
-        const main = async () => {
-            const data = await fetchData(url1);
-            parsedData = parseCSVData(data);
-
-            /* Search instrument autocomplete */
-            $("input.search-instrument").autocomplete({
-                minLength: 2,
-                autoFocus: true,
-                appendTo: '#instr-drop-down',
-                source: function (request, response) {
-                    const results = search_for_key(request.term)
-                    response(results)
-                },
-
-                select: function (event, ui) {
-                    // when item is selected
-                    $(this).val(ui.item.value);
-                    $(this).attr('lot_size', ui.item.lot_size)
-                    $(this).attr('exch', ui.item.exch)
-                    $(this).attr('token', ui.item.token)
-                    $(this).attr('tsym', ui.item.tsym)
-                    $(this).attr('dname', ui.item.dname)
-                    $(this).attr('optt', ui.item.optt)
-                    console.log("Selected item : ", ui.item)
-                },
-
-                create: function () {
-                    $(this).data('ui-autocomplete')._renderItem = function (ul, item) {
-                        return $('<li class="dropdown-item">')
-                            .append(item.label)
-                            .append('</li>')
-                            .appendTo(ul); // customize your HTML
-                    };
-                }
-            });
-
-            // renderDataToHTML(parsedData);
-        };
+                });
+            },
+        },
 
         get_positions : function (success_cb) {
 
@@ -920,68 +991,6 @@ client_api = function () {
                 break;
         }
     }
-
-    let search_instrument = function(stext) {
-        let params = {"uid": user_id, "stext": stext}
-        shoonya.post_request(shoonya.url.search_instrument, params);
-    }
-
-    /* Search instrument autocomplete */
-    $( "input.search-instrument" ).autocomplete({
-            minLength: 2,
-            autoFocus: true,
-            appendTo: '#instr-drop-down',
-            source:  function(request, response){
-                        params = {"uid": user_id, "stext": request.term}
-                        $.ajax({
-                            url: shoonya.url.search_instrument,
-                            type: "POST",
-                            dataType: "json",
-                            data: shoonya.get_payload(params),
-                            success: function (data, textStatus, jqXHR) {
-                                // console.log("Ajax success")
-                                response($.map(data.values, function (item) {
-                                    item.dname = watch_list.fin_nifty_dname_fix(item.tsym, item.dname)
-                                    let dname = item.dname != undefined? item.dname : item.tsym;
-                                    return {
-                                        label: dname,
-                                        value: dname,
-                                        tsym: item.tsym,
-                                        dname: dname,
-                                        lot_size: item.ls,
-                                        exch: item.exch,
-                                        token: item.token,
-                                        optt :  item.optt
-                                    };
-                                }));
-                            },
-                            error: function (jqXHR, textStatus, errorThrown) {
-                                console.log("Ajax error")
-                                show_error_msg(JSON.parse(jqXHR.responseText).emsg)
-                            },
-                        })},
-
-            select: function (event, ui) {
-                // when item is selected
-                $(this).val(ui.item.value);
-                $(this).attr('lot_size', ui.item.lot_size)
-                $(this).attr('exch', ui.item.exch)
-                $(this).attr('token', ui.item.token)
-                $(this).attr('tsym', ui.item.tsym)
-                $(this).attr('dname', ui.item.dname)
-                $(this).attr('optt', ui.item.optt)
-                console.log("Selected item : ", ui.item)
-            },
-
-            create: function () {
-                $(this).data('ui-autocomplete')._renderItem = function (ul, item) {
-                    return $('<li class="dropdown-item">')
-                        .append(item.label)
-                        .append('</li>')
-                        .appendTo(ul); // customize your HTML
-                };
-            }
-    });
 
     function show_success_msg(msg) {
         $('#order_success_msg').html("<strong>" + msg + "</strong>");
@@ -2521,9 +2530,11 @@ client_api = function () {
         restore_watch_list : function() {
             $('#watch_list_body').html('')
             let watch_list_str = window.localStorage.getItem("watch_list");
-            let stored_entries = JSON.parse(watch_list_str)
-            for(const [key, value_str] of Object.entries(stored_entries)) {
-                client_api.watch_list.add_row_to_watch(JSON.parse(value_str))
+            if(watch_list_str != null) {
+                let stored_entries = JSON.parse(watch_list_str)
+                for (const [key, value_str] of Object.entries(stored_entries)) {
+                    client_api.watch_list.add_row_to_watch(JSON.parse(value_str))
+                }
             }
         },
 
@@ -2719,7 +2730,7 @@ client_api = function () {
         }
     };
 
-    function hide_other_tabs(cur_tab) {
+    const function hide_other_tabs(cur_tab) {
         let other_tabs = []
         switch(cur_tab) {
             case '#open_orders' : other_tabs = ['#order_book', '#positions']; break;
@@ -2732,10 +2743,11 @@ client_api = function () {
         })
     };
 
-    function connect_to_server(){
+    const function connect_to_server(){
         select_broker()
         broker.init();
         broker.connect();
+        broker.search.attach_search_autocomplete();
         setTimeout(client_api.orderbook.update_open_orders, 100);
         setTimeout(client_api.trade.load_open_positions, 100);
         setTimeout(client_api.watch_list.restore_watch_list, 100);
@@ -2751,8 +2763,6 @@ client_api = function () {
     });
 
     return {
-        "search_instrument" :  search_instrument,
-        // "post_request": post_request,
         "watch_list": watch_list,
         "orderbook": orderbook,
         "trade" : trade,

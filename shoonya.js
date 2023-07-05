@@ -1836,9 +1836,11 @@ shoonya_api = function () {
         restore_watch_list : function() {
             $('#watch_list_body').html('')
             let watch_list_str = window.localStorage.getItem("watch_list");
-            let stored_entries = JSON.parse(watch_list_str)
-            for(const [key, value_str] of Object.entries(stored_entries)) {
-                shoonya_api.watch_list.add_row_to_watch(JSON.parse(value_str))
+            if(watch_list_str != null) {
+                let stored_entries = JSON.parse(watch_list_str)
+                for (const [key, value_str] of Object.entries(stored_entries)) {
+                    shoonya_api.watch_list.add_row_to_watch(JSON.parse(value_str))
+                }
             }
         },
 
