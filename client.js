@@ -401,6 +401,10 @@ client_api = function () {
                     }
                 });
             },
+
+            exit_order : function(values, success_cb) {
+                shoonya.post_request(shoonya.url.place_order, values, success_cb);
+            },
         }
 
     }
@@ -897,7 +901,7 @@ client_api = function () {
                     'norentm': kite_order.exchange_timestamp,
                     'exch_time': kite_order.exchange_timestamp,
                     'reject_reason': kite_order.status_message,
-                    'remarks': undefined,
+                    'remarks': kite_order.tag,
                     'prd': kite_order.product,
                     'exch_order_id': kite_order.exchange_order_id,
 
@@ -940,7 +944,7 @@ client_api = function () {
                         console.log("Ajax error : ", JSON.stringify(jqXHR))
                         if(jqXHR.status == 401)
                             login_status(false)
-                        show_error_msg(JSON.parse(jqXHR.responseText).emsg)
+                        show_error_msg(jqXHR.responseJSON.message)
                     }
                 });
             },
@@ -962,8 +966,7 @@ client_api = function () {
                         if (data.data.order_id != undefined) {
                             let orderno = data.data.order_id
 
-                            kite.get_orderbook(function (data) {
-                                // let orders = kite.map_orders(data)
+                            kite.order.get_orderbook(function (data) {
                                 success_cb(data)
                             })
                         }
@@ -1030,7 +1033,7 @@ client_api = function () {
                         console.log("Ajax error : ", JSON.stringify(jqXHR))
                         if (jqXHR.status == 401)
                             login_status(false)
-                        show_error_msg(JSON.parse(jqXHR.responseText).emsg)
+                        show_error_msg(jqXHR.responseJSON.message)
                     }
                 })
             },
@@ -1101,6 +1104,34 @@ client_api = function () {
                     // dataType: "json",
                     method: "POST",
                     data: pay_load,
+                    headers: {
+                        "Authorization": "enctoken " + session_token,
+                    },
+                    success: function (data, textStatus, jqXHR) {
+                        let dt = {}
+                        if (data.status === "success") {
+                            dt.stat = "OK";
+                            dt.norenordno = data.data.order_id;
+                        }
+                        success_cb(dt);
+                    },
+                    error: function (jqXHR, textStatus, errorThrown) {
+                        console.log("Ajax error : ", JSON.stringify(jqXHR))
+                        if (jqXHR.status == 401)
+                            login_status(false)
+                        show_error_msg(jqXHR.responseJSON.message)
+                    }
+                });
+            },
+
+            exit_order : function(values, success_cb) {
+                let url = kite.url.exit_order + pay_load.variety
+
+                $.ajax({
+                    url: url,
+                    // dataType: "json",
+                    method: "POST",
+                    data: values,
                     headers: {
                         "Authorization": "enctoken " + session_token,
                     },
@@ -1610,9 +1641,6 @@ client_api = function () {
 
         place_paper_trade : function(order, ltp) {
 
-            /*if(broker.name === "kite")
-                order = kite.order.map_order(order)*/
-
             let order_id = "paper" + Date.now()
             order.norenordno = order_id
             order.prc = ltp
@@ -1639,10 +1667,10 @@ client_api = function () {
 
             let buy_sell= tr_elm.attr('trtype') == 'B' ? 'S' : 'B'; // Do the opposite
             let exit_limit = milestone_manager.get_value_object(limit_value);
-            let values = orderbook.get_order_params(tr_elm, buy_sell, exit_limit, qty)
+            let values = broker.order.get_order_params(tr_elm, buy_sell, exit_limit, qty)
 
             if(!is_paper_trade()) {
-                shoonya.post_request(shoonya.url.place_order, values, function (data) {
+                broker.order.exit_order(values, function (data) {
                     if (data.stat.toUpperCase() === "OK") {
                         let orderno = data.norenordno;
                         orderbook.update_open_orders();
