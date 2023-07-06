@@ -134,6 +134,10 @@ client_api = function () {
             return params.token;
         },
 
+        get_remarks: function (params) {
+            return params.remarks;
+        },
+
         subscribe_token: function (token) {
 
             pending_to_subscribe_tokens.add(token);
@@ -322,7 +326,7 @@ client_api = function () {
                 values["ret"] = 'DAY';
                 values["remarks"] = remarks;
 
-                values["amo"] = "Yes";          // TODO - AMO ORDER
+                // values["amo"] = "Yes";          // TODO - AMO ORDER
 
                 return values;
             },
@@ -853,6 +857,10 @@ client_api = function () {
             return params.instrument_token;
         },
 
+        get_remarks: function (params) {
+            return params.tag;
+        },
+
         order : {
             map_orders: function (kite_orders) {
                 if (kite_orders == undefined)
@@ -1135,10 +1143,10 @@ client_api = function () {
                     'instrument_token': kite_position.instrument_token,
                     'token': kite_position.exchange_token,
                     'tsym': kite_position.tradingsymbol,
-                    'daybuyavgprc': kite_position.buy_price,
-                    'daysellavgprc': kite_position.sell_price,
-                    'daybuyqty': kite_position.buy_quantity,
-                    'daysellqty': kite_position.sell_quantity,
+                    'daybuyavgprc': kite_position.day_buy_price.toFixed(2),
+                    'daysellavgprc': kite_position.day_sell_price.toFixed(2),
+                    'daybuyqty': kite_position.day_buy_quantity,
+                    'daysellqty': kite_position.day_sell_quantity,
                     'remarks': kite_position.tag,
                     'urmtom':kite_position.realised.toFixed(2), // kite unrealised is not correct.. looks like unrealised and realised are swapped
                     'rpnl': kite_position.pnl.toFixed(2),
@@ -1147,7 +1155,7 @@ client_api = function () {
                     'daysellamt' : kite_position.day_sell_value.toFixed(2) ,
                     'netqty' : kite_position.quantity,
                     'dayavgprc': kite_position.day_buy_price,
-                    'netavgprc': kite_position.average_price,
+                    'netavgprc': (kite_position.quantity > 0)? kite_position.buy_price : kite_position.sell_price,
                 }
                 return std_pos;
             },
@@ -2476,7 +2484,7 @@ client_api = function () {
             tbody_elm.append(`<tr id="${row_id}" class="${className}" ordid="${order.norenordno}"  exch="${order.exch}" token="${order.token}" instrument_token="${order.instrument_token}" qty="${order.qty}" tsym="${order.tsym}" ttype="${ttype}" trtype="${order.trantype}" trade="active">
                         <td>${buy_sell}</td>
                         <td class="instrument">${dname}</td>
-                        <td class="entry" title="Margin Used : ${(order.prc * order.qty).toFixed(2)}">
+                        <td class="entry num" title="Margin Used : ${(order.prc * order.qty).toFixed(2)}">
                             <span class="badge badge-pill badge-dark">${order.norentm.split(" ")[0]}</span>
                             </br><span class="badge badge-info">${order.remarks}</span>
                             <span class="price">${order.prc}</span></br>
@@ -2570,7 +2578,11 @@ client_api = function () {
         },
 
         getCounterTradePosition : function(open_ord_tr_elm) {
-            let token=open_ord_tr_elm.attr('token')
+            let token;
+            if(broker.name === "shoonya")
+                token = open_ord_tr_elm.attr('token')
+            else if(broker.name === "kite")
+                token = open_ord_tr_elm.attr('instrument_token')
             let qty=open_ord_tr_elm.attr('qty')
             let counter_trtype=open_ord_tr_elm.attr('trtype') === 'B'? 'S': 'B'
             let exch=open_ord_tr_elm.attr('exch')
@@ -2581,7 +2593,11 @@ client_api = function () {
         },
 
         getTradePosition : function(token, exch, trtype, qty) {
-            let position = $(`#active_trades_table tr[token=${token}][exch=${exch}][qty=${qty}][trtype=${trtype}]`)
+            let position;
+            if(broker.name === "shoonya")
+                position = $(`#active_trades_table tr[token=${token}][exch=${exch}][qty=${qty}][trtype=${trtype}]`)
+            else if(broker.name === "kite")
+                position = $(`#active_trades_table tr[instrument_token=${token}][exch=${exch}][qty=${qty}][trtype=${trtype}]`)
             return position;
         },
 
@@ -2637,10 +2653,10 @@ client_api = function () {
         load_open_positions : function() {
             if(!is_paper_trade()) {
                 // $('#active_trades_table').html("")
-                positions.get_positions(function (positions) {
+                broker.position.get_positions(function (positions) {
                     if (positions != undefined && positions.stat !== 'Not_Ok')
                         positions.forEach((position) => {
-                            subscribe_token(broker.get_subscribe_token(position));
+                            broker.subscribe_token(broker.get_subscribe_token(position));
                             trade.display_trade_position(position)
                         })
                 })
@@ -2650,7 +2666,6 @@ client_api = function () {
         display_trade_position : function(pos) {
             if (pos.stat.toUpperCase() === "OK") {
                 let buy_sell = '', trtype='';
-                let price = pos.netavgprc;
                 let qty = pos.netqty;
                 if (qty > 0) {
                     buy_sell = '<span class="badge badge-success">Buy</span>'
@@ -2667,19 +2682,17 @@ client_api = function () {
                 if(qty >0) {
                     console.log("Open position : ", JSON.stringify(pos))
 
-                    let position = trade.getTradePosition(pos.token, pos.exch, trtype, qty);
-
+                    let ticker = broker.get_ticker(pos)
+                    let position = trade.getTradePosition(ticker, pos.exch, trtype, qty);
                     if(position.length == 0) { //Add new position only if it doesn't exist
                         console.log("Position doesn't exist in active trades. So adding it..")
-                        $('#active_trades_table').append(`<tr id="row_id_${++unique_row_id}" exch="${pos.exch}" token="${pos.token}" tsym="${pos.tsym}" qty="${qty}" ttype="${ttype}" trtype="${trtype}" trade="active">
+                        $('#active_trades_table').append(`<tr id="row_id_${++unique_row_id}" exch="${pos.exch}" token="${ticker}" instrument_token="${ticker}" tsym="${pos.tsym}" qty="${qty}" ttype="${ttype}" trtype="${trtype}" trade="active">
                             <td>${buy_sell}</td>
                             <td>${dname}</td>
-                            <td class="entry">
-<!--                                <span class="badge badge-pill badge-dark"></span></br>-->
-                                <span class="price">${price}</span>
-<!--                                </br><span class="badge badge-info"></span>-->
+                            <td class="entry num">
+                                <span class="price">${pos.netavgprc}</span>
                             </td>
-                            <td class="trade_${pos.token} ltp">${live_data[pos.token]}</td>
+                            <td class="trade_${ticker} ltp">${pos.lp}</td>
                             <td class="pnl"></td>
                             <td><input type="text" disabled class="form-control target" placeholder="" ></td>
                             <td><input type="text" disabled class="form-control sl" placeholder="" ></td>
@@ -2688,6 +2701,7 @@ client_api = function () {
                             <td><button type="button" class="btn btn-success modify" onclick="client_api.trade.modify(this, $(this).text())">Edit</button></td>
                             <td><button type="button" class="btn btn-danger exit" onclick="client_api.trade.exit(this)">Exit</button></td>
                         </tr>`);
+                        /*${live_data[ticker]}*/
                     }else {
                         console.log("Position is already present in active trades")
                     }
