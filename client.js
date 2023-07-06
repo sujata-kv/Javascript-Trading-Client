@@ -1461,9 +1461,10 @@ client_api = function () {
                     <td><button type="button" class="btn btn-danger cancel" onclick="client_api.orderbook.cancel_order(this)">Cancel</button></td>
             </tr>`);
 
+            let ticker = broker.get_ticker({'token' : item.token, 'instrument_token': item.instrument_token})
             let entry_obj = milestone_manager.get_value_object(entry_val)
             if(entry_obj.spot_based)
-                milestone_manager.add_entry(row_id, item.token, ttype, item.trantype, entry_obj);
+                milestone_manager.add_entry(row_id, ticker, ttype, item.trantype, entry_obj);
         },
 
         update_open_orders : function() {
@@ -1500,14 +1501,17 @@ client_api = function () {
             let ttype = tr_elm.attr('ttype')
             let trtype = tr_elm.attr('trtype')
             let token = tr_elm.attr('token')
+            let instrument_token = tr_elm.attr('instrument_token')
 
             let target_value = tr_elm.find('.target').val()
+
+            let ticker = broker.get_ticker({'token': token, 'instrument_token': instrument_token})
 
             if(target_value == undefined || target_value == '') {
                 milestone_manager.remove_target(row_id);
             } else { // Target has some value
                 let target_obj = milestone_manager.get_value_object(target_value)
-                milestone_manager.add_target(row_id, token, ttype, trtype, target_obj);
+                milestone_manager.add_target(row_id, ticker, ttype, trtype, target_obj);
             }
 
             let sl_value = tr_elm.find('.sl').val()
@@ -1516,12 +1520,12 @@ client_api = function () {
                 milestone_manager.remove_sl(row_id);
             } else {  // SL has some value
                 let sl_obj = milestone_manager.get_value_object(sl_value)
-                milestone_manager.add_sl(row_id, token, ttype, trtype, sl_obj);
+                milestone_manager.add_sl(row_id, ticker, ttype, trtype, sl_obj);
             }
 
             let entry_obj = milestone_manager.get_value_object(entry_value)
             if(entry_obj.spot_based && entry_obj.value != '') {  // Spot based entry
-                milestone_manager.add_entry(row_id, token, ttype, trtype, entry_obj)
+                milestone_manager.add_entry(row_id, ticker, ttype, trtype, entry_obj)
             } else {
                 milestone_manager.remove_entry(row_id); // Entry should be present in milestone_mgr only if it is spot based. Else LIMIT & MKT order should be placed immediately
 
@@ -2442,11 +2446,11 @@ client_api = function () {
                 </tr>`);
 
             if(target != undefined && target != '' ) {
-                milestone_manager.add_target(row_id, order.token, ttype, order.trantype, milestone_manager.get_value_object(target))
+                milestone_manager.add_target(row_id, ticker, ttype, order.trantype, milestone_manager.get_value_object(target))
                 $('#' + row_id).find('.target').val(target)
             }
             if(sl != undefined && sl != '' ) {
-                milestone_manager.add_sl(row_id, order.token, ttype, order.trantype, milestone_manager.get_value_object(sl))
+                milestone_manager.add_sl(row_id, ticker, ttype, order.trantype, milestone_manager.get_value_object(sl))
                 $('#' + row_id).find('.sl').val(sl)
             }
 
@@ -2564,14 +2568,17 @@ client_api = function () {
 
                 let row_id = tr_elm.attr('id')
                 let token = tr_elm.attr('token')
+                let instrument_token = tr_elm.attr('instrument_token')
                 let trtype = tr_elm.attr('trtype')
+
+                let ticker = broker.get_ticker({'token': token, 'instrument_token': instrument_token})
                 if(target != undefined && target != '' ) {
-                    milestone_manager.add_target(row_id, token, ttype, trtype, milestone_manager.get_value_object(target))
+                    milestone_manager.add_target(row_id, ticker, ttype, trtype, milestone_manager.get_value_object(target))
                 } else
                     milestone_manager.remove_target(row_id)
 
                 if(sl != undefined && sl != '' ) {
-                    milestone_manager.add_sl(row_id, token, ttype, trtype, milestone_manager.get_value_object(sl))
+                    milestone_manager.add_sl(row_id, ticker, ttype, trtype, milestone_manager.get_value_object(sl))
                 } else
                     milestone_manager.remove_sl(row_id)
             }
