@@ -157,28 +157,6 @@ client_api = function () {
             }
         },
 
-        get_positions: function (success_cb) {
-
-            let values = {};
-            values["uid"] = user_id;
-            values["actid"] = user_id;
-
-            let payload = shoonya.get_payload(values)
-            $.ajax({
-                url: broker.url.positions,
-                type: "POST",
-                dataType: "json",
-                data: payload,
-                success: function (data, textStatus, jqXHR) {
-                    success_cb(data)
-                },
-                error: function (jqXHR, textStatus, errorThrown) {
-                    console.error("Ajax error")
-                    show_error_msg(JSON.parse(jqXHR.responseText).emsg)
-                }
-            });
-        },
-
         get_payload: function (params) {
             let payload = 'jData=' + JSON.stringify(params);
             payload = payload + "&jKey=" + session_token;
@@ -209,6 +187,30 @@ client_api = function () {
                     }
                 }
             });
+        },
+
+        position : {
+            get_positions: function (success_cb) {
+
+                let values = {};
+                values["uid"] = user_id;
+                values["actid"] = user_id;
+
+                let payload = shoonya.get_payload(values)
+                $.ajax({
+                    url: broker.url.positions,
+                    type: "POST",
+                    dataType: "json",
+                    data: payload,
+                    success: function (data, textStatus, jqXHR) {
+                        success_cb(data)
+                    },
+                    error: function (jqXHR, textStatus, errorThrown) {
+                        console.error("Ajax error")
+                        show_error_msg(JSON.parse(jqXHR.responseText).emsg)
+                    }
+                });
+            },
         },
 
         search: {
@@ -843,25 +845,6 @@ client_api = function () {
             },
         },
 
-        get_positions : function (success_cb) {
-
-            $.get({
-                url: kite.url.positions,
-                dataType: "json",
-                headers : {
-                    "Authorization" : "enctoken " + session_token,
-                },
-
-                success: function (data, textStatus, jqXHR) {
-                    success_cb(data)
-                },
-                error: function (jqXHR, textStatus, errorThrown) {
-                    console.error("Ajax error " + errorThrown)
-                    show_error_msg(jqXHR.responseText)
-                }
-            });
-        },
-
         get_subscribe_token : function(params) {
             return parseInt(params.instrument_token);
         },
@@ -1112,7 +1095,7 @@ client_api = function () {
                     success: function (data, textStatus, jqXHR) {
                         let dt = {}
                         if (data.status === "success") {
-                            dt.stat = "OK";
+                            dt.stat = "Ok";
                             dt.norenordno = data.data.order_id;
                         }
                         success_cb(dt);
@@ -1128,6 +1111,68 @@ client_api = function () {
 
             exit_order : function(values, success_cb) {
                 this.place_order(values, success_cb)
+            },
+        },
+
+        position : {
+            map_positions: function (kite_positions) {
+                if (kite_positions == undefined)
+                    return undefined
+                let day_positions = kite_positions.data.day
+                let std_positions = []
+                for (const kite_position of day_positions) {
+                    let std_pos = this.map_position(kite_position);
+                    std_positions.push(std_pos);
+                }
+                return std_positions;
+            },
+
+            map_position: function (kite_position) {
+                let std_pos = {
+                    'stat': "Ok",
+                    'prd' : kite_position.product,
+                    'exch': kite_position.exchange,
+                    'token': kite_position.instrument_token,    //This is used to fetch ltp from websocket
+                    'tsym': kite_position.tradingsymbol,
+                    'daybuyavgprc': kite_position.buy_price,
+                    'daysellavgprc': kite_position.sell_price,
+                    'daybuyqty': kite_position.buy_quantity,
+                    'daysellqty': kite_position.sell_quantity,
+                    'remarks': kite_position.tag,
+                    'urmtom':kite_position.realised.toFixed(2), // kite unrealised is not correct.. looks like unrealised and realised are swapped
+                    'rpnl': kite_position.pnl.toFixed(2),
+                    'lp' : kite_position.last_price.toFixed(2),
+                    'daybuyamt' : kite_position.day_buy_value.toFixed(2) ,
+                    'daysellamt' : kite_position.day_sell_value.toFixed(2) ,
+                    'netqty' : kite_position.quantity,
+                    'dayavgprc': kite_position.day_buy_price,
+                    'netavgprc': kite_position.average_price,
+                }
+                return std_pos;
+            },
+
+            get_positions: function (success_cb) {
+
+                $.get({
+                    url: kite.url.positions,
+                    dataType: "json",
+                    headers: {
+                        "Authorization": "enctoken " + session_token,
+                    },
+
+                    success: function (data, textStatus, jqXHR) {
+                        if(data.status == "success") {
+                            let positions = kite.position.map_positions(data)
+                            success_cb(positions)
+                        } else {
+                            show_error_msg("Failed to fetch positions" + jqXHR.responseText)
+                        }
+                    },
+                    error: function (jqXHR, textStatus, errorThrown) {
+                        console.error("Ajax error " + errorThrown)
+                        show_error_msg(jqXHR.responseText)
+                    }
+                });
             },
         },
     }
@@ -2795,11 +2840,10 @@ client_api = function () {
 
     const positions = {
 
-
         show_positions : function() {
             $('#positions_table').html("")
             hide_other_tabs('#positions')
-            broker.get_positions(function(positions) {
+            broker.position.get_positions(function(positions) {
                 let pnl = {unrealized_pnl : 0.0, realized_pnl:0.0 };
                 if (positions != undefined && positions.stat !== 'Not_Ok')
                     positions.forEach((position)=> client_api.positions.show_position(position, pnl))
