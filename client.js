@@ -887,7 +887,7 @@ client_api = function () {
                     'reject_reason': kite_order.status_message,
                     'remarks': kite_order.tag,
                     'prd': kite_order.product,
-                    'exch_order_id': kite_order.exchange_order_id,
+                    'exchordid': kite_order.exchange_order_id,
 
                     //Kite specific
                     'variety': kite_order.variety,
@@ -1831,7 +1831,7 @@ client_api = function () {
 
                 let dname = (item.dname != undefined)? item.dname : item.tsym;
                 let rej_reason = (item.rejreason != undefined)? item.rejreason : "";
-
+                let ticker = broker.get_ticker(item)
                 $('#order_book_table').append(`<tr>
                         <td class="order-num">${item.norenordno}</td>
                         <td>${status}</td>
@@ -1846,7 +1846,7 @@ client_api = function () {
                         <td>${item.exch_tm === undefined? "": item.exch_tm}</td>
                         <td>${item.exch}</td>
                         <td>${prd}</td>
-                        <td>${item.token}</td>
+                        <td>${ticker}</td>
                         <td>${item.exchordid === undefined?"":item.exchordid}</td>
                 </tr>`);
         },
