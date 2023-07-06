@@ -1132,7 +1132,8 @@ client_api = function () {
                     'stat': "Ok",
                     'prd' : kite_position.product,
                     'exch': kite_position.exchange,
-                    'token': kite_position.instrument_token,    //This is used to fetch ltp from websocket
+                    'instrument_token': kite_position.instrument_token,
+                    'token': kite_position.exchange_token,
                     'tsym': kite_position.tradingsymbol,
                     'daybuyavgprc': kite_position.buy_price,
                     'daysellavgprc': kite_position.sell_price,
@@ -2639,7 +2640,7 @@ client_api = function () {
                 positions.get_positions(function (positions) {
                     if (positions != undefined && positions.stat !== 'Not_Ok')
                         positions.forEach((position) => {
-                            subscribe_token(position.exch + "|" + position.token);
+                            subscribe_token(broker.get_subscribe_token(position));
                             trade.display_trade_position(position)
                         })
                 })
@@ -2891,7 +2892,9 @@ client_api = function () {
                         cls = 'table-danger'
                 }
 
-                $('#positions_table').append(`<tr class="${cls}" exch="${item.exch}" token-"${item.token}" tsym="${item.tsym}" lot_size="${item.ls}">
+                let ticker = broker.get_ticker(item)
+
+                $('#positions_table').append(`<tr class="${cls}" exch="${item.exch}" token="${item.token}" tsym="${item.tsym}" lot_size="${item.ls}">
                         <td class="text">${dname}</td>
                         <td class="num">${urmtm}</td>
                         <td class="num">${rpnl}</td>
@@ -2899,7 +2902,7 @@ client_api = function () {
                         <td>${item.daysellavgprc}</td>
                         <td>${item.daybuyqty}</td>
                         <td>${item.daysellqty}</td>
-                        <td class="pos_${item.token} num ltp">${item.lp}</td>
+                        <td class="pos_${ticker} num ltp">${item.lp}</td>
                         <td>${prd}</td>
                         <td class="num">${item.daybuyamt}</td>
                         <td class="num">${item.daysellamt}</td>
