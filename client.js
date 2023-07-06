@@ -1127,31 +1127,7 @@ client_api = function () {
             },
 
             exit_order : function(values, success_cb) {
-                let url = kite.url.exit_order + pay_load.variety
-
-                $.ajax({
-                    url: url,
-                    // dataType: "json",
-                    method: "POST",
-                    data: values,
-                    headers: {
-                        "Authorization": "enctoken " + session_token,
-                    },
-                    success: function (data, textStatus, jqXHR) {
-                        let dt = {}
-                        if (data.status === "success") {
-                            dt.stat = "OK";
-                            dt.norenordno = data.data.order_id;
-                        }
-                        success_cb(dt);
-                    },
-                    error: function (jqXHR, textStatus, errorThrown) {
-                        console.log("Ajax error : ", JSON.stringify(jqXHR))
-                        if (jqXHR.status == 401)
-                            login_status(false)
-                        show_error_msg(jqXHR.responseJSON.message)
-                    }
-                });
+                this.place_order(values, success_cb)
             },
         },
     }
