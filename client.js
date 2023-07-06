@@ -884,16 +884,17 @@ client_api = function () {
 
             map_order: function (kite_order) {
                 let std_order = {
-                    'subscribe_token': kite_order.instrument_token,
                     'status': kite.order.get_std_order_status(kite_order.status),
                     'exch': kite_order.exchange,
-                    'token': kite_order.instrument_token,
+                    'token': kite_order.exchange_token,
+                    'instrument_token': kite_order.instrument_token,
                     'timestamp': kite_order.order_timestamp.split(' ')[1],
                     'tsym': kite_order.tradingsymbol,
                     'amo': kite_order.variety == "amo" ? "Yes" : "No",
                     'trantype': kite_order.transaction_type == "BUY" ? "B" : "S",
                     'qty': kite_order.quantity,
                     'prc': kite_order.price,
+                    'avgprc': kite_order.price,
                     'norenordno': kite_order.order_id,
                     'dname': kite_order.tradingsymbol,
 
@@ -1000,7 +1001,7 @@ client_api = function () {
                     order_type: prctyp,
                     quantity: qty,
                     price: price,
-                    product: 'CNC',
+                    product: 'MIS',
                     validity: 'DAY',
                     disclosed_quantity: 0,
                     trigger_price: 0,
@@ -1072,7 +1073,7 @@ client_api = function () {
                 }
 
                 let payload = {
-                    variety: 'amo',     //TODO - amo to regular
+                    variety: 'regular',     //TODO - amo to regular
                     exchange: exch,
                     tradingsymbol: tsym,
                     instrument_token : instrument_token,
