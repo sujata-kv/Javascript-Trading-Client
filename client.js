@@ -883,7 +883,7 @@ client_api = function () {
                     'exch': kite_order.exchange,
                     'token': kite_order.exchange_token,
                     'instrument_token': kite_order.instrument_token,
-                    'timestamp': kite_order.order_timestamp.split(' ')[1],
+                    'timestamp': (kite_order.order_timestamp != undefined)?kite_order.order_timestamp.split(' ')[1]:'',
                     'tsym': kite_order.tradingsymbol,
                     'amo': kite_order.variety == "amo" ? "Yes" : "No",
                     'trantype': kite_order.transaction_type == "BUY" ? "B" : "S",
@@ -1465,6 +1465,8 @@ client_api = function () {
             let params = broker.order.get_order_params(tr_elm, buy_sell, entry_obj, qty)
             if (entry_obj.spot_based) {
                 params.dname = tr_elm.attr('dname')
+                if(broker.name != "shoonya")
+                    params = broker.order.map_order(params)
                 this.add_to_spot_order_list(params, entry_val)
             } else {
                 console.log("Going to place order " + JSON.stringify(params))
@@ -1505,7 +1507,7 @@ client_api = function () {
 
             let dname = (item.dname != undefined)? item.dname : item.tsym;
             let row_id = `row_id_${++unique_row_id}`
-            $('#spot_order_list').append(`<tr id="${row_id}" ordid="${item.norenordno}" exch="${item.exch}" tsym="${item.tsym}" qty="${item.qty}" token="${item.token}" ttype="${ttype}" trtype="${item.trantype}">
+            $('#spot_order_list').append(`<tr id="${row_id}" ordid="${item.norenordno}" exch="${item.exch}" tsym="${item.tsym}" qty="${item.qty}" token="${item.token}" instrument_token="${item.instrument_token}" ttype="${ttype}" trtype="${item.trantype}">
                     <td>${buy_sell}</td>
                     <td class="order-num">Spot Based Entry</td>
                     <td>${dname}</td>
@@ -1739,14 +1741,15 @@ client_api = function () {
         exit_order_cb: function(matching_order, orders, tr_elm){
             console.log("Exit order complete cb : "+ matching_order.norenordno)
             // console.log(open_order_mgr.open_orders[matching_order.norenordno])
+            console.log(matching_order)
 
             milestone_manager.remove_milestone(tr_elm.attr('id'));
             tr_elm.addClass('table-secondary');
             tr_elm.attr('trade', 'closed');
             let td_elm = tr_elm.find('.exit-limit').parent();
             td_elm.html(`<span class="badge badge-pill badge-dark">${matching_order.norentm.split(" ")[0]}</span>
-                                    <span class="badge badge-info">${matching_order.remarks}</span>
-                                    </br><span class="price exit-price">${matching_order.avgprc}</span></br>
+                                    </br><span class="badge badge-info">${matching_order.remarks}</span>
+                                    </br><span class="price exit-price">${matching_order.avgprc}</span>
                                 `);
             trade.update_pnl(tr_elm, matching_order.avgprc)
             trade.update_total_pnl()
@@ -2491,7 +2494,7 @@ client_api = function () {
                         <td class="entry num" title="Margin Used : ${(order.prc * order.qty).toFixed(2)}">
                             <span class="badge badge-pill badge-dark">${order.norentm.split(" ")[0]}</span>
                             </br><span class="badge badge-info">${order.remarks}</span>
-                            <span class="price">${order.prc}</span></br>
+                            </br><span class="price">${order.prc}</span>
                         </td>
                         <td class="trade_${ticker} ltp">${live_data[ticker]}</td>
                         <td class="pnl"></td>
