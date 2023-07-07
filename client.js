@@ -40,6 +40,8 @@ client_api = function () {
             logged_in = false
             $('#connection_status').css('color', 'red')
         }
+        setTimeout(client_api.orderbook.update_open_orders, 100);
+        setTimeout(client_api.trade.load_open_positions, 100);
     }
 
     let shoonya = {
@@ -152,11 +154,13 @@ client_api = function () {
 
                 } else {
                     console.log("Web socket is ready.. Subscribing ", token)
+                    if (!logged_in) login_status(true)
 
                     ws.send(JSON.stringify(symtoken));
                     if (!subscribed_symbols.includes(token))
                         subscribed_symbols.push(token);
                     pending_to_subscribe_tokens.delete(token);
+
                 }
             }
         },
@@ -885,7 +889,7 @@ client_api = function () {
                     'trantype': kite_order.transaction_type == "BUY" ? "B" : "S",
                     'qty': kite_order.quantity,
                     'prc': kite_order.price,
-                    'avgprc': kite_order.price,
+                    'avgprc': kite_order.average_price,
                     'norenordno': kite_order.order_id,
                     'dname': kite_order.tradingsymbol,
 
@@ -1734,7 +1738,7 @@ client_api = function () {
 
         exit_order_cb: function(matching_order, orders, tr_elm){
             console.log("Exit order complete cb : "+ matching_order.norenordno)
-            console.log(open_order_mgr.open_orders[matching_order.norenordno])
+            // console.log(open_order_mgr.open_orders[matching_order.norenordno])
 
             milestone_manager.remove_milestone(tr_elm.attr('id'));
             tr_elm.addClass('table-secondary');
