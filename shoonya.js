@@ -1915,18 +1915,18 @@ shoonya_api = function () {
     
                 <td> <input type="checkbox" class="select" value=""> </td>
                 <td class="dname">${params.sym}</td>
-                <th class="margin_req num"></th>
-                <th class="watch_${params.token} ltp" lot_size="${params.lot_size}"></th>
+                <td class="margin_req num"></td>
+                <td class="watch_${params.token} ltp" lot_size="${params.lot_size}"></td>
                 <td class="input_box"><input type="text" class="form-control entry" placeholder="" onclick="shoonya_api.watch_list.add_ltp(this)"></td> 
                 <td class="input_box"><input type="text" class="form-control qty" placeholder="" value="${params.lot_size}"></td>
                 <td><button type="button" class="btn btn-success buy" onclick="shoonya_api.orderbook.buy(this)">BUY</button></td>
                 <td><button type="button" class="btn btn-danger sell" onclick="shoonya_api.orderbook.sell(this)">SELL</button></td>
-                <th class="del-icon" onclick="shoonya_api.watch_list.delete_item(this)">
+                <td class="del-icon" onclick="shoonya_api.watch_list.delete_item(this)">
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-trash" viewBox="0 0 16 16">
                         <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/>
                         <path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/>
                     </svg>
-                </th>
+                </td>
                </tr>`);
         },
 
@@ -2108,5 +2108,28 @@ $(document).ready(function(){
     $('button.close-btn').on('click', function (event) {
         event.preventDefault();
         $(this).parent().hide();
+    });
+
+    $("#watch_list_body").sortable({
+        // items: 'tr:not(tr:first-child)',
+        items: 'tr',
+        dropOnEmpty: false,
+        start: function (G, ui) {
+            ui.item.addClass("select");
+        },
+        stop: function (G, ui) {
+            ui.item.removeClass("select");
+        }
+    });
+
+    $("#active_trades table").sortable({
+        items: 'tr:not(tfoot tr, thead tr)',
+        dropOnEmpty: false,
+        start: function (G, ui) {
+            ui.item.addClass("select");
+        },
+        stop: function (G, ui) {
+            ui.item.removeClass("select");
+        }
     });
 })
