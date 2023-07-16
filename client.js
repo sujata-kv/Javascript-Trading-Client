@@ -35,13 +35,14 @@ client_api = function () {
     function login_status(success) {
         if(success) {
             logged_in = true
+            console.log("Login success..")
             $('#connection_status').css('color', 'green')
+            setTimeout(client_api.orderbook.update_open_orders, 100);
+            setTimeout(client_api.trade.load_open_positions, 100);
         } else {
             logged_in = false
             $('#connection_status').css('color', 'red')
         }
-        setTimeout(client_api.orderbook.update_open_orders, 100);
-        setTimeout(client_api.trade.load_open_positions, 100);
     }
 
     let shoonya = {
@@ -154,7 +155,9 @@ client_api = function () {
 
                 } else {
                     console.log("Web socket is ready.. Subscribing ", token)
-                    if (!logged_in) login_status(true)
+                    if (!logged_in) {
+                        login_status(true)
+                    }
 
                     ws.send(JSON.stringify(symtoken));
                     if (!subscribed_symbols.includes(token))
@@ -395,8 +398,10 @@ client_api = function () {
                     dataType: "json",
                     data: payload,
                     success: function (data, textStatus, jqXHR) {
-                        if (jqXHR.status == 200)
+                        if (jqXHR.status == 200) {
+                            console.log("get_orderbook success")
                             login_status(true)
+                        }
 
                         for (const [key, order] of Object.entries(data)) {
                             order['subscribe_token'] = shoonya.get_subscribe_token(order)      //Add subscribe_token field.. specific to shoonya
@@ -495,7 +500,9 @@ client_api = function () {
                     }, 1000)
                 } else {
                     console.log("Web socket is open.. Subscribing ", token)
-                    if (!logged_in) login_status(true)
+                    if (!logged_in){
+                        login_status(true)
+                    }
 
                     let mesg = {"a": "subscribe", "v": [token]}
                     ws.send(JSON.stringify(mesg));
@@ -721,6 +728,7 @@ client_api = function () {
         search : {
             url_nfo: "https://api.kite.trade/instruments/NFO",
             url_nse: "https://api.kite.trade/instruments/NSE",
+            url_mcx: "https://api.kite.trade/instruments/MCX",
 
             parsedData : [],
 
@@ -751,6 +759,7 @@ client_api = function () {
                 }
 
                 const rows = data.split("\n");
+                rows.shift(); //Remove first element which is the header
                 for (const row of rows) {
                     const columns = row.split(",");
                     if (columns[i_name] != undefined) {
@@ -770,8 +779,53 @@ client_api = function () {
                                 'optt': columns[i_instrument_type],
                                 'expiry': columns[i_expiry],
                             }
+                            console.log(dname)
                             parsedData.push(obj);
                         }
+                    }
+                }
+                console.log("Total instrument entries loaded : " + parsedData.length)
+                return parsedData;
+            },
+
+            parseNseMcxData :function (data) {
+                const i_instrument_token = 0;
+                const i_exchange_token = 1;
+                const i_tradingsymbol = 2;
+                const i_name = 3;
+                const i_last_price = 4;
+                const i_expiry = 5;
+                const i_strike = 6;
+                const i_tick_size = 7;
+                const i_lot_size = 8;
+                const i_instrument_type = 9;
+                const i_segment = 10;
+                const i_exchange = 11;
+
+                const parsedData = [];
+
+                const rows = data.split("\n");
+                rows.shift(); //Remove first element which is the header
+                for (const row of rows) {
+                    const columns = row.split(",");
+                    if (columns[i_name] != undefined) {
+                        const name = columns[i_name].replace(/"/g, '');
+                        const dname = columns[i_tradingsymbol]
+                        let obj = {
+                            'value': dname,
+                            // 'label' : columns[i_tradingsymbol],
+                            'name': name,
+                            'lot_size': columns[i_lot_size],
+                            'instrument_token': columns[i_instrument_token],
+                            'exch': columns[i_exchange],
+                            'token': columns[i_exchange_token],
+                            'tsym': columns[i_tradingsymbol],
+                            'dname': dname,
+                            'optt': columns[i_instrument_type],
+                            'expiry': columns[i_expiry],
+                        }
+                        console.log(dname)
+                        parsedData.push(obj);
                     }
                 }
                 console.log("Total instrument entries loaded : " + parsedData.length)
@@ -782,6 +836,7 @@ client_api = function () {
                 let results = []
                 for (const row of this.parsedData) {
                     var filterstrings = term.trim().toLowerCase().split(" ");
+                    console.log(row)
                     let str = row['dname'].toLowerCase();
                     let found = true
                     for (const key of filterstrings) {
@@ -815,6 +870,14 @@ client_api = function () {
 
                 const data_nfo = await fetchData(this.url_nfo);
                 this.parsedData = this.parseNfoData(data_nfo);
+
+                const data_mcx = await fetchData(this.url_mcx);
+                const mcx_parsed_data = this.parseNseMcxData(data_mcx);
+                this.parsedData.push(...mcx_parsed_data);
+
+                const data_nse = await fetchData(this.url_nse);
+                const nse_parsed_data = this.parseNseMcxData(data_nse);
+                this.parsedData.push(...nse_parsed_data);
             },
 
             attach_search_autocomplete : function() {
