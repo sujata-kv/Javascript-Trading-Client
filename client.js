@@ -92,6 +92,8 @@ client_api = function () {
                 if (result.t == 'ck') {
                     if (result.s == 'OK') {
                         // console.log('On message : ck OK')
+                        console.log('Login successful')
+                        logged_in = true;
                         subscribed_symbols.forEach(shoonya.subscribe_token)
                     }
                 }
@@ -147,7 +149,7 @@ client_api = function () {
 
             for (token of pending_to_subscribe_tokens.keys()) {
                 let symtoken = {"t": "t", "k": token.concat('#')}
-                if (ws.readyState != WebSocket.OPEN) {
+                if (ws.readyState != WebSocket.OPEN || !logged_in) {
                     console.log("Web socket not ready yet.. ", token)
                     setTimeout(function () {
                         shoonya.subscribe_token(token)
@@ -400,7 +402,6 @@ client_api = function () {
                     success: function (data, textStatus, jqXHR) {
                         if (jqXHR.status == 200) {
                             console.log("get_orderbook success")
-                            login_status(true)
                         }
 
                         for (const [key, order] of Object.entries(data)) {
