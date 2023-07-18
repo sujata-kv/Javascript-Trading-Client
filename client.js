@@ -37,8 +37,8 @@ client_api = function () {
             logged_in = true
             console.log("Login success..")
             $('#connection_status').css('color', 'green')
-            setTimeout(client_api.orderbook.update_open_orders, 100);
-            setTimeout(client_api.trade.load_open_positions, 100);
+            // setTimeout(client_api.orderbook.update_open_orders, 100);
+            // setTimeout(client_api.trade.load_open_positions, 100);
         } else {
             logged_in = false
             $('#connection_status').css('color', 'red')
@@ -93,7 +93,7 @@ client_api = function () {
                     if (result.s == 'OK') {
                         // console.log('On message : ck OK')
                         console.log('Login successful')
-                        logged_in = true;
+                        login_status(true)
                         subscribed_symbols.forEach(shoonya.subscribe_token)
                     }
                 }
