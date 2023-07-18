@@ -2412,11 +2412,14 @@ client_api = function () {
                         if(cur_spot_value!=undefined)
                             cur_spot_value = parseFloat(cur_spot_value)
                     }
-                    else
-                        cur_spot_value = live_data[mile_stone.token]
+                    else {
+                        // cur_spot_value = live_data[mile_stone.token]; //Check for LTP of the instrument
+                        let pnl = $(`#${row_id}`).find('.pnl').text()
+                        cur_spot_value = parseFloat(pnl)
+                    }
                 }
 
-                console.log(`Checking Target : ${ttype}  spot : ${cur_spot_value}  trig : ${trig_value}`)
+                console.log(`Checking Target : ${ttype}  current : ${cur_spot_value}  trig : ${trig_value}`)
 
                 if (target_obj.spot_based) {
                     if (ttype === 'bull') {
@@ -2429,11 +2432,13 @@ client_api = function () {
                         }
                     }
                 } else if(target_obj.instrument === "price") {  //Price based
-                    if(row_id === "total_row") {
+                    // if(row_id === "total_row") {
                         if (cur_spot_value >= trig_value) {
                             target_triggered()
                         }
-                    }
+                    // }
+                    /*
+                    // Instrument LTP based checking
                     if (buy_sell === 'B') {
                         if(cur_spot_value >= trig_value) {
                             target_triggered()
@@ -2442,7 +2447,7 @@ client_api = function () {
                         if(cur_spot_value <= trig_value) {
                             target_triggered()
                         }
-                    }
+                    }*/
                 }
 
                 function target_triggered() {
@@ -2474,16 +2479,18 @@ client_api = function () {
                         case "fin_nifty" : cur_spot_value = live_data[fin_nifty_tk]; break;
                     }
                 } else { // Price based
-                    if(row_id === "total_row") { // Use total P & L value in case of cumulative target and SL
+                    if (row_id === "total_row") { // Use total P & L value in case of cumulative target and SL
                         cur_spot_value = $('#total_row').find('.pnl').text()
-                        if(cur_spot_value!=undefined)
+                        if (cur_spot_value != undefined)
                             cur_spot_value = parseFloat(cur_spot_value)
+                    } else {
+                        // cur_spot_value = live_data[mile_stone.token];  //Check for LTP of the instrument
+                        let pnl = $(`#${row_id}`).find('.pnl').text()
+                        cur_spot_value = parseFloat(pnl)
                     }
-                    else
-                        cur_spot_value = live_data[mile_stone.token]
                 }
 
-                console.log(`Checking SL : ${ttype}  spot : ${cur_spot_value}  trig : ${trig_value}`)
+                console.log(`Checking SL : ${ttype}  current : ${cur_spot_value}  trig : ${trig_value}`)
                 if(sl_obj.spot_based) {
                     if (ttype === 'bull') {
                         if (cur_spot_value <= trig_value) {
@@ -2495,11 +2502,11 @@ client_api = function () {
                         }
                     }
                 } else if(sl_obj.instrument === "price") {
-                    if(row_id === "total_row") {
+                    // if(row_id === "total_row") {
                         if (cur_spot_value <= trig_value) {
                             sl_triggered()
                         }
-                    } else {
+                    /*} else {      // Instrument LTP based checking has to be this way
                         if (buy_sell === 'B') {
                             if (cur_spot_value <= trig_value) {
                                 sl_triggered()
@@ -2509,7 +2516,7 @@ client_api = function () {
                                 sl_triggered()
                             }
                         }
-                    }
+                    }*/
                 }
 
                 function sl_triggered() {
