@@ -37,8 +37,6 @@ client_api = function () {
             logged_in = true
             console.log("Login success..")
             $('#connection_status').css('color', 'green')
-            // setTimeout(client_api.orderbook.update_open_orders, 100);
-            // setTimeout(client_api.trade.load_open_positions, 100);
         } else {
             logged_in = false
             $('#connection_status').css('color', 'red')
