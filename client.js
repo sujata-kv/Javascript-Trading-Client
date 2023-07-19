@@ -2453,18 +2453,22 @@ client_api = function () {
                 }
 
                 function target_triggered() {
-                    show_success_msg("Target triggered for row_id : " + row_id + " Trigger value = " + trig_value + " Spot value = " + cur_spot_value)
-                    console.log("Target triggered for row_id : " + row_id + " Trigger value = " + trig_value + " Spot value = " + cur_spot_value)
+                    let msg, group_name='';
+
                     if(row_id.startsWith("summary-")){
-                        //Close all trades
-                        // trade.close_all_trades();
-                        let group_selector = '#' + row_id.replace('summary-', '')
+                        let group_id = row_id.replace('summary-', '')
+                        group_name = row_id.replace('summary-at-', '').toUpperCase()
+                        let group_selector = '#' + group_id;
                         util.grouping.exit_group(group_selector, true)
                     }
                     else {
                         let tr_elm = $(`#${row_id}`)
                         tr_elm.find('.exit').click();
                     }
+                    let name = (group_name=='')? "row: "+row_id : "group: " + group_name
+                    msg = "Target triggered for " + name + " Trigger value = " + trig_value + " Current value = " + cur_spot_value
+                    show_success_msg(msg)
+                    console.log(msg)
                     milestone_manager.remove_milestone(row_id)
                 }
             }
@@ -2524,18 +2528,23 @@ client_api = function () {
                 }
 
                 function sl_triggered() {
-                    show_error_msg("SL triggered for row_id : " + row_id + " Trigger value = " + trig_value + " Spot value = " + cur_spot_value)
-                    console.log("SL triggered for row_id : " + row_id + " Trigger value = " + trig_value + " Spot value = " + cur_spot_value)
+                    let msg, group_name='';
+
                     if(row_id.startsWith("summary-")) {
-                        //Close all trades
-                        // trade.close_all_trades();
-                        let group_selector = '#' + row_id.replace('summary-', '')
+                        let group_id = row_id.replace('summary-', '')
+                        group_name = row_id.replace('summary-at-', '').toUpperCase()
+                        let group_selector = '#' + group_id;
                         util.grouping.exit_group(group_selector, true)
                     }
                     else {
                         let tr_elm = $(`#${row_id}`)
                         tr_elm.find('.exit').click();
                     }
+                    let name = (group_name=='')? "row: "+row_id : "group: " + group_name
+                    msg = "SL triggered for " + name + " Trigger value = " + trig_value + " Current value = " + cur_spot_value
+                    show_error_msg(msg)
+                    console.log(msg)
+
                     milestone_manager.remove_milestone(row_id)
                 }
             }
