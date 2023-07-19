@@ -1288,7 +1288,7 @@ client_api = function () {
             default:
                 update_ltp('#watch_list_body .watch_' + instr_token, ltp);   //In watch list
                 update_ltp("#open_orders .open_order_" + instr_token, ltp)  // In Open Order table
-                update_ltp("#active_trades .trade_" + instr_token, ltp)  // In Active Trades table
+                update_ltp("#active_trades_pool .trade_" + instr_token, ltp)  // In Active Trades table
                 break;
         }
     }
@@ -1826,7 +1826,7 @@ client_api = function () {
             }
 
             //Remove SL and Target set on Total row, if there are no active trades
-            if($(`#active_trades tr[trade="active"]`).length < 1) {
+            if($(`#active_trades_pool tr[trade="active"]`).length < 1) {
                 milestone_manager.remove_milestone("total_row");
                 $('#total_row th input.target, #total_row th input.sl').val("")  //Reset UI
             }
@@ -2240,7 +2240,7 @@ client_api = function () {
         update_total_pnl : function() {
             let total = 0
 
-            let rows = $('#active_trades').find('tr')
+            let rows = $('#active_trades_pool').find('tr')
             rows.each(function () {
                 let pnl = $(this).find('td.pnl').text()
                 total += parseFloat(pnl)
@@ -2521,13 +2521,13 @@ client_api = function () {
 
         close_all_trades: function () {
             //Exit all sell positions first
-            $('#active_trades tr[trtype="S"]').each(function (index, tr_elm) {
+            $('#active_trades_pool tr[trtype="S"]').each(function (index, tr_elm) {
                 $(tr_elm).find('.exit').click()
             })
 
             //Then exit the buy positions
             setTimeout(function () {
-                $('#active_trades tr[trtype="B"]').each(function (index, tr_elm) {
+                $('#active_trades_pool tr[trtype="B"]').each(function (index, tr_elm) {
                     $(tr_elm).find('.exit').click()
                 })
             }, 500)
@@ -2553,10 +2553,10 @@ client_api = function () {
             let ticker = broker.get_ticker(order)
             let className= "";//(ttype==="bear")?"table-danger":" ";
 
-            let tbody_elm = $('#active_trades');
+            let tbody_elm = $('#active_trades_pool');
 
             tbody_elm.append(`<tr id="${row_id}" class="${className}" ordid="${order.norenordno}"  exch="${order.exch}" token="${order.token}" instrument_token="${order.instrument_token}" qty="${order.qty}" tsym="${order.tsym}" ttype="${ttype}" trtype="${order.trantype}" trade="active">
-                        <td> <input type="checkbox" class="select" value="" onclick="client_api.util.uncheck(this, $('#parent_chk_at'))"> </td>
+                        <td> <input type="checkbox" class="select_box" value="" onclick="client_api.util.uncheck(this)"> </td>
                         <td>${buy_sell}</td>
                         <td class="instrument">${dname}</td>
                         <td class="entry num" title="Margin Used : ${(order.prc * order.qty).toFixed(2)}">
@@ -2634,15 +2634,15 @@ client_api = function () {
                         break_even = strike1 - net_debit
                     }
 
-                    $('#active_trades .max-profit-loss').html( (credit_spread?"Credit Spread": "Debit Spread") + "<br>Max profit = " + max_profit.toFixed(1) + "</br> Max loss = " + max_loss.toFixed(1) + "</br> Break-even=" + break_even.toFixed(0))
+                    $('#active_trades_pool .max-profit-loss').html( (credit_spread?"Credit Spread": "Debit Spread") + "<br>Max profit = " + max_profit.toFixed(1) + "</br> Max loss = " + max_loss.toFixed(1) + "</br> Break-even=" + break_even.toFixed(0))
                 }
             } else {
-                $('#active_trades .max-profit-loss').html("")
+                $('#active_trades_pool .max-profit-loss').html("")
             }
         },
 
         calculate_spreads : function() {
-            let tbody_elm = $('#active_trades')
+            let tbody_elm = $('#active_trades_pool')
 
             trade.fill_in_max_profit_loss_for_debit_spread(tbody_elm)
             setTimeout(trade.calculate_spreads, 1000);
@@ -2666,9 +2666,9 @@ client_api = function () {
         getTradePosition : function(token, exch, trtype, qty) {
             let position;
             if(broker.name === "shoonya")
-                position = $(`#active_trades tr[token=${token}][exch=${exch}][qty=${qty}][trtype=${trtype}]`)
+                position = $(`#active_trades_pool tr[token=${token}][exch=${exch}][qty=${qty}][trtype=${trtype}]`)
             else if(broker.name === "kite")
-                position = $(`#active_trades tr[instrument_token=${token}][exch=${exch}][qty=${qty}][trtype=${trtype}]`)
+                position = $(`#active_trades_pool tr[instrument_token=${token}][exch=${exch}][qty=${qty}][trtype=${trtype}]`)
             return position;
         },
 
@@ -2756,7 +2756,7 @@ client_api = function () {
                     let position = trade.getTradePosition(ticker, pos.exch, trtype, qty);
                     if(position.length == 0) { //Add new position only if it doesn't exist
                         console.log("Position doesn't exist in active trades. So adding it..")
-                        $('#active_trades').append(`<tr id="row_id_${++unique_row_id}" exch="${pos.exch}" token="${ticker}" instrument_token="${ticker}" tsym="${pos.tsym}" qty="${qty}" ttype="${ttype}" trtype="${trtype}" trade="active">
+                        $('#active_trades_pool').append(`<tr id="row_id_${++unique_row_id}" exch="${pos.exch}" token="${ticker}" instrument_token="${ticker}" tsym="${pos.tsym}" qty="${qty}" ttype="${ttype}" trtype="${trtype}" trade="active">
                             <td>${buy_sell}</td>
                             <td>${dname}</td>
                             <td class="entry num">
@@ -2875,7 +2875,7 @@ client_api = function () {
 
             $('#watch_list_body').append(`<tr class="${class_name}" exch="${params.exch}" token="${params.token}" instrument_token="${params.instrument_token}" tsym="${params.tsym}" lot_size="${params.lot_size}" dname="${params.sym}">
     
-                <td> <input type="checkbox" class="select" value="" onclick="client_api.util.uncheck(this, $('#parent_chk_wl'))"> </td>
+                <td> <input type="checkbox" class="select_box" value="" onclick="client_api.util.uncheck(this)"> </td>
                 <td class="dname">${params.sym}</td>
                 <td class="margin_req num"></td>
                 <td class="watch_${ticker} ltp" lot_size="${params.lot_size}"></td>
@@ -2995,9 +2995,17 @@ client_api = function () {
             })
         },
 
-        uncheck : function(chk_elm, parent_checkbox) {
+        uncheck : function(chk_elm) {
             if(!chk_elm.checked) {
+                let $table_elm = $(chk_elm).parent().parent().parent().parent()
+                let parent_checkbox = $table_elm.find('thead input:checkbox')
                 parent_checkbox[0].checked = false;
+            } else {
+                let $tbody_elm = $(chk_elm).parent().parent().parent()
+                if($tbody_elm.find('input:checkbox:not(:checked)').length == 0) {
+                    let parent_checkbox = $tbody_elm.parent().find('thead input:checkbox')
+                    parent_checkbox[0].checked = true;
+                }
             }
         },
 
@@ -3006,7 +3014,7 @@ client_api = function () {
             class_names : ['table-light', 'table-success'],
 
             generate_group_id : function(name) {
-                let uname = "";
+                let uname;
                 if(name === "")
                     uname = name = "group-" + (++this.unique_group_id);
                 else
@@ -3017,31 +3025,61 @@ client_api = function () {
             },
 
             group_selected: function () {
-                let class_name = this.class_names[this.unique_group_id % this.class_names.length];
-                let group_name = $('#group_name').val().trim()
-                let group = this.generate_group_id(group_name);
+                if( $('#active_trades_pool input:checkbox:checked').length > 0) {
+                    let class_name = this.class_names[this.unique_group_id % this.class_names.length];
+                    let group_name = $('#group_name').val().trim()
+                    let group = this.generate_group_id(group_name);
 
-                // $('#active_trades').append(`<tbody id="${group.id}" name="${group.name}"/>`);
-                this.create_table(group, class_name)
-                let tbody_elm = $(`#${group.id}`);
+                    // $('#active_trades_pool').append(`<tbody id="${group.id}" name="${group.name}"/>`);
+                    this.create_table(group, class_name)
+                    let tbody_elm = $(`#${group.id}`);
 
-                $('#active_trades input:checkbox:checked').each(function () {
-                    let row_elm = $(this).parent().parent()
-                    this.checked = false;
-                    let cl_row = row_elm.clone()
-                    tbody_elm.append(cl_row)
-                    row_elm.remove()
-                })
+                    $('#active_trades_pool input:checkbox:checked').each(function () {
+                        let row_elm = $(this).parent().parent()
+                        this.checked = false;
+                        let cl_row = row_elm.clone()
+                        tbody_elm.append(cl_row)
+                        row_elm.remove()
+                    })
+
+                    if($('#active_trades_pool').children().length === 0) {
+                        let parent_checkbox = $('#active_trades_pool').parent().find('thead input:checkbox');
+                        parent_checkbox[0].checked = false;
+                        trade.reset_max_profit_loss();
+                    }
+                } else {
+                    show_error_msg("No position is selected")
+                }
             },
 
-            ungroup_selected: function () {
+            ungroup_selected: function (tbody_selector) {
+                if($(`${tbody_selector} input:checkbox:checked`).length > 0) {
+                    $(`${tbody_selector} input:checkbox:checked`).each(function () {
+                        let row_elm = $(this).parent().parent()
+                        this.checked = false;
+                        let cl_row = row_elm.clone()
+                        $('#active_trades_pool').append(cl_row)
+                        row_elm.remove()
+                    })
+                    $(tbody_selector).parent().find('thead input:checkbox')[0].checked = false; //uncheck parent checkbox
+                    if($(tbody_selector).children().length === 0) { //Remove group if no position is left in the group
+                        $(tbody_selector).parent().parent().remove(); //Remove the div
+                    }
+                } else {
+                    show_error_msg("No position is selected")
+                }
             },
 
             create_table : function(group, class_name) {
-                $('#active_trades_div').append(`<table  class="table ${class_name} table-condensed table-striped table-bordered">
+                $('#active_trades_div').append(`<div group="${group.id}">
+                    <div>
+                        <button class="btn btn-secondary mb-3" onclick="client_api.util.grouping.ungroup_selected('#${group.id}')">Ungroup Selected</button>
+                        <h4 style="float:right">${group.name.toUpperCase()}</h4>
+                    </div>
+                    <table  class="table ${class_name} table-condensed table-striped table-bordered">
                     <thead>
                         <tr>
-                            <th> </th>
+                            <td> <input type="checkbox" class="select_box" value="" onclick="client_api.util.select_all(this, '#${group.id} .select_box')"> </td>
                             <th scope="col">Type</th>
                             <th scope="col">Instrument</th>
                             <th scope="col">Entry</th>
@@ -3061,8 +3099,8 @@ client_api = function () {
                             <th scope="col"></th>
                             <th scope="col"></th>
                             <th scope="col" class="max-profit-loss"></th>
-                            <th scope="col"></th>
-                            <th> ${group.name.toUpperCase()} Total</th>
+                            <th scope="col">${group.name.toUpperCase()}</th>
+                            <th>Total</th>
                             <th scope="col" class="pnl" id="pnl-${group.id}"></th>
                             <th><input type="text" disabled class="form-control target" placeholder="" value=""></th>
                             <th><input type="text" disabled class="form-control sl" placeholder="" value=""></th>
@@ -3076,7 +3114,7 @@ client_api = function () {
                             <th scope="col" class="pos-mtm" id="max_profit_seen" title="Max Profit Seen"></th>
                             <th scope="col" class="neg-mtm" id="max_loss_seen" title="Max Loss Seen"></th>
                         </tr>
-                    </tfoot> `)
+                    </tfoot> </table></div>`)
             },
         }
     };
@@ -3162,7 +3200,7 @@ $(document).ready(function() {
         }
     });
 
-    $("#active_trades").sortable({
+    $("#active_trades_pool").sortable({
         items: 'tr:not(tfoot tr, thead tr, tr.summary)',
         dropOnEmpty: false,
         start: function (G, ui) {
