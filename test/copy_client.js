@@ -2815,6 +2815,22 @@ client_api = function () {
             }
         },
 
+        delete : function() {
+            let count = 0;
+            let $tbody = $("#watch_list_body")
+            $tbody.find('tr input:checkbox:checked').each(function() {
+                let row_elm = $(this).parent().parent()
+                row_elm.find('.delete').click();
+                ++count;
+            })
+
+            if(count == 0) show_error_msg("No instruments selected to delete")
+
+            if($tbody.children().length === 0) {
+                $tbody.parent().find('thead input:checkbox')[0].checked = false; //uncheck parent checkbox
+            }
+        },
+
         add_to_watchlist : function() {
             if(this.selection_is_valid()) {
                 let params = {}
@@ -2888,7 +2904,7 @@ client_api = function () {
                 <td class="input_box"><input type="text" class="form-control qty" placeholder="" value="${params.lot_size}"></td>
                 <td><button type="button" class="btn btn-success buy" onclick="client_api.orderbook.buy(this)">BUY</button></td>
                 <td><button type="button" class="btn btn-danger sell" onclick="client_api.orderbook.sell(this)">SELL</button></td>
-                <td class="del-icon" onclick="client_api.watch_list.delete_item(this)">
+                <td class="del-icon delete" onclick="client_api.watch_list.delete_item(this)">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-trash" viewBox="0 0 16 16">
                         <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/>
                         <path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/>
@@ -3080,7 +3096,8 @@ client_api = function () {
                 $(tbody_selector).find('tr .delete').click();
                 if($(tbody_selector).children().length === 0) { //Remove group if no position is left in the group
                     $(tbody_selector).parent().find('thead input:checkbox')[0].checked = false; //uncheck parent checkbox
-                    $(tbody_selector).parent().parent().remove(); //Remove the div
+                    if(!tbody_selector.includes('at-pool')) //Do not remove the pool
+                        $(tbody_selector).parent().parent().remove(); //Remove the div
                 }
             },
 
@@ -3106,7 +3123,7 @@ client_api = function () {
                     <div>
                         <button class="btn btn-secondary mb-3" onclick="client_api.util.grouping.ungroup_selected('#${group.id}')">Ungroup Selected</button>
                         <button class="btn btn-danger mb-3" onclick="client_api.util.grouping.exit_group('#${group.id}')">Exit</button>
-                        <span class="del-icon" onclick="client_api.util.grouping.delete('#${group.id}')" title="Delete Closed Trades" style="position: relative; top:-7px;">
+                        <span class="del-icon" onclick="client_api.util.grouping.delete('#${group.id}')" title="Delete the closed trades" style="position: relative; top:-7px;">
                             <svg xmlns="http://www.w3.org/2000/svg" width="28" height="32" fill="currentColor" class="bi bi-trash" viewBox="0 0 16 16">
                                 <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/>
                                 <path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/>
