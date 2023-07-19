@@ -2347,7 +2347,7 @@ client_api = function () {
                 }
             }
 
-            setTimeout(trade.trigger, 100)
+            setTimeout(trade.trigger, 500)
 
             function check_entry_trigger(row_id, mile_stone) {
                 let cur_spot_value = 0;
@@ -2542,23 +2542,26 @@ client_api = function () {
         },
 
         close_all_trades: function () {
-            if($('#at-pool tr[trtype="S"]').length > 0) {
+            if($('#active_trades_div tbody tr[trtype="S"]').length > 0) {
                 //Exit all sell positions first
-                $('#at-pool tr[trtype="S"]').each(function (index, tr_elm) {
+                $('#active_trades_div tbody tr[trtype="S"]').each(function (index, tr_elm) {
                     $(tr_elm).find('.exit').click()
                 })
                 //Then exit the buy positions
                 setTimeout(function () {
-                    $('#at-pool tr[trtype="B"]').each(function (index, tr_elm) {
+                    $('#active_trades_div tbody tr[trtype="B"]').each(function (index, tr_elm) {
                         $(tr_elm).find('.exit').click()
                     })
                 }, 500)
             } else {
-                $('#at-pool tr').each(function (index, tr_elm) {
+                $('#active_trades_div tbody tr').each(function (index, tr_elm) {
                     $(tr_elm).find('.exit').click()
                 })
             }
-            milestone_manager.remove_milestone('summary-at-pool');
+
+            $('#active_trades_div tfoot tr').each(function(index, tr_elm) {
+                milestone_manager.remove_milestone($(tr_elm).attr('id'));
+            })
         },
 
         display_active_trade : function(order, target, sl, paper_trade=false, row_id) {
