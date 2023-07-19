@@ -3070,13 +3070,28 @@ client_api = function () {
                 }
             },
 
+            exit_group : function(group_selector) {
+                let count = 0;
+                $(group_selector).find('tr').each(function(){
+                    let checkbox = $(this).find('.select_box')[0];
+                    if(checkbox.checked) {
+                        count++;
+                        $(this).find('.exit').click();
+                    }
+                })
+                if(count == 0)
+                    show_error_msg("No position selected to exit")
+            },
+
             create_table : function(group, class_name) {
                 $('#active_trades_div').append(`<div group="${group.id}">
                     <div>
                         <button class="btn btn-secondary mb-3" onclick="client_api.util.grouping.ungroup_selected('#${group.id}')">Ungroup Selected</button>
-                        <h4 style="float:right">${group.name.toUpperCase()}</h4>
+                        <button class="btn btn-danger mb-3" onclick="client_api.util.grouping.exit_group('#${group.id}')">Exit</button>
+                        <h4 style="float:right;">${group.name.toUpperCase()}</h4>
                     </div>
                     <table  class="table ${class_name} table-condensed table-striped table-bordered">
+                    
                     <thead>
                         <tr>
                             <td> <input type="checkbox" class="select_box" value="" onclick="client_api.util.select_all(this, '#${group.id} .select_box')"> </td>
