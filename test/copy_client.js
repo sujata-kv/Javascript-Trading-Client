@@ -312,7 +312,7 @@ client_api = function () {
                             remarks = "B-" + Math.round(live_data[bank_nifty_tk])
                         else if (tsym.startsWith("FINNIFTY"))
                             remarks = "F-" + Math.round(live_data[fin_nifty_tk])
-                        remarks += " Vix " + live_data[vix_tk]
+                        // remarks += " Vix " + live_data[vix_tk]
                     }
                 }
 
@@ -1256,7 +1256,7 @@ client_api = function () {
         $(selector).each(function(i, ltp_elm) {
             $(ltp_elm).text(ltp)
 
-            if(selector.startsWith('#active_trade') || selector.startsWith("#active_paper_trade")) {
+            if(selector.startsWith('#active_trade')) {
                 $(ltp_elm).text(ltp)
                 let tr_elm = $(ltp_elm).parent();
                 if(tr_elm.attr('trade') == 'active') {
@@ -1288,7 +1288,7 @@ client_api = function () {
             default:
                 update_ltp('#watch_list_body .watch_' + instr_token, ltp);   //In watch list
                 update_ltp("#open_orders .open_order_" + instr_token, ltp)  // In Open Order table
-                update_ltp("#active_trades_pool .trade_" + instr_token, ltp)  // In Active Trades table
+                update_ltp("#active_trades_div tbody .trade_" + instr_token, ltp)  // In Active Trades table
                 break;
         }
     }
@@ -2520,17 +2520,22 @@ client_api = function () {
         },
 
         close_all_trades: function () {
-            //Exit all sell positions first
-            $('#active_trades_pool tr[trtype="S"]').each(function (index, tr_elm) {
-                $(tr_elm).find('.exit').click()
-            })
-
-            //Then exit the buy positions
-            setTimeout(function () {
-                $('#active_trades_pool tr[trtype="B"]').each(function (index, tr_elm) {
+            if($('#active_trades_pool tr[trtype="S"]').length > 0) {
+                //Exit all sell positions first
+                $('#active_trades_pool tr[trtype="S"]').each(function (index, tr_elm) {
                     $(tr_elm).find('.exit').click()
                 })
-            }, 500)
+                //Then exit the buy positions
+                setTimeout(function () {
+                    $('#active_trades_pool tr[trtype="B"]').each(function (index, tr_elm) {
+                        $(tr_elm).find('.exit').click()
+                    })
+                }, 500)
+            } else {
+                $('#active_trades_pool tr').each(function (index, tr_elm) {
+                    $(tr_elm).find('.exit').click()
+                })
+            }
             milestone_manager.remove_milestone('total_row');
         },
 
@@ -3072,15 +3077,19 @@ client_api = function () {
 
             exit_group : function(group_selector) {
                 let count = 0;
-                $(group_selector).find('tr').each(function(){
-                    let checkbox = $(this).find('.select_box')[0];
-                    if(checkbox.checked) {
-                        count++;
-                        $(this).find('.exit').click();
-                    }
-                })
+                $(group_selector).find('tr[trtype="S"]').each(function(){close(this);})
+                $(group_selector).find('tr[trtype="B"]').each(function(){close(this);})
+
                 if(count == 0)
                     show_error_msg("No position selected to exit")
+
+                function close(row) {
+                    let checkbox = $(row).find('.select_box')[0];
+                    if(checkbox.checked) {
+                        count++;
+                        $(row).find('.exit').click();
+                    }
+                }
             },
 
             create_table : function(group, class_name) {

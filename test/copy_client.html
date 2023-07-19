@@ -154,12 +154,12 @@
             </div>
             <div class="col-sm-4" style="padding-left:0px">
                 <button class="btn btn-primary mb-3" onclick="client_api.util.grouping.group_selected()">Group Selected</button>
-
+                <button class="btn btn-danger mb-3" onclick="client_api.util.grouping.exit_group('#active_trades_pool')">Exit</button>
             </div>
 
             <div class="col-sm-4">
-                <button class="btn btn-danger" type="button" style="float:right; margin-right: -60px" onclick="client_api.trade.exit_all_positions()">
-                    Exit All Positions
+                <button class="btn btn-danger" type="button" style="float:right; margin-right: -60px" onclick="client_api.trade.exit_all_positions()" title="Cancels all the open orders and closes all the open positions">
+                    KILL SWITCH
                 </button>
             </div>
         </div>
