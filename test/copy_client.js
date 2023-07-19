@@ -1261,7 +1261,10 @@ client_api = function () {
                 let tr_elm = $(ltp_elm).parent();
                 if(tr_elm.attr('trade') == 'active') {
                     trade.update_pnl(tr_elm)
-                    trade.update_total_pnl()
+                    $("#active_trades_div").find('tbody').each(function(){
+                        let group_id = $(this).attr('id')
+                        trade.update_total_pnl(group_id)
+                    })
                 }
             } else if(selector.startsWith('#watch_list')) {
                 let margin = parseInt($(ltp_elm).attr('lot_size')) * ltp
@@ -1415,16 +1418,28 @@ client_api = function () {
 
         buy_selected : function() {
             $('#watch_list_body input:checkbox:checked').each(function(){
+                this.checked=false;
                 let row_elm = $(this).parent().parent()
                 row_elm.find('.buy').click()
             })
+
+            if($('#watch_list_body input:checkbox:checked').length == 0) {
+                let parent_checkbox = $('#watch_list_body').parent().find('thead input:checkbox')
+                parent_checkbox[0].checked=false;
+            }
         },
 
         sell_selected : function() {
             $('#watch_list_body input:checkbox:checked').each(function(){
+                this.checked=false;
                 let row_elm = $(this).parent().parent()
                 row_elm.find('.sell').click()
             })
+
+            if($('#watch_list_body input:checkbox:checked').length == 0) {
+                let parent_checkbox = $('#watch_list_body').parent().find('thead input:checkbox')
+                parent_checkbox[0].checked=false;
+            }
         },
 
         display_order_exec_msg: function(order) {
@@ -1814,7 +1829,8 @@ client_api = function () {
                                     </br><span class="price exit-price">${matching_order.avgprc}</span>
                                 `);
             trade.update_pnl(tr_elm, matching_order.avgprc)
-            trade.update_total_pnl()
+            let group_id = tr_elm.parent().attr('id')
+            trade.update_total_pnl(group_id)
 
             tr_elm.find('.modify').parent().html(`CLOSED</br><span class="badge badge-pill badge-secondary" title="Watch live" onclick="client_api.trade.toggle_watch_closed_trade($(this))" style="cursor:pointer;padding:8px;margin-top:10px">Watch</span>`);
             tr_elm.find('.exit').parent().html(`<button type="button" class="btn btn-dark btn-sm delete" onclick="$(this).parent().parent().remove();client_api.trade.reset_max_profit_loss()">Delete</button>`);
@@ -1826,9 +1842,10 @@ client_api = function () {
             }
 
             //Remove SL and Target set on Total row, if there are no active trades
-            if($(`#at-pool tr[trade="active"]`).length < 1) {
-                milestone_manager.remove_milestone("summary-at-pool");
-                $('#summary-at-pool th input.target, #summary-at-pool th input.sl').val("")  //Reset UI
+            if($(`#${group_id} tr[trade="active"]`).length < 1) {
+                let summary_row_id = `summary-${group_id}`;
+                milestone_manager.remove_milestone(summary_row_id);
+                $(`#${summary_row_id} th input.target, #${summary_row_id} th input.sl`).val("")  //Reset UI
             }
         },
 
@@ -2228,27 +2245,27 @@ client_api = function () {
             }
         },
 
-        reset_max_profit_loss : function() {
-            $('#ms-profit-at-pool').text('')
-            $('#ms-loss-at-pool').text('')
-            $('#pnl-at-pool').text('')
-            let row_id='summary-at-pool'
+        reset_max_profit_loss : function(group_id) {
+            $('#ms-profit-' + group_id).text('')
+            $('#ms-loss-' + group_id).text('')
+            $('#pnl-' + group_id).text('')
+            let row_id='summary-' + group_id;
             this.max_profit_seen[row_id] = 0
             this.max_loss_seen[row_id] = 0
         },
 
-        update_total_pnl : function() {
+        update_total_pnl : function(group_id) {
             let total = 0
 
-            let rows = $('#at-pool').find('tr')
+            let rows = $(`#${group_id}`).find('tr')
             rows.each(function () {
                 let pnl = $(this).find('td.pnl').text()
                 total += parseFloat(pnl)
             })
 
             if (!isNaN(total)) {
-                let total_pnl_elm = $('#pnl-at-pool')
-                const row_id = 'summary-at-pool';
+                let total_pnl_elm = $('#pnl-' + group_id)
+                const row_id = 'summary-' + group_id;
                 if (total < 0) {
                     total_pnl_elm.css('color', 'red')
                 } else {
@@ -2256,8 +2273,8 @@ client_api = function () {
                 }
                 let ret = this.get_max_profit_loss(row_id, total);
                 total_pnl_elm.text(total.toFixed(2))
-                $('#ms-profit-at-pool').text(ret['profit'].toFixed(2))
-                $('#ms-loss-at-pool').text(ret['loss'].toFixed(2))
+                $('#ms-profit-'+group_id).text(ret['profit'].toFixed(2))
+                $('#ms-loss-'+group_id).text(ret['loss'].toFixed(2))
             }
         },
 
@@ -2304,7 +2321,8 @@ client_api = function () {
                 show_success_msg("Resetting the P&L")
                 setTimeout(function() {
                     trade.update_pnl(tr_elm, tr_elm.find('.exit-price').text())
-                    trade.update_total_pnl()
+                    let group_id = tr_elm.parent().attr('id')
+                    trade.update_total_pnl(group_id)
                 }, 1500)
             }
         },
@@ -2391,8 +2409,8 @@ client_api = function () {
                         default : console.error(row_id + " .. Something is wrong .. " + mile_stone.token); break;
                     }
                 } else { // Price based
-                    if(row_id === "summary-at-pool") { // Use total P & L value in case of cumulative target and SL
-                        cur_spot_value = $('#summary-at-pool').find('.pnl').text()
+                    if(row_id.startsWith("summary-")) { // Use total P & L value in case of cumulative target and SL
+                        cur_spot_value = $(`#${row_id}`).find('.pnl').text()
                         if(cur_spot_value!=undefined)
                             cur_spot_value = parseFloat(cur_spot_value)
                     }
@@ -2416,7 +2434,7 @@ client_api = function () {
                         }
                     }
                 } else if(target_obj.instrument === "price") {  //Price based
-                    // if(row_id === "summary-at-pool") {
+                    // if(row_id.startsWith("summary-")) {
                         if (cur_spot_value >= trig_value) {
                             target_triggered()
                         }
@@ -2437,9 +2455,11 @@ client_api = function () {
                 function target_triggered() {
                     show_success_msg("Target triggered for row_id : " + row_id + " Trigger value = " + trig_value + " Spot value = " + cur_spot_value)
                     console.log("Target triggered for row_id : " + row_id + " Trigger value = " + trig_value + " Spot value = " + cur_spot_value)
-                    if(row_id === "summary-at-pool") {
+                    if(row_id.startsWith("summary-")){
                         //Close all trades
-                        trade.close_all_trades();
+                        // trade.close_all_trades();
+                        let group_selector = '#' + row_id.replace('summary-', '')
+                        util.grouping.exit_group(group_selector, true)
                     }
                     else {
                         let tr_elm = $(`#${row_id}`)
@@ -2463,8 +2483,8 @@ client_api = function () {
                         case "fin_nifty" : cur_spot_value = live_data[fin_nifty_tk]; break;
                     }
                 } else { // Price based
-                    if (row_id === "summary-at-pool") { // Use total P & L value in case of cumulative target and SL
-                        cur_spot_value = $('#summary-at-pool').find('.pnl').text()
+                    if (row_id.startsWith("summary-")) { // Use total P & L value in case of cumulative target and SL
+                        cur_spot_value = $('#' + row_id).find('.pnl').text()
                         if (cur_spot_value != undefined)
                             cur_spot_value = parseFloat(cur_spot_value)
                     } else {
@@ -2486,7 +2506,7 @@ client_api = function () {
                         }
                     }
                 } else if(sl_obj.instrument === "price") {
-                    // if(row_id === "summary-at-pool") {
+                    // if(row_id.startsWith("summary-")) {
                         if (cur_spot_value <= trig_value) {
                             sl_triggered()
                         }
@@ -2506,9 +2526,11 @@ client_api = function () {
                 function sl_triggered() {
                     show_error_msg("SL triggered for row_id : " + row_id + " Trigger value = " + trig_value + " Spot value = " + cur_spot_value)
                     console.log("SL triggered for row_id : " + row_id + " Trigger value = " + trig_value + " Spot value = " + cur_spot_value)
-                    if(row_id === "summary-at-pool") {
+                    if(row_id.startsWith("summary-")) {
                         //Close all trades
-                        trade.close_all_trades()
+                        // trade.close_all_trades();
+                        let group_selector = '#' + row_id.replace('summary-', '')
+                        util.grouping.exit_group(group_selector, true)
                     }
                     else {
                         let tr_elm = $(`#${row_id}`)
@@ -3065,7 +3087,7 @@ client_api = function () {
                     if($('#at-pool').children().length === 0) {
                         let parent_checkbox = $('#at-pool').parent().find('thead input:checkbox');
                         parent_checkbox[0].checked = false;
-                        trade.reset_max_profit_loss();
+                        trade.reset_max_profit_loss('at-pool');
                     }
 
                     $('#group_name').val(''); //Reset group name
@@ -3101,7 +3123,7 @@ client_api = function () {
                 }
             },
 
-            exit_group : function(group_selector) {
+            exit_group : function(group_selector, target_sl_triggered=false) {
                 let count = 0;
                 $(group_selector).find('tr[trtype="S"]').each(function(){close(this);})
                 $(group_selector).find('tr[trtype="B"]').each(function(){close(this);})
@@ -3111,7 +3133,7 @@ client_api = function () {
 
                 function close(row) {
                     let checkbox = $(row).find('.select_box')[0];
-                    if(checkbox.checked) {
+                    if(checkbox.checked || target_sl_triggered) {
                         count++;
                         $(row).find('.exit').click();
                     }
@@ -3129,7 +3151,7 @@ client_api = function () {
                                 <path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/>
                             </svg>
                         </span>
-                        <h4 style="float:right;">${group.name.toUpperCase()}</h4>
+                        <h5 style="float:right;">${group.name.toUpperCase()}</h5>
                     </div>
                     <table  class="table ${class_name} table-condensed table-striped table-bordered">
                     
@@ -3167,8 +3189,8 @@ client_api = function () {
                                 </select>
                             </th>
                             <th scope="col"><button type="button" class="btn btn-success btn-sm modify" onclick="client_api.trade.modify(this, $(this).text(), true)">Edit</button></th>
-                            <th scope="col" class="pos-mtm" id="ms-profit-at-pool" title="Max Profit Seen"></th>
-                            <th scope="col" class="neg-mtm" id="ms-loss-at-pool" title="Max Loss Seen"></th>
+                            <th scope="col" class="pos-mtm" id="ms-profit-${group.id}" title="Max Profit Seen"></th>
+                            <th scope="col" class="neg-mtm" id="ms-loss-${group.id}" title="Max Loss Seen"></th>
                         </tr>
                     </tfoot> </table></div>`)
             },
