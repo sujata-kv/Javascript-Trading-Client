@@ -2858,7 +2858,7 @@ client_api = function () {
                 ++count;
             })
 
-            if(count == 0) show_error_msg("No instruments selected to delete")
+            if(count == 0) show_error_msg("No instrument is selected")
 
             if($tbody.children().length === 0) {
                 $tbody.parent().find('thead input:checkbox')[0].checked = false; //uncheck parent checkbox
