@@ -163,7 +163,6 @@ client_api = function () {
                     if (!subscribed_symbols.includes(token))
                         subscribed_symbols.push(token);
                     pending_to_subscribe_tokens.delete(token);
-
                 }
             }
         },
@@ -312,7 +311,7 @@ client_api = function () {
                             remarks = "B-" + Math.round(live_data[bank_nifty_tk])
                         else if (tsym.startsWith("FINNIFTY"))
                             remarks = "F-" + Math.round(live_data[fin_nifty_tk])
-                        // remarks += " Vix " + live_data[vix_tk]
+                        remarks += " Vix " + live_data[vix_tk]
                     }
                 }
 
@@ -1824,8 +1823,10 @@ client_api = function () {
             tr_elm.addClass('table-secondary');
             tr_elm.attr('trade', 'closed');
             let td_elm = tr_elm.find('.exit-limit').parent();
+            // let remarks = matching_order.remarks.substring(0, matching_order.remarks.indexOf(" Vix"));
+            let remarks = matching_order.remarks;
             td_elm.html(`<span class="badge badge-pill badge-dark">${matching_order.norentm.split(" ")[0]}</span>
-                                    </br><span class="badge badge-info">${matching_order.remarks}</span>
+                                    </br><span class="badge badge-info">${remarks}</span>
                                     </br><span class="price exit-price">${matching_order.avgprc}</span>
                                 `);
             trade.update_pnl(tr_elm, matching_order.avgprc)
@@ -1833,7 +1834,7 @@ client_api = function () {
             trade.update_total_pnl(group_id)
 
             tr_elm.find('.modify').parent().html(`CLOSED</br><span class="badge badge-pill badge-secondary" title="Watch live" onclick="client_api.trade.toggle_watch_closed_trade($(this))" style="cursor:pointer;padding:8px;margin-top:10px">Watch</span>`);
-            tr_elm.find('.exit').parent().html(`<button type="button" class="btn btn-dark btn-sm delete" onclick="$(this).parent().parent().remove();client_api.trade.reset_max_profit_loss()">Delete</button>`);
+            tr_elm.find('.exit').parent().html(`<button type="button" class="btn btn-dark btn-sm delete" onclick="client_api.trade.delete(this)">Delete</button>`);
             tr_elm.find('.qty').attr('disabled', 'disabled');
             tr_elm.find('.exit').attr('disabled', 'disabled');
 
@@ -2254,6 +2255,13 @@ client_api = function () {
             this.max_loss_seen[row_id] = 0
         },
 
+        delete: function(del_btn) {
+            let row_elm = $(del_btn).parent().parent();
+            let group_id = row_elm.parent().attr('id')
+            row_elm.remove();
+            trade.reset_max_profit_loss(group_id)
+        },
+
         update_total_pnl : function(group_id) {
             let total = 0
 
@@ -2593,6 +2601,8 @@ client_api = function () {
             let className= "";//(ttype==="bear")?"table-danger":" ";
 
             let tbody_elm = $('#at-pool');
+            // let remarks = order.remarks.substring(0, order.remarks.indexOf(" Vix"));
+            let remarks = order.remarks;
 
             tbody_elm.append(`<tr id="${row_id}" class="${className}" ordid="${order.norenordno}"  exch="${order.exch}" token="${order.token}" instrument_token="${order.instrument_token}" qty="${order.qty}" tsym="${order.tsym}" ttype="${ttype}" trtype="${order.trantype}" trade="active">
                         <td> <input type="checkbox" class="select_box" value="" onclick="client_api.util.uncheck(this)"> </td>
@@ -2600,7 +2610,7 @@ client_api = function () {
                         <td class="instrument">${dname}</td>
                         <td class="entry num" title="Margin Used : ${(order.prc * order.qty).toFixed(2)}">
                             <span class="badge badge-pill badge-dark">${order.norentm.split(" ")[0]}</span>
-                            </br><span class="badge badge-info">${order.remarks}</span>
+                            </br><span class="badge badge-info">${remarks}</span>
                             </br><span class="price">${order.prc}</span>
                         </td>
                         <td class="trade_${ticker} ltp">${live_data[ticker]}</td>
@@ -3068,21 +3078,24 @@ client_api = function () {
             unique_group_id: 0,
             class_names : ['table-light', 'table-success'],
 
-            generate_group_id : function(name) {
+            generate_group_id : function(group_name) {
                 let uname;
-                if(name === "")
-                    uname = name = "group-" + (++this.unique_group_id);
-                else
-                    uname = name + (++this.unique_group_id);
+                if(group_name === "")
+                    uname = group_name = "group-" + (++this.unique_group_id);
+                else {
+                    group_name = group_name.replace(/[^\w]/gi, '-'); //Remove all special characters
+                    uname = group_name + "-" + (++this.unique_group_id);
+                }
 
-                let gid = "at-" + uname.replace(/ /g, '-');
-                return {'name' : name, 'id': gid}
+                let gid = "at-" + uname;
+                return {'name' : group_name, 'id': gid}
             },
 
             group_selected: function () {
                 if( $('#at-pool input:checkbox:checked').length > 0) {
                     let class_name = this.class_names[this.unique_group_id % this.class_names.length];
                     let group_name = $('#group_name').val().trim()
+
                     let group = this.generate_group_id(group_name);
 
                     this.create_table(group, class_name)
