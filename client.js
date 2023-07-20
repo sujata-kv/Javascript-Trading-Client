@@ -1477,9 +1477,9 @@ client_api = function () {
                 let type = order.amo == "Yes"? "AMO ": "";
                 let buy_sell = '';
                 if (order.trantype == "B") {
-                    buy_sell = '<span class="badge badge-success">' + type + 'Buy</span>'
+                    buy_sell = '<span class="badge bg-success">' + type + 'Buy</span>'
                 } else {
-                    buy_sell = '<span class="badge badge-danger">' + type + 'Sell</span>'
+                    buy_sell = '<span class="badge bg-danger">' + type + 'Sell</span>'
                 }
                 let ttype = orderbook.know_bull_or_bear(order)
 
@@ -1573,9 +1573,9 @@ client_api = function () {
         add_to_spot_order_list : function(item, entry_val) {
             let buy_sell = '';
             if (item.trantype === "B") {
-                buy_sell = '<span class="badge badge-success">Buy</span>'
+                buy_sell = '<span class="badge bg-success">Buy</span>'
             } else {
-                buy_sell = '<span class="badge badge-danger">Sell</span>'
+                buy_sell = '<span class="badge bg-danger">Sell</span>'
             }
 
             let ttype = this.know_bull_or_bear(item)
@@ -1825,15 +1825,15 @@ client_api = function () {
             let td_elm = tr_elm.find('.exit-limit').parent();
             // let remarks = matching_order.remarks.substring(0, matching_order.remarks.indexOf(" Vix"));
             let remarks = matching_order.remarks;
-            td_elm.html(`<span class="badge badge-pill badge-dark">${matching_order.norentm.split(" ")[0]}</span>
-                                    </br><span class="badge badge-info">${remarks}</span>
+            td_elm.html(`<span class="badge badge-pill bg-dark">${matching_order.norentm.split(" ")[0]}</span>
+                                    </br><span class="badge bg-primary">${remarks}</span>
                                     </br><span class="price exit-price">${matching_order.avgprc}</span>
                                 `);
             trade.update_pnl(tr_elm, matching_order.avgprc)
             let group_id = tr_elm.parent().attr('id')
             trade.update_total_pnl(group_id)
 
-            tr_elm.find('.modify').parent().html(`CLOSED</br><span class="badge badge-pill badge-secondary" title="Watch live" onclick="client_api.trade.toggle_watch_closed_trade($(this))" style="cursor:pointer;padding:8px;margin-top:10px">Watch</span>`);
+            tr_elm.find('.modify').parent().html(`CLOSED</br><span class="badge badge-pill bg-secondary" title="Watch live" onclick="client_api.trade.toggle_watch_closed_trade($(this))" style="cursor:pointer;padding:8px;margin-top:10px">Watch</span>`);
             tr_elm.find('.exit').parent().html(`<button type="button" class="btn btn-dark btn-sm delete" onclick="client_api.trade.delete(this)">Delete</button>`);
             tr_elm.find('.qty').attr('disabled', 'disabled');
             tr_elm.find('.exit').attr('disabled', 'disabled');
@@ -1914,9 +1914,9 @@ client_api = function () {
                 let type = item.amo == "Yes"? "AMO ": "";
                 let buy_sell = '';
                 if (item.trantype == "B") {
-                    buy_sell = '<span class="badge badge-success">' + type + 'Buy</span>'
+                    buy_sell = '<span class="badge bg-success">' + type + 'Buy</span>'
                 } else {
-                    buy_sell = '<span class="badge badge-danger">' + type + 'Sell</span>'
+                    buy_sell = '<span class="badge bg-danger">' + type + 'Sell</span>'
                 }
                 let prd = this.get_prod_name(item.prd);
 
@@ -2319,15 +2319,15 @@ client_api = function () {
 
         toggle_watch_closed_trade : function(elm) {
             if(elm.text() === "Watch") {
-                elm.removeClass('badge-secondary')
-                elm.addClass('badge-success')
+                elm.removeClass('bg-secondary')
+                elm.addClass('bg-success')
                 let tr_elm = elm.parent().parent()
                 tr_elm.attr('trade', 'active')
                 elm.text("Stop")
                 elm.attr('title', "Stop live watching")
             } else {
-                elm.removeClass('badge-success')
-                elm.addClass('badge-secondary')
+                elm.removeClass('bg-success')
+                elm.addClass('bg-secondary')
                 let tr_elm = elm.parent().parent()
                 tr_elm.attr('trade', 'closed')
                 elm.text("Watch")
@@ -2592,9 +2592,9 @@ client_api = function () {
             let buy_sell = '';
             let paper_tag = paper_trade?"Paper ":""
             if (order.trantype == "B") {
-                buy_sell = `<span class="badge badge-success"> ${paper_tag} Buy</span>`
+                buy_sell = `<span class="badge bg-success"> ${paper_tag} Buy</span>`
             } else {
-                buy_sell = `<span class="badge badge-danger"> ${paper_tag} Sell</span>`
+                buy_sell = `<span class="badge bg-danger"> ${paper_tag} Sell</span>`
             }
             let dname = (order.dname != undefined)? order.dname : order.tsym;
 
@@ -2615,8 +2615,8 @@ client_api = function () {
                         <td>${buy_sell}</td>
                         <td class="instrument">${dname}</td>
                         <td class="entry num" title="Margin Used : ${(order.prc * order.qty).toFixed(2)}">
-                            <span class="badge badge-pill badge-dark">${order.norentm.split(" ")[0]}</span>
-                            </br><span class="badge badge-info">${remarks}</span>
+                            <span class="badge badge-pill bg-dark">${order.norentm.split(" ")[0]}</span>
+                            </br><span class="badge bg-primary">${remarks}</span>
                             </br><span class="price">${order.prc}</span>
                         </td>
                         <td class="trade_${ticker} ltp">${live_data[ticker]}</td>
@@ -2793,10 +2793,10 @@ client_api = function () {
                 let buy_sell = '', trtype='';
                 let qty = pos.netqty;
                 if (qty > 0) {
-                    buy_sell = '<span class="badge badge-success">Buy</span>'
+                    buy_sell = '<span class="badge bg-success">Buy</span>'
                     trtype='B'
                 } else {
-                    buy_sell = '<span class="badge badge-danger">Sell</span>'
+                    buy_sell = '<span class="badge bg-danger">Sell</span>'
                     trtype='S'
                 }
                 pos.transtype = trtype;
@@ -3214,9 +3214,9 @@ client_api = function () {
                             <th><input type="text" disabled class="form-control target" placeholder="" value=""></th>
                             <th><input type="text" disabled class="form-control sl" placeholder="" value=""></th>
                             <th>
-                                <select disabled class="form-select" onchange="client_api.trade.select_trade_type(this, $(this).parent().parent())">
-                                    <option selected value="bull">Bullish</option>
-                                    <option value="bear">Bearish</option>
+                                <select disabled class="form-select" onchange="client_api.trade.select_trade_type(this, $(this).parent().parent())" title="Trade type Bull/Bear">
+                                    <option selected value="bull">Bull</option>
+                                    <option value="bear">Bear</option>
                                 </select>
                             </th>
                             <th scope="col"><button type="button" class="btn btn-success btn-sm modify" onclick="client_api.trade.modify(this, $(this).text(), true)">Edit</button></th>
