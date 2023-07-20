@@ -2257,9 +2257,16 @@ client_api = function () {
 
         delete: function(del_btn) {
             let row_elm = $(del_btn).parent().parent();
-            let group_id = row_elm.parent().attr('id')
+            let tbody = row_elm.parent();
+            let group_id = tbody.attr('id')
             row_elm.remove();
-            trade.reset_max_profit_loss(group_id)
+
+            trade.reset_max_profit_loss(group_id);
+            if(tbody.children().length === 0) { //Remove group if no position is left in the group
+                tbody.parent().find('thead input:checkbox')[0].checked = false; //uncheck parent checkbox
+                if(!group_id.includes('at-pool')) //Do not remove the pool
+                    tbody.parent().parent().remove(); //Remove the div
+            }
         },
 
         update_total_pnl : function(group_id) {
@@ -2267,23 +2274,22 @@ client_api = function () {
 
             let rows = $(`#${group_id}`).find('tr')
             rows.each(function () {
-                let pnl = $(this).find('td.pnl').text()
-                total += parseFloat(pnl)
+                let pnl = $(this).find('td.pnl').text().trim()
+                if(pnl != "")
+                    total += parseFloat(pnl)
             })
 
-            if (!isNaN(total)) {
-                let total_pnl_elm = $('#pnl-' + group_id)
-                const row_id = 'summary-' + group_id;
-                if (total < 0) {
-                    total_pnl_elm.css('color', 'red')
-                } else {
-                    total_pnl_elm.css('color', 'green')
-                }
-                let ret = this.get_max_profit_loss(row_id, total);
-                total_pnl_elm.text(total.toFixed(2))
-                $('#ms-profit-'+group_id).text(ret['profit'].toFixed(2))
-                $('#ms-loss-'+group_id).text(ret['loss'].toFixed(2))
+            let total_pnl_elm = $('#pnl-' + group_id)
+            const row_id = 'summary-' + group_id;
+            if (total < 0) {
+                total_pnl_elm.css('color', 'red')
+            } else {
+                total_pnl_elm.css('color', 'green')
             }
+            let ret = this.get_max_profit_loss(row_id, total);
+            total_pnl_elm.text(total.toFixed(2))
+            $('#ms-profit-'+group_id).text(ret['profit'].toFixed(2))
+            $('#ms-loss-'+group_id).text(ret['loss'].toFixed(2))
         },
 
         calculate_pnl: function(params)  {
@@ -3303,7 +3309,7 @@ $(document).ready(function() {
         }
     });
 
-    $("#at-pool").sortable({
+    /*$("#at-pool").sortable({
         items: 'tr:not(tfoot tr, thead tr, tr.summary)',
         dropOnEmpty: false,
         start: function (G, ui) {
@@ -3312,7 +3318,7 @@ $(document).ready(function() {
         stop: function (G, ui) {
             ui.item.removeClass("select");
         }
-    });
+    });*/
 });
 
 
