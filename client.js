@@ -2906,6 +2906,8 @@ client_api = function () {
         selection_is_valid : function() {
             let item = $('input.watch_item')
             let name = item.val().trim()
+            if(name == "")
+                return false
             let dname = item.attr('dname')
             if(dname != undefined) {
                 dname = dname.trim()
