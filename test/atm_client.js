@@ -49,12 +49,6 @@ client_api = function () {
         url: {
             websocket: "wss://trade.shoonya.com/NorenWSWeb/",
             search_instrument: "https://trade.shoonya.com/NorenWClientWeb/SearchScrip",
-            order_book: "https://trade.shoonya.com/NorenWClientWeb/OrderBook",
-            place_order: "https://trade.shoonya.com/NorenWClientWeb/PlaceOrder",
-            modify_order: "https://trade.shoonya.com/NorenWClientWeb/ModifyOrder",
-            cancel_order: "https://trade.shoonya.com/NorenWClientWeb/CancelOrder",
-            exit_order: "https://trade.shoonya.com/NorenWClientWeb/ExitOrder",
-            positions: "https://trade.shoonya.com/NorenWClientWeb/PositionBook",
         },
 
         init: function () {
@@ -170,75 +164,61 @@ client_api = function () {
         },
 
         search: {
-            attach_search_autocomplete: function () {
-                /* Search instrument autocomplete */
-                $("input.search-instrument").autocomplete({
-                    minLength: 2,
-                    autoFocus: true,
-                    appendTo: '#instr-drop-down',
-                    source: function (request, response) {
-                        params = {"uid": user_id, "stext": request.term}
-                        $.ajax({
-                            url: shoonya.url.search_instrument,
-                            type: "POST",
-                            dataType: "json",
-                            data: shoonya.get_payload(params),
-                            success: function (data, textStatus, jqXHR) {
-                                // console.log("Ajax success")
-                                response($.map(data.values, function (item) {
-                                    item.dname = watch_list.fin_nifty_dname_fix(item.tsym, item.dname)
-                                    let dname = item.dname != undefined ? item.dname : item.tsym;
-                                    return {
-                                        label: dname,
-                                        value: dname,
-                                        tsym: item.tsym,
-                                        dname: dname,
-                                        lot_size: item.ls,
-                                        exch: item.exch,
-                                        token: item.token,
-                                        optt: item.optt
-                                    };
-                                }));
-                            },
-                            error: function (jqXHR, textStatus, errorThrown) {
-                                console.log("Ajax error")
-                                show_error_msg(JSON.parse(jqXHR.responseText).emsg)
-                            },
-                        })
-                    },
+            search_strike: function (instrument, strike) {
+                let params = {
+                    "uid": user_id,
+                    "stext": instrument.replace('_', '') + " " + strike
+                }
+                $.ajax({
+                    url: shoonya.url.search_instrument,
+                    type: "POST",
+                    dataType: "json",
+                    data: shoonya.get_payload(params),
+                    success: function (data, textStatus, jqXHR) {
+                        // console.log("Ajax success")
+                         let info = data.values[0];
+                         let info1 = data.values[1];
+                         shoonya.atm_strike_details[instrument] = [
+                             {
+                                 'optt': info['optt'],
+                                 'strike': strike,
+                                 'token': 'NFO|' + info['token'],
+                                 'tsym': info['tsym'],
+                                 'dname': info['dname']
+                             },
+                             {
+                                 'optt': info1['optt'],
+                                 'strike': strike,
+                                 'token': 'NFO|' + info1['token'],
+                                 'tsym': info1['tsym'],
+                                 'dname': info1['dname']
+                             },
+                         ]
 
-                    select: function (event, ui) {
-                        // when item is selected
-                        $(this).val(ui.item.value);
-                        $(this).attr('lot_size', ui.item.lot_size)
-                        $(this).attr('exch', ui.item.exch)
-                        $(this).attr('token', ui.item.token)
-                        $(this).attr('tsym', ui.item.tsym)
-                        $(this).attr('dname', ui.item.dname)
-                        $(this).attr('optt', ui.item.optt)
-                        console.log("Selected item : ", ui.item)
-                    },
+                        shoonya.subscribe_token('NFO|' + info['token']);
+                        shoonya.subscribe_token('NFO|' + info1['token']);
 
-                    create: function () {
-                        $(this).data('ui-autocomplete')._renderItem = function (ul, item) {
-                            return $('<li class="dropdown-item">')
-                                .append(item.label)
-                                .append('</li>')
-                                .appendTo(ul); // customize your HTML
-                        };
-                    }
-                });
-            }
+                        console.log(shoonya.atm_strike_details[instrument])
+                    },
+                    error: function (jqXHR, textStatus, errorThrown) {
+                        console.log("Ajax error")
+                        show_error_msg(JSON.parse(jqXHR.responseText).emsg)
+                    },
+                })
+            },
         },
 
-        atm_strike : {},
+        atm_strike_details : {},
+        atm_strikes : {},
 
-        identify_atm_strike : function(instrument) {
-            let mod = Math.round(live_data[nifty_tk]%100);
+        find_atm_strike_price : function(instrument) {
+            let mod = Math.round(this.get_ltp(instrument)%100);
+            let strike_price;
             if(mod < 50)
-                this.atm_strike[instrument] = Math.floor(this.get_ltp(instrument)/100) * 100;
+                strike_price = Math.floor(this.get_ltp(instrument)/100) * 100;
             else
-                this.atm_strike[instrument] = Math.ceil(this.get_ltp(instrument)/100) * 100;
+                strike_price = Math.ceil(this.get_ltp(instrument)/100) * 100;
+            return strike_price
         },
 
         get_ltp: function(instrument) {
@@ -248,7 +228,23 @@ client_api = function () {
                 case 'fin_nifty': return live_data[fin_nifty_tk]; break;
                 default : return NaN; break;
             }
+        },
+
+        find_atm_strikes : function() {
+            let instruments = ['nifty', 'bank_nifty', 'fin_nifty']
+            instruments.forEach(function(instr) {
+                let strike = shoonya.find_atm_strike_price(instr);
+                let str = instr + "_" + strike
+                if(shoonya.atm_strikes[instr] !== str) {
+                    //New strike found
+                    console.log("New strike price found for " + instr + " " + strike)
+                    shoonya.search.search_strike(instr, strike)
+                    shoonya.atm_strikes[instr] = str;
+                }
+            })
+            setTimeout(shoonya.find_atm_strikes, 60000); //Keep looping to find ATM strike price
         }
+
     }
     
     function update_ltp(selector, ltp) {
@@ -316,10 +312,7 @@ client_api = function () {
         select_broker()
         broker.init();
         broker.connect();
-        broker.search.attach_search_autocomplete();
-
-        //Uncomment below line to enable spreads dynamic calculation
-        // setTimeout(trade.calculate_spreads, 2000);
+        setTimeout(broker.find_atm_strikes, 2000)
     }
 
     return {
@@ -329,6 +322,7 @@ client_api = function () {
         "show_error_msg" : show_error_msg,
         "connect_to_server" : connect_to_server,
         "select_broker" : select_broker,
+        "atm_strike_details": shoonya.atm_strike_details,
     }
 
 }();
