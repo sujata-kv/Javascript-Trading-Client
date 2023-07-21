@@ -11,6 +11,7 @@ client_api = function () {
     let heartbeat_timeout = 7000;
     let live_data = {};
     let broker = '';
+    let instruments = ['nifty', 'bank_nifty', 'fin_nifty']
 
     function select_broker() {
         let broker_name = $('#broker_option')[0].value
@@ -182,14 +183,14 @@ client_api = function () {
                              {
                                  'optt': info['optt'],
                                  'strike': strike,
-                                 'token': 'NFO|' + info['token'],
+                                 'token': info['token'],
                                  'tsym': info['tsym'],
                                  'dname': info['dname']
                              },
                              {
                                  'optt': info1['optt'],
                                  'strike': strike,
-                                 'token': 'NFO|' + info1['token'],
+                                 'token': info1['token'],
                                  'tsym': info1['tsym'],
                                  'dname': info1['dname']
                              },
@@ -231,7 +232,6 @@ client_api = function () {
         },
 
         find_atm_strikes : function() {
-            let instruments = ['nifty', 'bank_nifty', 'fin_nifty']
             instruments.forEach(function(instr) {
                 let strike = shoonya.find_atm_strike_price(instr);
                 let str = instr + "_" + strike
@@ -243,8 +243,23 @@ client_api = function () {
                 }
             })
             setTimeout(shoonya.find_atm_strikes, 60000); //Keep looping to find ATM strike price
-        }
+        },
 
+        display_atm_prices : function() {
+            var time = new Date().toLocaleTimeString();
+            let str = time + " "
+            instruments.forEach(function(instr) {
+                str = str + instr.toUpperCase()
+                let details = shoonya.atm_strike_details[instr]
+                str = str + " Strike: " + details[0]['strike']
+                let ce_idx = 0, pe_idx = 1;
+                if(details[0]['optt'] === "PE") { ce_idx = 1; pe_idx = 0}
+                let total_premium = parseFloat(live_data[details[ce_idx]['token']]) + parseFloat(live_data[details[pe_idx]['token']])
+                str = str + " Total prem: " + total_premium.toFixed(0) + " "
+            })
+            $('#screen').prepend(str + "<br>")
+            setTimeout(shoonya.display_atm_prices, 1000)
+        }
     }
     
     function update_ltp(selector, ltp) {
@@ -313,6 +328,7 @@ client_api = function () {
         broker.init();
         broker.connect();
         setTimeout(broker.find_atm_strikes, 2000)
+        setTimeout(broker.display_atm_prices, 3000)
     }
 
     return {
