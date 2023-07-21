@@ -539,7 +539,7 @@ shoonya_api = function () {
 
             let dname = (item.dname != undefined)? item.dname : item.tsym;
             let row_id = `row_id_${++unique_row_id}`
-            $('#spot_order_list').append(`<tr id="${row_id}" ordid="${item.norenordno}" exch="${item.exch}" tsym="${item.tsym}" qty="${item.qty}" token="${item.token}" ttype="${ttype}" trtype="${item.trantype}">
+            $('#spot_order_list').append(`<tr id="${row_id}" ordid="${item.norenordno}" exch="${item.exch}" tsym="${item.tsym}" dname="${item.dname}" qty="${item.qty}" token="${item.token}" ttype="${ttype}" trtype="${item.trantype}">
                     <td>${buy_sell}</td>
                     <td class="order-num">Spot Based Entry</td>
                     <td>${dname}</td>

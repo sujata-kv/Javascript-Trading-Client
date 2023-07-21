@@ -1582,7 +1582,7 @@ client_api = function () {
 
             let dname = (item.dname != undefined)? item.dname : item.tsym;
             let row_id = `row_id_${++unique_row_id}`
-            $('#spot_order_list').append(`<tr id="${row_id}" ordid="${item.norenordno}" exch="${item.exch}" tsym="${item.tsym}" qty="${item.qty}" token="${item.token}" instrument_token="${item.instrument_token}" ttype="${ttype}" trtype="${item.trantype}">
+            $('#spot_order_list').append(`<tr id="${row_id}" ordid="${item.norenordno}" exch="${item.exch}" tsym="${item.tsym}" dname="${item.dname}"  qty="${item.qty}" token="${item.token}" instrument_token="${item.instrument_token}" ttype="${ttype}" trtype="${item.trantype}">
                     <td>${buy_sell}</td>
                     <td class="order-num">Spot Based Entry</td>
                     <td>${dname}</td>
@@ -2365,29 +2365,29 @@ client_api = function () {
             setTimeout(trade.trigger, 500)
 
             function check_entry_trigger(row_id, mile_stone) {
-                let cur_spot_value = 0;
+                let cur_value = 0;
                 let entry_obj = mile_stone.get_entry();
                 let trig_value = parseFloat(entry_obj.value);
                 let ttype = mile_stone.ttype;
                 let buy_sell = mile_stone.buy_sell;
                 if (entry_obj.spot_based) {
                     switch(entry_obj.instrument) {
-                        case "nifty" : cur_spot_value = live_data[nifty_tk]; break;
-                        case "bank_nifty" : cur_spot_value = live_data[bank_nifty_tk]; break;
-                        case "fin_nifty" : cur_spot_value = live_data[fin_nifty_tk]; break;
-                        default : console.error(row_id + " Spot based entry.. neither nifty nor bank-nifty " + mile_stone); break;
+                        case "nifty" : cur_value = live_data[nifty_tk]; break;
+                        case "bank_nifty" : cur_value = live_data[bank_nifty_tk]; break;
+                        case "fin_nifty" : cur_value = live_data[fin_nifty_tk]; break;
+                        default : console.error(row_id + " Spot based entry.. neither nifty, nor bank-nifty, not even fin-nifty " + mile_stone); break;
                     }
                 }
-                console.log(`Checking Entry : ${ttype}  spot : ${cur_spot_value}  trig : ${trig_value}`)
+                console.log(`Checking Entry : ${ttype}  current : ${cur_value}  trig : ${trig_value}`)
 
                 //Only spot based entry should be checked. If it is price based then limit order will be placed
                 if(entry_obj.spot_based) {
                     if (ttype === 'bull') {
-                        if (cur_spot_value <= trig_value) {
+                        if (cur_value <= trig_value) {
                             entry_triggered()
                         }
                     } else if (ttype === 'bear') {
-                        if (cur_spot_value >= trig_value) {
+                        if (cur_value >= trig_value) {
                             entry_triggered()
                         }
                     }
@@ -2396,8 +2396,8 @@ client_api = function () {
                 function entry_triggered() {
 
                     if(milestone_manager.entry_exists(row_id)) {  // To avoid duplicate execution
-                        show_success_msg("Entry triggered for row_id : " + row_id + " Trigger value = " + trig_value + " Spot value = " + cur_spot_value)
-                        console.log("Entry triggered for row_id : " + row_id + " Trigger value = " + trig_value + " Spot value = " + cur_spot_value)
+                        show_success_msg("Entry triggered for row_id : " + row_id + " Trigger value = " + trig_value + " Spot value = " + cur_value)
+                        console.log("Entry triggered for row_id : " + row_id + " Trigger value = " + trig_value + " Spot value = " + cur_value)
                         console.log(entry_obj)
                         let tr_elm = $(`#${row_id}`)
                         tr_elm.find('.entry').val('') // Set entry value to '' in order to place market order
