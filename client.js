@@ -2275,21 +2275,22 @@ client_api = function () {
             let rows = $(`#${group_id}`).find('tr')
             rows.each(function () {
                 let pnl = $(this).find('td.pnl').text().trim()
-                if(pnl != "")
-                    total += parseFloat(pnl)
+                total += parseFloat(pnl)
             })
 
-            let total_pnl_elm = $('#pnl-' + group_id)
-            const row_id = 'summary-' + group_id;
-            if (total < 0) {
-                total_pnl_elm.css('color', 'red')
-            } else {
-                total_pnl_elm.css('color', 'green')
+            if (!isNaN(total)) {
+                let total_pnl_elm = $('#pnl-' + group_id)
+                const row_id = 'summary-' + group_id;
+                if (total < 0) {
+                    total_pnl_elm.css('color', 'red')
+                } else {
+                    total_pnl_elm.css('color', 'green')
+                }
+                let ret = this.get_max_profit_loss(row_id, total);
+                total_pnl_elm.text(total.toFixed(2))
+                $('#ms-profit-' + group_id).text(ret['profit'].toFixed(2))
+                $('#ms-loss-' + group_id).text(ret['loss'].toFixed(2))
             }
-            let ret = this.get_max_profit_loss(row_id, total);
-            total_pnl_elm.text(total.toFixed(2))
-            $('#ms-profit-'+group_id).text(ret['profit'].toFixed(2))
-            $('#ms-loss-'+group_id).text(ret['loss'].toFixed(2))
         },
 
         calculate_pnl: function(params)  {
@@ -2812,6 +2813,7 @@ client_api = function () {
                     if(position.length == 0) { //Add new position only if it doesn't exist
                         console.log("Position doesn't exist in active trades. So adding it..")
                         $('#at-pool').append(`<tr id="row_id_${++unique_row_id}" exch="${pos.exch}" token="${ticker}" instrument_token="${ticker}" tsym="${pos.tsym}" qty="${qty}" ttype="${ttype}" trtype="${trtype}" trade="active">
+                            <td> <input type="checkbox" class="select_box" value="" onclick="client_api.util.uncheck(this)"> </td>
                             <td>${buy_sell}</td>
                             <td>${dname}</td>
                             <td class="entry num">
