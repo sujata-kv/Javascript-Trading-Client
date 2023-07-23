@@ -5,10 +5,22 @@ client_api = function () {
     let conf = {
         atm_strike_check_interval : 60000,
         atm_premium_monitor_interval : 30000,
-        algo_atm_pct_diff: 10,
-        algo_monitor_interval: 1000,
-        bank_nifty : {
-            tolerate_deviation : 180,
+        algo: {
+            atm_pct_diff: 10,
+            monitor_interval: 10000,
+            retry_count : 5,
+            bank_nifty: {
+                tolerate_deviation: 180,
+                qty: 15,
+            },
+            nifty : {
+                tolerate_deviation: 70,
+                qty: 50,
+            },
+            fin_nifty : {
+                tolerate_deviation: 80,
+                qty: 40,
+            }
         }
     }
     
@@ -257,6 +269,7 @@ client_api = function () {
                                 dname: info.dname,
                                 value: info.dname,
                                 lot_size: info.ls,
+                                qty: conf.algo[instrument].qty,
                                 algo : true,
                             }
                         }
@@ -383,6 +396,52 @@ client_api = function () {
                 values["remarks"] = remarks;
 
                 // values["amo"] = "Yes";          // TODO - AMO ORDER
+
+                return values;
+            },
+
+            get_algo_order_params : function(params, buy_or_sell) {
+                let prctyp = 'MKT', price = "0.0";
+                let remarks = "";
+                let tsym = params.tsym;
+                let dname = params.dname;
+                let token = params.token;
+                let qty = params.qty;
+                let instrument_token = params.instrument_token;
+                let exch = params.exch;
+
+                /* "C" For CNC, "M" FOR NRML, "I" FOR MIS, "B" FOR BRACKET ORDER, "H" FOR COVER ORDER*/
+                if (exch == "NSE" || exch == "BSE") {
+                    prd = "I";
+                } else {
+                    prd = "M";
+                    if (tsym != undefined) {
+                        if (tsym.startsWith("NIFTY"))
+                            remarks = "N-" + Math.round(live_data[nifty_tk])
+                        else if (tsym.startsWith("BANKNIFTY"))
+                            remarks = "B-" + Math.round(live_data[bank_nifty_tk])
+                        else if (tsym.startsWith("FINNIFTY"))
+                            remarks = "F-" + Math.round(live_data[fin_nifty_tk])
+                        remarks += " Vix " + live_data[vix_tk]
+                    }
+                }
+
+                let values = {'ordersource': 'WEB'};
+                values["uid"] = user_id;
+                values["actid"] = user_id;
+                values["trantype"] = buy_or_sell;
+                values["prd"] = prd;
+                values["exch"] = exch;
+                values["tsym"] = tsym;
+                values["dname"] = dname;
+                values["token"] = token;
+                values["instrument_token"] = instrument_token;
+                values["qty"] = qty;
+                values["dscqty"] = qty;
+                values["prctyp"] = prctyp       /*  LMT / MKT / SL-LMT / SL-MKT / DS / 2L / 3L */
+                values["prc"] = price;
+                values["ret"] = 'DAY';
+                values["remarks"] = remarks;
 
                 return values;
             },
@@ -546,7 +605,7 @@ client_api = function () {
         deploy_stats : {},
         deployed : false,
         run : function(instrument) {
-            console.log("Algo run function called")
+            console.log("Algo run function called for " + instrument)
             if(!algo.deployed) {
                 let atm_ce_pe = atm_tracker.atm_strike_details[instrument]
                 if (atm_ce_pe != undefined && atm_ce_pe.length == 2) {   // CE and PE both present
@@ -554,67 +613,73 @@ client_api = function () {
                     let ltp2 = live_data[atm_ce_pe[1].token];
                     let pct_diff = Math.abs(ltp1 - ltp2) / Math.min(ltp1, ltp2);
                     console.log("Ltp1= " + ltp1 + " Ltp2= " + ltp2 + " %Diff = " + (pct_diff * 100).toFixed(0))
-                    if (pct_diff <= conf.algo_atm_pct_diff/100) {
+                    if (pct_diff <= conf.algo.atm_pct_diff/100) {
                         console.log(`Deploying algo for ${instrument}..`)
                         algo.deploy_straddle(instrument, atm_ce_pe)
                     } else {
-                        console.log("Not deploying algo as the difference between premiums is more than "+ conf.algo_atm_pct_diff + "%")
+                        console.log("Not deploying algo as the difference between ATM premiums is more than "+ conf.algo.atm_pct_diff + "%")
+                        setTimeout(function() {algo.run(instrument);}, conf.atm_premium_monitor_interval)
                     }
                 } else {
-                    setTimeout(function () {
-                        algo.run(instrument)
-                    }, conf.atm_premium_monitor_interval)
+                    setTimeout(function() {algo.run(instrument);}, conf.atm_premium_monitor_interval)
                 }
             }
         },
 
         deploy_straddle: function(instrument, atm_ce_pe) {
-            algo.deploy_stats[instrument] = {}      //Initialize empty object
+            algo.deploy_stats[instrument] = algo.deploy_stats[instrument] || {}      //Initialize empty object
             algo.deploy_stats[instrument].spot_value = atm_tracker.get_ltp(instrument); // Record the spot value
 
             //Deploy straddle
             atm_ce_pe.forEach(function (ce_pe_params) {
-                let row_css = watch_list.add_row_to_watch(ce_pe_params)
-                setTimeout(function (row_css) {
-                    $(row_css).find('.sell').click()
-                    algo.deployed = true
-                    let selector = (`#at-pool tr[token=${ce_pe_params.token}][exch=${ce_pe_params.exch}][trtype='S']`)
-                    setTimeout(function(sel, optt) {
-                        let row_id = $(sel).attr('id');
-                        if(optt== "CE") {
-                            algo.deploy_stats[instrument].ce_leg = row_id;
-                        } else if(optt=="PE") {
-                            algo.deploy_stats[instrument].pe_leg = row_id;
-                        }
-                        $(sel).find('input:checkbox')[0].checked = true;
+                orderbook.place_order(broker.order.get_algo_order_params(ce_pe_params, "S"))
+                algo.deployed = true
+                let selector = (`#at-pool tr[token=${ce_pe_params.token}][exch=${ce_pe_params.exch}][trtype='S']`)
+                setTimeout(function(sel, optt) {
+                    let row_id = $(sel).attr('id');
+                    if(optt== "CE") {
+                        algo.deploy_stats[instrument].ce_leg = row_id;
+                    } else if(optt=="PE") {
+                        algo.deploy_stats[instrument].pe_leg = row_id;
+                    }
+                    $(sel).find('input:checkbox')[0].checked = true;
 
-                        if(algo.deploy_stats[instrument].ce_leg != undefined
-                            && algo.deploy_stats[instrument].pe_leg != undefined) {
-                            $('#group_name').val(algo.get_straddle_name(instrument))
-                            algo.deploy_stats[instrument].group = util.grouping.group_selected();
-                            algo.monitor_straddle(instrument)
-                        }
-                    }, 1000, selector, ce_pe_params.optt)
-                }, 300, row_css)
+                    if(algo.deploy_stats[instrument].ce_leg != undefined
+                        && algo.deploy_stats[instrument].pe_leg != undefined) {
+                        algo.deploy_stats[instrument].deploy_count = algo.deploy_stats[instrument].deploy_count==undefined? 1: algo.deploy_stats[instrument].deploy_count+1;
+                        $('#group_name').val(algo.get_straddle_name(instrument, algo.deploy_stats[instrument].deploy_count))
+                        algo.deploy_stats[instrument].group = util.grouping.group_selected();
+                        algo.monitor_straddle(instrument)
+                    }
+                }, 1000, selector, ce_pe_params.optt)
             })
         },
 
-        get_straddle_name : function(instrument) {
-            return instrument.toUpperCase().replace('_', '') + '-STRADDLE'
+        get_straddle_name : function(instrument, count) {
+            return instrument.toUpperCase().replace('_', '') + '-STRADDLE-' + count
         },
 
         monitor_straddle: function(instrument) {
             let cur_value = atm_tracker.get_ltp(instrument)
             let diff = Math.abs(cur_value - algo.deploy_stats[instrument].spot_value);
-            if(diff > conf[instrument].tolerate_deviation) {
-                show_error_msg("Exiting "+ algo.deploy_stats[instrument].group.name +" as the spot moved beyond tolerable points of " + conf[instrument].tolerate_deviation , false)
+            if(diff > conf.algo[instrument].tolerate_deviation) {
+                show_error_msg("Exiting "+ algo.deploy_stats[instrument].group.name +" as the spot moved beyond tolerable points of " + conf.algo[instrument].tolerate_deviation)
                 //Close straddle
                 let ce_leg_id = algo.deploy_stats[instrument].ce_leg;
                 let pe_leg_id = algo.deploy_stats[instrument].pe_leg;
                 $(`#${ce_leg_id}`).find('.exit').click()
                 $(`#${pe_leg_id}`).find('.exit').click()
+
+                algo.deployed = false
+
+                let deploy_count = algo.deploy_stats[instrument].deploy_count
+                algo.deploy_stats[instrument] = {}      //Initialize empty object
+                algo.deploy_stats[instrument].deploy_count = deploy_count
+
+                if(deploy_count < conf.algo.retry_count)
+                    algo.run(instrument);   //Re-deploy if the premiums of ATM strikes are close enough
             } else {
-                setTimeout(function(){algo.monitor_straddle(instrument)}, conf.algo_monitor_interval)
+                setTimeout(function(){algo.monitor_straddle(instrument)}, conf.algo.monitor_interval)
             }
         },
     }
@@ -913,30 +978,30 @@ client_api = function () {
                     params = broker.order.map_order(params)
                 this.add_to_spot_order_list(params, entry_val)
             } else {
-                console.log("Going to place order " + JSON.stringify(params))
-                if(!is_paper_trade()) {
-                    broker.order.place_order(params, function (data) {
-                        if (success_cb != undefined) {  // Call custom function provided.. In case of exit, it needs to remove tr
-                            console.log("Success call back is provided. Will be called")
-                            success_cb(data)
-                        } else { // No custom function provided. Default actions
-                            console.log("Default place order call back called")
-                            orderbook.place_order_cb_carry_target_sl_to_active_trade(data)
-                        }
-                    })
-                } else {
-                    let ltp = tr_elm.find('.ltp').text()
-                    if(!isNaN(parseFloat(ltp)))
-                        orderbook.place_paper_trade(params, ltp)
-                    else
-                        show_error_msg("LTP is missing")
-                }
+                this.place_order(params, success_cb)
             }
 
             setTimeout(function() {
                 tr_elm.find('.buy').removeAttr('disabled');
                 tr_elm.find('.sell').removeAttr('disabled');
             }, 500)
+        },
+
+        place_order : function(params, success_cb) {
+            console.log("Going to place order " + JSON.stringify(params))
+            if(!is_paper_trade()) {
+                broker.order.place_order(params, function (data) {
+                    if (success_cb != undefined) {  // Call custom function provided.. In case of exit, it needs to remove tr
+                        console.log("Success call back is provided. Will be called")
+                        success_cb(data)
+                    } else { // No custom function provided. Default actions
+                        console.log("Default place order call back called")
+                        orderbook.place_order_cb_carry_target_sl_to_active_trade(data)
+                    }
+                })
+            } else {
+                orderbook.place_paper_trade(params, live_data[params['token']])
+            }
         },
 
         add_to_spot_order_list : function(item, entry_val) {

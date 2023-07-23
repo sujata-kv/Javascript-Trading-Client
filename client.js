@@ -1556,11 +1556,7 @@ client_api = function () {
                         }
                     })
                 } else {
-                    let ltp = tr_elm.find('.ltp').text()
-                    if(!isNaN(parseFloat(ltp)))
-                        orderbook.place_paper_trade(params, ltp)
-                    else
-                        show_error_msg("LTP is missing")
+                    orderbook.place_paper_trade(params, live_data[params['token']])
                 }
             }
 
