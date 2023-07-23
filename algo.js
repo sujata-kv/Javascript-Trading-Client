@@ -4,8 +4,12 @@ client_api = function () {
 
     let conf = {
         atm_strike_check_interval : 60000,
-        atm_premium_display_interval : 30000,
+        atm_premium_monitor_interval : 30000,
         algo_atm_pct_diff: 10,
+        algo_monitor_interval: 1000,
+        bank_nifty : {
+            tolerate_deviation : 180,
+        }
     }
     
     let alert_msg_disappear_after = 3000; // Unit milliseconds
@@ -534,7 +538,7 @@ client_api = function () {
                 })
                 $('#prem-display').prepend(str + "<br>")
             }
-            setTimeout(atm_tracker.display_atm_prices, conf.atm_premium_display_interval)
+            setTimeout(atm_tracker.display_atm_prices, conf.atm_premium_monitor_interval)
         },
     }
 
@@ -559,14 +563,14 @@ client_api = function () {
                 } else {
                     setTimeout(function () {
                         algo.run(instrument)
-                    }, conf.atm_premium_display_interval)
+                    }, conf.atm_premium_monitor_interval)
                 }
             }
         },
 
         deploy_straddle: function(instrument, atm_ce_pe) {
             algo.deploy_stats[instrument] = {}      //Initialize empty object
-            algo.deploy_stats[instrument].spot = atm_tracker.get_ltp(instrument); // Record the spot value
+            algo.deploy_stats[instrument].spot_value = atm_tracker.get_ltp(instrument); // Record the spot value
 
             //Deploy straddle
             atm_ce_pe.forEach(function (ce_pe_params) {
@@ -587,7 +591,8 @@ client_api = function () {
                         if(algo.deploy_stats[instrument].ce_leg != undefined
                             && algo.deploy_stats[instrument].pe_leg != undefined) {
                             $('#group_name').val(algo.get_straddle_name(instrument))
-                            util.grouping.group_selected();
+                            algo.deploy_stats[instrument].group = util.grouping.group_selected();
+                            algo.monitor_straddle(instrument)
                         }
                     }, 1000, selector, ce_pe_params.optt)
                 }, 300, row_css)
@@ -596,6 +601,21 @@ client_api = function () {
 
         get_straddle_name : function(instrument) {
             return instrument.toUpperCase().replace('_', '') + '-STRADDLE'
+        },
+
+        monitor_straddle: function(instrument) {
+            let cur_value = atm_tracker.get_ltp(instrument)
+            let diff = Math.abs(cur_value - algo.deploy_stats[instrument].spot_value);
+            if(diff > conf[instrument].tolerate_deviation) {
+                show_error_msg("Exiting "+ algo.deploy_stats[instrument].group.name +" as the spot moved beyond tolerable points of " + conf[instrument].tolerate_deviation , false)
+                //Close straddle
+                let ce_leg_id = algo.deploy_stats[instrument].ce_leg;
+                let pe_leg_id = algo.deploy_stats[instrument].pe_leg;
+                $(`#${ce_leg_id}`).find('.exit').click()
+                $(`#${pe_leg_id}`).find('.exit').click()
+            } else {
+                setTimeout(function(){algo.monitor_straddle(instrument)}, conf.algo_monitor_interval)
+            }
         },
     }
     
@@ -2477,6 +2497,7 @@ client_api = function () {
                     }
 
                     $('#group_name').val(''); //Reset group name
+                    return group
                 } else {
                     show_error_msg("No position is selected")
                 }
