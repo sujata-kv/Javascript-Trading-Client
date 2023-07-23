@@ -5,6 +5,7 @@ client_api = function () {
     let conf = {
         atm_strike_check_interval : 60000,
         atm_premium_display_interval : 30000,
+        algo_atm_pct_diff: 10,
     }
     
     let alert_msg_disappear_after = 3000; // Unit milliseconds
@@ -259,7 +260,7 @@ client_api = function () {
                         shoonya.subscribe_token('NFO|' + info1.token);
                         shoonya.subscribe_token('NFO|' + info2.token);
 
-                        console.log(instrument.toUpperCase() + " ATM strikes : ");
+                        console.log(instrument.toUpperCase() + " ATM strike: " + strike);
                         console.log(atm_tracker.atm_strike_details[instrument])
                     },
                     error: function (jqXHR, textStatus, errorThrown) {
@@ -538,7 +539,7 @@ client_api = function () {
     }
 
     const algo = {
-        legs : {ce_leg: '', pe_leg: ''},
+        deploy_stats : {},
         deployed : false,
         run : function(instrument) {
             console.log("Algo run function called")
@@ -549,19 +550,24 @@ client_api = function () {
                     let ltp2 = live_data[atm_ce_pe[1].token];
                     let pct_diff = Math.abs(ltp1 - ltp2) / Math.min(ltp1, ltp2);
                     console.log("Ltp1= " + ltp1 + " Ltp2= " + ltp2 + " %Diff = " + (pct_diff * 100).toFixed(0))
-                    if (pct_diff <= 0.1) {
-                        console.log("Deploying algo..")
-                        algo.deploy_straddle(atm_ce_pe)
+                    if (pct_diff <= conf.algo_atm_pct_diff/100) {
+                        console.log(`Deploying algo for ${instrument}..`)
+                        algo.deploy_straddle(instrument, atm_ce_pe)
+                    } else {
+                        console.log("Not deploying algo as the difference between premiums is more than "+ conf.algo_atm_pct_diff + "%")
                     }
                 } else {
                     setTimeout(function () {
                         algo.run(instrument)
-                    }, 10000)
+                    }, conf.atm_premium_display_interval)
                 }
             }
         },
 
-        deploy_straddle: function(atm_ce_pe) {
+        deploy_straddle: function(instrument, atm_ce_pe) {
+            algo.deploy_stats[instrument] = {}      //Initialize empty object
+            algo.deploy_stats[instrument].spot = atm_tracker.get_ltp(instrument); // Record the spot value
+
             //Deploy straddle
             atm_ce_pe.forEach(function (ce_pe_params) {
                 let row_css = watch_list.add_row_to_watch(ce_pe_params)
@@ -572,14 +578,25 @@ client_api = function () {
                     setTimeout(function(sel, optt) {
                         let row_id = $(sel).attr('id');
                         if(optt== "CE") {
-                            algo.legs.ce_leg = row_id;
+                            algo.deploy_stats[instrument].ce_leg = row_id;
                         } else if(optt=="PE") {
-                            algo.legs.pe_leg = row_id;
+                            algo.deploy_stats[instrument].pe_leg = row_id;
                         }
-                    }, 2000, selector, ce_pe_params.optt)
+                        $(sel).find('input:checkbox')[0].checked = true;
+
+                        if(algo.deploy_stats[instrument].ce_leg != undefined
+                            && algo.deploy_stats[instrument].pe_leg != undefined) {
+                            $('#group_name').val(algo.get_straddle_name(instrument))
+                            util.grouping.group_selected();
+                        }
+                    }, 1000, selector, ce_pe_params.optt)
                 }, 300, row_css)
             })
-        }
+        },
+
+        get_straddle_name : function(instrument) {
+            return instrument.toUpperCase().replace('_', '') + '-STRADDLE'
+        },
     }
     
     function update_ltp(selector, ltp) {
@@ -2603,7 +2620,7 @@ client_api = function () {
 
         setTimeout(atm_tracker.find_atm_strikes, 1000)
         setTimeout(atm_tracker.display_atm_prices, 3000)
-        setTimeout(function(){algo.run('bank_nifty')}, 60000)
+        // setTimeout(function(){algo.run('bank_nifty')}, 60000)
     }
 
     /*Attach functions to connect, add to watch list button, etc*/
