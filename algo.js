@@ -4,7 +4,7 @@ client_api = function () {
 
     let conf = {
         atm_strike_check_interval : 60000,
-        atm_premium_display_interval : 1000,
+        atm_premium_display_interval : 30000,
     }
     
     let alert_msg_disappear_after = 3000; // Unit milliseconds
@@ -226,7 +226,7 @@ client_api = function () {
         },
 
         search: {
-            search_strike: function (instrument, strike) {
+            search_subscribe_strike: function (instrument, strike) {
                 let params = {
                     "uid": user_id,
                     "stext": instrument.replace('_', '') + " " + strike
@@ -238,28 +238,28 @@ client_api = function () {
                     data: shoonya.get_payload(params),
                     success: function (data, textStatus, jqXHR) {
                         // console.log("Ajax success")
-                         let info = data.values[0];
-                         let info1 = data.values[1];
-                         atm_tracker.atm_strike_details[instrument] = [
-                             {
-                                 'optt': info['optt'],
-                                 'strike': strike,
-                                 'token': info['token'],
-                                 'tsym': info['tsym'],
-                                 'dname': info['dname']
-                             },
-                             {
-                                 'optt': info1['optt'],
-                                 'strike': strike,
-                                 'token': info1['token'],
-                                 'tsym': info1['tsym'],
-                                 'dname': info1['dname']
-                             },
-                         ]
+                        let info1 = data.values[0]; // One is CE other is PE
+                        let info2 = data.values[1];
+                        atm_tracker.atm_strike_details[instrument] = [ get_strike_details(info1, strike), get_strike_details(info2, strike)]
 
-                        shoonya.subscribe_token('NFO|' + info['token']);
-                        shoonya.subscribe_token('NFO|' + info1['token']);
+                        function get_strike_details(info, strike) {
+                            return {
+                                strike: strike,
+                                optt: info.optt,
+                                token: info.token,
+                                exch: info.exch,
+                                tsym: info.tsym,
+                                dname: info.dname,
+                                value: info.dname,
+                                lot_size: info.ls,
+                                algo : true,
+                            }
+                        }
 
+                        shoonya.subscribe_token('NFO|' + info1.token);
+                        shoonya.subscribe_token('NFO|' + info2.token);
+
+                        console.log(instrument.toUpperCase() + " ATM strikes : ");
                         console.log(atm_tracker.atm_strike_details[instrument])
                     },
                     error: function (jqXHR, textStatus, errorThrown) {
@@ -498,38 +498,89 @@ client_api = function () {
         },
 
         find_atm_strikes: function () {
-            instruments.forEach(function (instr) {
-                let strike = atm_tracker.find_atm_strike_price(instr);
-                let str = instr + "_" + strike
-                if (atm_tracker.atm_strikes[instr] !== str) {
-                    //New strike found
-                    console.log("New strike price found for " + instr + " " + strike)
-                    broker.search.search_strike(instr, strike)
-                    atm_tracker.atm_strikes[instr] = str;
-                }
-            })
+            if(logged_in) {
+                instruments.forEach(function (instr) {
+                    let strike = atm_tracker.find_atm_strike_price(instr);
+                    let str = instr + "_" + strike
+                    if (atm_tracker.atm_strikes[instr] !== str) {
+                        //New strike found
+                        console.log("New strike price found for " + instr + " " + strike)
+                        broker.search.search_subscribe_strike(instr, strike)
+                        atm_tracker.atm_strikes[instr] = str;
+                    }
+                })
+            }
             setTimeout(atm_tracker.find_atm_strikes, conf.atm_strike_check_interval); //Keep looping to find ATM strike price
         },
 
         display_atm_prices: function () {
-            var time = new Date().toLocaleTimeString();
-            let str = time.replace(/ AM| PM/, "") + " "
-            instruments.forEach(function (instr) {
-                str = str + instr.toUpperCase()[0]
-                let details = atm_tracker.atm_strike_details[instr]
-                str = str +"-<span class='strike'>"+ details[0]['strike'] + "</span> "
-                let ce_idx = 0, pe_idx = 1;
-                if (details[0]['optt'] === "PE") {
-                    ce_idx = 1;
-                    pe_idx = 0
-                }
-                let total_premium = parseFloat(live_data[details[ce_idx]['token']]) + parseFloat(live_data[details[pe_idx]['token']])
-                str = str + "<span class='prem'>" + total_premium.toFixed(0) + "</span> "
-            })
-            $('#screen').prepend(str + "<br>")
+            if(logged_in) {
+                var time = new Date().toLocaleTimeString();
+                let str = time.replace(/ AM| PM/, "") + " "
+                instruments.forEach(function (instr) {
+                    let details = atm_tracker.atm_strike_details[instr]
+                    str = str + instr.toUpperCase()[0]
+                    if (details != undefined && details.length == 2) {
+                        str = str + "-<span class='strike'>" + details[0]['strike'] + "</span> "
+                        let ce_idx = 0, pe_idx = 1;
+                        if (details[0]['optt'] === "PE") {
+                            ce_idx = 1;
+                            pe_idx = 0
+                        }
+                        let total_premium = parseFloat(live_data[details[ce_idx]['token']]) + parseFloat(live_data[details[pe_idx]['token']])
+                        str = str + "<span class='prem'>" + total_premium.toFixed(0) + "</span> "
+                    }
+                })
+                $('#prem-display').prepend(str + "<br>")
+            }
             setTimeout(atm_tracker.display_atm_prices, conf.atm_premium_display_interval)
         },
-    };
+    }
+
+    const algo = {
+        legs : {ce_leg: '', pe_leg: ''},
+        deployed : false,
+        run : function(instrument) {
+            console.log("Algo run function called")
+            if(!algo.deployed) {
+                let atm_ce_pe = atm_tracker.atm_strike_details[instrument]
+                if (atm_ce_pe != undefined && atm_ce_pe.length == 2) {   // CE and PE both present
+                    let ltp1 = live_data[atm_ce_pe[0].token];
+                    let ltp2 = live_data[atm_ce_pe[1].token];
+                    let pct_diff = Math.abs(ltp1 - ltp2) / Math.min(ltp1, ltp2);
+                    console.log("Ltp1= " + ltp1 + " Ltp2= " + ltp2 + " %Diff = " + (pct_diff * 100).toFixed(0))
+                    if (pct_diff <= 0.1) {
+                        console.log("Deploying algo..")
+                        algo.deploy_straddle(atm_ce_pe)
+                    }
+                } else {
+                    setTimeout(function () {
+                        algo.run(instrument)
+                    }, 10000)
+                }
+            }
+        },
+
+        deploy_straddle: function(atm_ce_pe) {
+            //Deploy straddle
+            atm_ce_pe.forEach(function (ce_pe_params) {
+                let row_css = watch_list.add_row_to_watch(ce_pe_params)
+                setTimeout(function (row_css) {
+                    $(row_css).find('.sell').click()
+                    algo.deployed = true
+                    let selector = (`#at-pool tr[token=${ce_pe_params.token}][exch=${ce_pe_params.exch}][trtype='S']`)
+                    setTimeout(function(sel, optt) {
+                        let row_id = $(sel).attr('id');
+                        if(optt== "CE") {
+                            algo.legs.ce_leg = row_id;
+                        } else if(optt=="PE") {
+                            algo.legs.pe_leg = row_id;
+                        }
+                    }, 2000, selector, ce_pe_params.optt)
+                }, 300, row_css)
+            })
+        }
+    }
     
     function update_ltp(selector, ltp) {
         $(selector).each(function(i, ltp_elm) {
@@ -818,6 +869,7 @@ client_api = function () {
             let qty = tr_elm.find('.qty').val()
 
             let params = broker.order.get_order_params(tr_elm, buy_sell, entry_obj, qty)
+            let algo = tr_elm.attr('algo')
             if (entry_obj.spot_based) {
                 params.dname = tr_elm.attr('dname')
                 if(broker.name != "shoonya")
@@ -2228,10 +2280,10 @@ client_api = function () {
 
             let ticker = broker.get_ticker(params);
 
-            $('#watch_list_body').append(`<tr class="${class_name}" exch="${params.exch}" token="${params.token}" instrument_token="${params.instrument_token}" tsym="${params.tsym}" lot_size="${params.lot_size}" dname="${params.sym}">
+            $('#watch_list_body').append(`<tr class="${class_name}" ${params.algo?'algo':''} exch="${params.exch}" token="${params.token}" instrument_token="${params.instrument_token}" tsym="${params.tsym}" lot_size="${params.lot_size}" dname="${params.dname}">
     
                 <td> <input type="checkbox" class="select_box" value="" onclick="client_api.util.uncheck(this)"> </td>
-                <td class="dname">${params.sym}</td>
+                <td class="dname">${params.dname}</td>
                 <td class="margin_req num"></td>
                 <td class="watch_${ticker} ltp" lot_size="${params.lot_size}"></td>
                 <td class="input_box"><input type="text" class="form-control entry" placeholder="" onclick="client_api.watch_list.add_ltp(this); $(this).unbind('click');"></td>  
@@ -2245,6 +2297,8 @@ client_api = function () {
                     </svg>
                 </td>
                </tr>`);
+
+            return `#watch_list_body tr[token=${params.token}]`;   //Class identifier for the row added
         },
 
         add_ltp : function(input_elm) {
@@ -2544,11 +2598,12 @@ client_api = function () {
         broker.search.attach_search_autocomplete();
         setTimeout(client_api.orderbook.update_open_orders, 100);
         setTimeout(client_api.trade.load_open_positions, 100);
-        setTimeout(client_api.watch_list.restore_watch_list, 100);
+        // setTimeout(client_api.watch_list.restore_watch_list, 100);
         setTimeout(client_api.trade.trigger, 1000);
 
-        setTimeout(atm_tracker.find_atm_strikes, 2000)
+        setTimeout(atm_tracker.find_atm_strikes, 1000)
         setTimeout(atm_tracker.display_atm_prices, 3000)
+        setTimeout(function(){algo.run('bank_nifty')}, 60000)
     }
 
     /*Attach functions to connect, add to watch list button, etc*/
@@ -2572,6 +2627,7 @@ client_api = function () {
         "mgr": milestone_manager,
         "order_mgr" : open_order_mgr,
         "toggle_paper_trade": toggle_paper_trade,
+        "algo" : algo,
     }
 
 }();

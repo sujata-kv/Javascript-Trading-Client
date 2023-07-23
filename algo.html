@@ -64,8 +64,8 @@
                     </div>
                 </div>
             </div>
-            <div class="d-flex flex-column align-items-stretch" style="width:100%; height: 350px; overflow-y:scroll;">
-                <div class="col"  id="screen">
+            <div class="d-flex flex-column align-items-stretch prem-disp" >
+                <div class="col"  id="prem-display">
 
                 </div>
             </div>
@@ -90,6 +90,7 @@
             </div>
 
             <div class="col-sm-4" style="text-align: right;">
+                <button type="button" class="btn btn-success buy col-sm-3" onclick="client_api.algo.run('bank_nifty')">Run Algo</button>
                 <input id="trade_type" type="checkbox" checked data-toggle="toggle"
                        onchange="client_api.toggle_paper_trade()"
                        data-on="Paper Trade" data-off="Real Trade" data-onstyle="warning" data-offstyle="success">
@@ -360,6 +361,14 @@
         padding: 30px 10px 20px 10px;
         width: 77%;
         padding-left:20px;
+    }
+
+    .prem-disp {
+        width:100%;
+        height: 350px;
+        overflow-y:scroll;
+        background-color: white;
+        padding-left: 5px;
     }
 
     table {
