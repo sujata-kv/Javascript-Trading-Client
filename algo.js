@@ -16,11 +16,11 @@ client_api = function () {
                 qty: 15,
             },
             nifty : {
-                tolerate_deviation: 70,
+                tolerate_deviation: 100,
                 qty: 50,
             },
             fin_nifty : {
-                tolerate_deviation: 80,
+                tolerate_deviation: 100,
                 qty: 40,
             }
         }
@@ -637,6 +637,7 @@ client_api = function () {
                 orderbook.place_order(broker.order.get_algo_order_params(ce_pe_params, "S"))
                 algo.deployed = true
                 let selector = (`#at-pool tr[token=${ce_pe_params.token}][exch=${ce_pe_params.exch}][trtype='S']`)
+                //TODO - use setInterval instead
                 setTimeout(function(sel, optt) {
                     let row_id = $(sel).attr('id');
                     if(optt== "CE") {

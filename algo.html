@@ -74,11 +74,11 @@
 
     <div class="d-flex flex-column align-items-stretch trade-panel">
         <div class="row">
-            <div class=" col-sm-4">
+            <div class=" col-sm-3">
                 <input type="text" class="form-control search-instrument watch_item"  value="" placeholder="Instrument" >
                 <div id="instr-drop-down" class="ui-front" style=""></div>
             </div>
-            <div class=" col-sm-4" style="padding-left:0px">
+            <div class=" col-sm-3" style="padding-left:0px">
                 <button class="btn btn-primary mb-3" id="add_to_watchlist" onclick="client_api.watch_list.add_to_watchlist()">Add To Watchlist</button>
                 <button class="btn btn-secondary mb-3" onclick="$('input.search-instrument').val('')">Clear</button>
                 <span class="del-icon" onclick="client_api.watch_list.delete()" title="Delete selected rows" style="position: relative; top:-7px;">
@@ -89,8 +89,13 @@
                 </span>
             </div>
 
-            <div class="col-sm-4" style="text-align: right;">
-                <button type="button" class="btn btn-success" onclick="client_api.algo.run('bank_nifty')">Run Algo</button>
+            <div class="col-sm-6" style="text-align: right;">
+                <select id="select_instrument" onchange="" style="width:20%">
+                    <option selected value="bank_nifty">Bank-nifty</option>
+                    <option value="nifty">Nifty</option>
+                    <option value="fin_nifty">Fin-nifty</option>
+                </select>
+                <button type="button" class="btn btn-success" onclick="client_api.algo.run($('#select_instrument')[0].value)">Run Algo</button>
                 <input id="trade_type" type="checkbox" checked data-toggle="toggle"
                        onchange="client_api.toggle_paper_trade()"
                        data-on="Paper Trade" data-off="Real Trade" data-onstyle="warning" data-offstyle="success">
