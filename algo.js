@@ -23,7 +23,7 @@ client_api = function () {
                 round_to: 50,
             },
             fin_nifty : {
-                tolerate_deviation: 100,
+                tolerate_deviation: 180,
                 qty: 40,
                 round_to: 50,
             }
