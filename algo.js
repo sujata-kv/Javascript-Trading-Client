@@ -612,16 +612,16 @@ client_api = function () {
                     let ltp1 = live_data[atm_ce_pe[0].token];
                     let ltp2 = live_data[atm_ce_pe[1].token];
                     let pct_diff = Math.abs(ltp1 - ltp2) / Math.min(ltp1, ltp2);
-                    console.log("Ltp1= " + ltp1 + " Ltp2= " + ltp2 + " %Diff = " + (pct_diff * 100).toFixed(0))
+                    console.log(atm_ce_pe[0].strike + "  Ltp1= " + ltp1 + " Ltp2= " + ltp2 + " % Diff = " + (pct_diff * 100).toFixed(0))
                     if (pct_diff <= conf.algo.atm_pct_diff/100) {
                         console.log(`Deploying algo for ${instrument}..`)
                         algo.deploy_straddle(instrument, atm_ce_pe)
                     } else {
                         console.log("Not deploying algo as the difference between ATM premiums is more than "+ conf.algo.atm_pct_diff + "%")
-                        setTimeout(function() {algo.run(instrument);}, conf.atm_premium_monitor_interval)
+                        setTimeout(function() {algo.run(instrument);}, conf.algo.monitor_interval)
                     }
                 } else {
-                    setTimeout(function() {algo.run(instrument);}, conf.atm_premium_monitor_interval)
+                    setTimeout(function() {algo.run(instrument);}, conf.algo.monitor_interval)
                 }
             }
         },
