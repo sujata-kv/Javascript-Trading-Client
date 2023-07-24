@@ -406,7 +406,7 @@ client_api = function () {
                 let tsym = params.tsym;
                 let dname = params.dname;
                 let token = params.token;
-                let qty = params.qty;
+                let qty = params.qty.toString();
                 let instrument_token = params.instrument_token;
                 let exch = params.exch;
 
