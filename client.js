@@ -1192,8 +1192,13 @@ client_api = function () {
                 if (kite_positions == undefined)
                     return undefined
                 let day_positions = kite_positions.data.day
+                let net_positions = kite_positions.data.net
                 let std_positions = []
                 for (const kite_position of day_positions) {
+                    let std_pos = this.map_position(kite_position);
+                    std_positions.push(std_pos);
+                }
+                for (const kite_position of net_positions) {
                     let std_pos = this.map_position(kite_position);
                     std_positions.push(std_pos);
                 }
