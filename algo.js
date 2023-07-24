@@ -5,7 +5,7 @@ client_api = function () {
     let conf = {
         atm_strike_check_interval : 60000,
         atm_premium_monitor_interval : 30000,
-        target_sl_check_interval: 500,
+        target_sl_check_interval: 1000,
         algo: {
             atm_pct_diff: 10,
             profit_pct : 10,
@@ -15,14 +15,17 @@ client_api = function () {
             bank_nifty: {
                 tolerate_deviation: 180,
                 qty: 15,
+                round_to: 100,
             },
             nifty : {
                 tolerate_deviation: 100,
                 qty: 50,
+                round_to: 50,
             },
             fin_nifty : {
                 tolerate_deviation: 100,
                 qty: 40,
+                round_to: 50,
             }
         },
     }
@@ -538,12 +541,13 @@ client_api = function () {
         atm_strikes: {},
 
         find_atm_strike_price: function (instrument) {
-            let mod = Math.round(this.get_ltp(instrument) % 100);
+            let round_to = conf.algo[instrument].round_to;
+            let mod = Math.round(this.get_ltp(instrument) % round_to);
             let strike_price;
-            if (mod < 50)
-                strike_price = Math.floor(this.get_ltp(instrument) / 100) * 100;
+            if (mod < round_to/2)
+                strike_price = Math.floor(this.get_ltp(instrument) / round_to) * round_to;
             else
-                strike_price = Math.ceil(this.get_ltp(instrument) / 100) * 100;
+                strike_price = Math.ceil(this.get_ltp(instrument) / round_to) * round_to;
             return strike_price
         },
 
