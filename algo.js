@@ -7,7 +7,7 @@ client_api = function () {
         atm_premium_monitor_interval : 30000,
         algo: {
             atm_pct_diff: 10,
-            monitor_interval: 10000,
+            monitor_interval: 1000,
             retry_count : 5,
             bank_nifty: {
                 tolerate_deviation: 180,

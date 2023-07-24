@@ -22,7 +22,7 @@
                             <input type="text"  class="form-control form-control-sm user-id"  placeholder="User" value="FA90807">
                         </div>
                         <div class="col-auto">
-                            <input type="text" class="form-control form-control-sm session-token" placeholder="Session Token" value="3ee4727f6ffcbe1c1fa335c4d9ca7b245e8c02381d2c5097fcb6580970533c65">
+                            <input type="text" class="form-control form-control-sm session-token" placeholder="Session Token" value="e1e1045fe4b606a73f7f080c73cdde3ae7e66f437bb02c719ebdfaf2df612786">
                         </div>
                     </div>
                 </div>
@@ -90,7 +90,7 @@
             </div>
 
             <div class="col-sm-4" style="text-align: right;">
-                <button type="button" class="btn btn-success buy col-sm-3" onclick="client_api.algo.run('bank_nifty')">Run Algo</button>
+                <button type="button" class="btn btn-success" onclick="client_api.algo.run('bank_nifty')">Run Algo</button>
                 <input id="trade_type" type="checkbox" checked data-toggle="toggle"
                        onchange="client_api.toggle_paper_trade()"
                        data-on="Paper Trade" data-off="Real Trade" data-onstyle="warning" data-offstyle="success">
@@ -143,7 +143,7 @@
                 <input id="group_name" style="text-transform: uppercase"  type="text" class="form-control"  value="" placeholder="Group name" >
                 <!--                <div class="ui-front" style=""></div>-->
             </div>
-            <div class="col-md-4" style="padding-left:0px">
+            <div class="col-sm-6" style="padding-left:0px">
                 <button class="btn btn-primary mb-3" onclick="client_api.util.grouping.group_selected()">Group Selected</button>
                 <button class="btn btn-danger mb-3" onclick="client_api.util.grouping.exit_group('#at-pool')" title="Close selected trades">Exit</button>
                 <span class="del-icon" onclick="client_api.util.grouping.delete('#at-pool')" title="Delete the closed trades" style="position: relative; top:-7px;">
@@ -154,7 +154,7 @@
                 </span>
             </div>
 
-            <div class="col-md-4">
+            <div class="col-sm-2">
                 <button class="btn btn-danger" type="button" style="float:right" onclick="client_api.trade.exit_all_positions()" title="Cancels all the open orders and closes all the open positions">
                     KILL SWITCH
                 </button>
@@ -207,17 +207,17 @@
         <hr class="hr hr-blurry" />
 
         <div class="row" id="tabs">
-            <div class="custom-tab col-sm-2" style="margin-left:12px">
+            <div class="custom-tab col-sm-3" style="margin-left:12px">
                 <button class="btn btn-warning " type="button" onclick="client_api.orderbook.update_open_orders()">
                     Open Orders
                 </button>
             </div>
-            <div class="custom-tab  col-sm-2">
+            <div class="custom-tab  col-sm-3">
                 <button class="btn btn-secondary" type="button" onclick="client_api.orderbook.show_orderbook()">
                     Order book
                 </button>
             </div>
-            <div class="custom-tab  col-sm-2">
+            <div class="custom-tab  col-sm-3">
                 <button class="btn btn-primary" type="button" onclick="client_api.positions.show_positions()">
                     Positions
                 </button>
