@@ -7,6 +7,8 @@ client_api = function () {
         atm_premium_monitor_interval : 30000,
         algo: {
             atm_pct_diff: 10,
+            profit_pct : 10,
+            loss_pct : 10,
             monitor_interval: 1000,
             retry_count : 5,
             bank_nifty: {
@@ -649,7 +651,9 @@ client_api = function () {
                         algo.deploy_stats[instrument].deploy_count = algo.deploy_stats[instrument].deploy_count==undefined? 1: algo.deploy_stats[instrument].deploy_count+1;
                         $('#group_name').val(algo.get_straddle_name(instrument, algo.deploy_stats[instrument].deploy_count))
                         algo.deploy_stats[instrument].group = util.grouping.group_selected();
-                        algo.monitor_straddle(instrument)
+                        algo.set_target(instrument);
+                        algo.set_sl(instrument);
+                        algo.monitor_straddle(instrument);
                     }
                 }, 1000, selector, ce_pe_params.optt)
             })
@@ -657,6 +661,51 @@ client_api = function () {
 
         get_straddle_name : function(instrument, count) {
             return instrument.toUpperCase().replace('_', '') + '-STRADDLE-' + count
+        },
+
+        set_target : function(instrument) {
+            let entry_price1 = parseFloat($(`#${algo.deploy_stats[instrument].ce_leg}`).find('.entry .price').text());
+            let entry_price2 = parseFloat($(`#${algo.deploy_stats[instrument].pe_leg}`).find('.entry .price').text());
+            let total_prem = entry_price1 + entry_price2;
+            let target = (Math.round((total_prem * conf.algo.profit_pct * conf.algo[instrument].qty)/ 100)).toString();
+            let row_id = `summary-${algo.deploy_stats[instrument].group.id}`;
+            $(`#${row_id}`).attr('ttype', 'algo')
+            $(`#${row_id}`).attr('instrument', instrument)
+            $(`#${row_id}`).find('.target').val(target)
+
+            let ticker = broker.get_ticker({'token': 'algo-token', 'instrument_token': 'algo-instrument_token'})
+            if(target != undefined && target != '' ) {
+                milestone_manager.add_target(row_id, ticker, 'straddle', 'sell', milestone_manager.get_value_object(target))
+            } else
+                milestone_manager.remove_target(row_id)
+        },
+
+        set_sl : function(instrument) {
+            let entry_price1 = parseFloat($(`#${algo.deploy_stats[instrument].ce_leg}`).find('.entry .price').text());
+            let entry_price2 = parseFloat($(`#${algo.deploy_stats[instrument].pe_leg}`).find('.entry .price').text());
+            let total_prem = entry_price1 + entry_price2;
+            let sl = (-Math.round((total_prem * conf.algo.loss_pct * conf.algo[instrument].qty)/ 100)).toString();
+            let row_id = `summary-${algo.deploy_stats[instrument].group.id}`;
+            $(`#${row_id}`).attr('ttype', 'algo')
+            $(`#${row_id}`).attr('instrument', instrument)
+            $(`#${row_id}`).find('.sl').val(sl)
+
+            let ticker = broker.get_ticker({'token': 'algo-token', 'instrument_token': 'algo-instrument_token'})
+            if(sl != undefined && sl != '' ) {
+                milestone_manager.add_sl(row_id, ticker, 'straddle', 'sell', milestone_manager.get_value_object(sl))
+            } else
+                milestone_manager.remove_sl(row_id)
+        },
+
+        exit_cb : function(instrument) {
+            algo.deployed = false
+
+            let deploy_count = algo.deploy_stats[instrument].deploy_count
+            algo.deploy_stats[instrument] = {}      //Initialize empty object
+            algo.deploy_stats[instrument].deploy_count = deploy_count
+
+            if(deploy_count < conf.algo.retry_count)
+                algo.run(instrument);   //Re-deploy if the premiums of ATM strikes are close enough
         },
 
         monitor_straddle: function(instrument) {
@@ -670,14 +719,7 @@ client_api = function () {
                 $(`#${ce_leg_id}`).find('.exit').click()
                 $(`#${pe_leg_id}`).find('.exit').click()
 
-                algo.deployed = false
-
-                let deploy_count = algo.deploy_stats[instrument].deploy_count
-                algo.deploy_stats[instrument] = {}      //Initialize empty object
-                algo.deploy_stats[instrument].deploy_count = deploy_count
-
-                if(deploy_count < conf.algo.retry_count)
-                    algo.run(instrument);   //Re-deploy if the premiums of ATM strikes are close enough
+                algo.exit_cb(instrument)
             } else {
                 setTimeout(function(){algo.monitor_straddle(instrument)}, conf.algo.monitor_interval)
             }
@@ -1281,6 +1323,9 @@ client_api = function () {
                 let summary_row_id = `summary-${group_id}`;
                 milestone_manager.remove_milestone(summary_row_id);
                 $(`#${summary_row_id} th input.target, #${summary_row_id} th input.sl`).val("")  //Reset UI
+                if($(`#${summary_row_id}`).attr('ttype')==='algo') {
+                    algo.exit_cb($(`#${summary_row_id}`).attr('instrument'));
+                }
             }
         },
 
