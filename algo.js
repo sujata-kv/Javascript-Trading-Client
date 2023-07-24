@@ -7,7 +7,7 @@ client_api = function () {
         atm_premium_monitor_interval : 30000,
         target_sl_check_interval: 500,
         algo: {
-            atm_pct_diff: 50,
+            atm_pct_diff: 10,
             profit_pct : 10,
             loss_pct : 10,
             monitor_interval: 1000,
