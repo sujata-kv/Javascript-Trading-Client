@@ -5,8 +5,9 @@ client_api = function () {
     let conf = {
         atm_strike_check_interval : 60000,
         atm_premium_monitor_interval : 30000,
+        target_sl_check_interval: 500,
         algo: {
-            atm_pct_diff: 10,
+            atm_pct_diff: 50,
             profit_pct : 10,
             loss_pct : 10,
             monitor_interval: 1000,
@@ -23,7 +24,7 @@ client_api = function () {
                 tolerate_deviation: 100,
                 qty: 40,
             }
-        }
+        },
     }
     
     let alert_msg_disappear_after = 3000; // Unit milliseconds
@@ -636,28 +637,34 @@ client_api = function () {
             atm_ce_pe.forEach(function (ce_pe_params) {
                 orderbook.place_order(broker.order.get_algo_order_params(ce_pe_params, "S"))
                 algo.deployed = true
-                let selector = (`#at-pool tr[token=${ce_pe_params.token}][exch=${ce_pe_params.exch}][trtype='S']`)
+                let selector = (`#at-pool tr[token=${ce_pe_params.token}][exch=${ce_pe_params.exch}][qty=${ce_pe_params.qty}][trtype='S']`)
                 //TODO - use setInterval instead
-                setTimeout(function(sel, optt) {
-                    let row_id = $(sel).attr('id');
-                    if(optt== "CE") {
+                algo[ce_pe_params.optt + "-interval"] = setInterval(group_legs, conf.algo.monitor_interval, selector, ce_pe_params.optt)
+            })
+
+            function group_legs(sel, optt) {
+                let row_id = $(sel).attr('id');
+                console.log("Group legs : ", row_id)
+                if(row_id != undefined) {
+                    clearInterval(algo[optt + "-interval"])
+                    if (optt == "CE") {
                         algo.deploy_stats[instrument].ce_leg = row_id;
-                    } else if(optt=="PE") {
+                    } else if (optt == "PE") {
                         algo.deploy_stats[instrument].pe_leg = row_id;
                     }
                     $(sel).find('input:checkbox')[0].checked = true;
 
-                    if(algo.deploy_stats[instrument].ce_leg != undefined
+                    if (algo.deploy_stats[instrument].ce_leg != undefined
                         && algo.deploy_stats[instrument].pe_leg != undefined) {
-                        algo.deploy_stats[instrument].deploy_count = algo.deploy_stats[instrument].deploy_count==undefined? 1: algo.deploy_stats[instrument].deploy_count+1;
+                        algo.deploy_stats[instrument].deploy_count = algo.deploy_stats[instrument].deploy_count == undefined ? 1 : algo.deploy_stats[instrument].deploy_count + 1;
                         $('#group_name').val(algo.get_straddle_name(instrument, algo.deploy_stats[instrument].deploy_count))
                         algo.deploy_stats[instrument].group = util.grouping.group_selected();
                         algo.set_target(instrument);
                         algo.set_sl(instrument);
                         algo.monitor_straddle(instrument);
                     }
-                }, 1000, selector, ce_pe_params.optt)
-            })
+                }
+            }
         },
 
         get_straddle_name : function(instrument, count) {
@@ -676,7 +683,7 @@ client_api = function () {
 
             let ticker = broker.get_ticker({'token': 'algo-token', 'instrument_token': 'algo-instrument_token'})
             if(target != undefined && target != '' ) {
-                milestone_manager.add_target(row_id, ticker, 'straddle', 'sell', milestone_manager.get_value_object(target))
+                milestone_manager.add_target(row_id, ticker, instrument + '_straddle', 'sell', milestone_manager.get_value_object(target))
             } else
                 milestone_manager.remove_target(row_id)
         },
@@ -693,7 +700,7 @@ client_api = function () {
 
             let ticker = broker.get_ticker({'token': 'algo-token', 'instrument_token': 'algo-instrument_token'})
             if(sl != undefined && sl != '' ) {
-                milestone_manager.add_sl(row_id, ticker, 'straddle', 'sell', milestone_manager.get_value_object(sl))
+                milestone_manager.add_sl(row_id, ticker, instrument + '_straddle', 'sell', milestone_manager.get_value_object(sl))
             } else
                 milestone_manager.remove_sl(row_id)
         },
@@ -1842,7 +1849,7 @@ client_api = function () {
                 }
             }
 
-            setTimeout(trade.trigger, 500)
+            setTimeout(trade.trigger, conf.target_sl_check_interval)
 
             function check_entry_trigger(row_id, mile_stone) {
                 let cur_value = 0;

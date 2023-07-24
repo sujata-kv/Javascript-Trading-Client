@@ -91,11 +91,11 @@
 
             <div class="col-sm-6" style="text-align: right;">
                 <select id="select_instrument" onchange="" style="width:20%">
-                    <option selected value="bank_nifty">Bank-nifty</option>
+                    <option selected value="bank_nifty">Bank-Nifty</option>
                     <option value="nifty">Nifty</option>
-                    <option value="fin_nifty">Fin-nifty</option>
+                    <option value="fin_nifty">Fin-Nifty</option>
                 </select>
-                <button type="button" class="btn btn-success" onclick="client_api.algo.run($('#select_instrument')[0].value)">Run Algo</button>
+                <button type="button" class="btn btn-success" onclick="$(this).attr('disabled', 'disabled');client_api.algo.run($('#select_instrument')[0].value);">Run Algo</button>
                 <input id="trade_type" type="checkbox" checked data-toggle="toggle"
                        onchange="client_api.toggle_paper_trade()"
                        data-on="Paper Trade" data-off="Real Trade" data-onstyle="warning" data-offstyle="success">
