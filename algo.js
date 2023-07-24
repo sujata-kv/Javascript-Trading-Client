@@ -2373,7 +2373,7 @@ client_api = function () {
 
             //Add to watched items
             watch_list.watched_items[`${params.exch}_${params.token}`] = JSON.stringify(params)
-            watch_list.save_watch_list()
+            // watch_list.save_watch_list()
 
             let class_name = ''
             if(params.put_option) {
@@ -2414,7 +2414,7 @@ client_api = function () {
             let token = tr_elm.attr('token')
 
             delete watch_list.watched_items[`${exch}_${token}`]
-            watch_list.save_watch_list()
+            // watch_list.save_watch_list()
 
             tr_elm.remove();
         },
