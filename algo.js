@@ -23,7 +23,7 @@ client_api = function () {
                 round_to: 50,
             },
             fin_nifty : {
-                tolerate_deviation: 80,
+                tolerate_deviation: 100,
                 qty: 40,
                 round_to: 50,
             }
@@ -2333,6 +2333,7 @@ client_api = function () {
         },
 
         exit_all_positions : function() {
+            conf.algo.retry_count = 0;  //To make sure that algo doesn't place new trade
             if(!is_paper_trade()) {
                 $('#open_orders tr').each(function (index, tr_elm) {
                     $(tr_elm).find('.cancel').click()
@@ -2340,6 +2341,7 @@ client_api = function () {
             }
 
             trade.close_all_trades()
+            console.log("Switching off algo. Page needs to be refreshed before placing new algo");
         },
     };
 
