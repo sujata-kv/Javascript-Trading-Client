@@ -2622,9 +2622,9 @@ client_api = function () {
                     if($('#at-pool').children().length === 0) {
                         let parent_checkbox = $('#at-pool').parent().find('thead input:checkbox');
                         parent_checkbox[0].checked = false;
-                        trade.reset_max_profit_loss('at-pool');
                     }
 
+                    trade.reset_max_profit_loss('at-pool');
                     $('#group_name').val(''); //Reset group name
                     return group
                 } else {
