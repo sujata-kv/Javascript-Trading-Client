@@ -885,7 +885,7 @@ client_api = function () {
                     autoFocus: true,
                     appendTo: '#instr-drop-down',
                     source: function (request, response) {
-                        const results = kite.search.search_for_key(encodeURIComponent(request.term))
+                        const results = kite.search.search_for_key(request.term)
                         response(results)
                     },
 
