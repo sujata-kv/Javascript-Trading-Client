@@ -231,7 +231,7 @@ client_api = function () {
                     autoFocus: true,
                     appendTo: '#instr-drop-down',
                     source: function (request, response) {
-                        params = {"uid": user_id, "stext": request.term}
+                        params = {"uid": user_id, "stext": encodeURIComponent(request.term)}
                         $.ajax({
                             url: shoonya.url.search_instrument,
                             type: "POST",
@@ -321,8 +321,8 @@ client_api = function () {
                 values["trantype"] = buy_or_sell;
                 values["prd"] = prd;
                 values["exch"] = exch;
-                values["tsym"] = tsym;
-                values["dname"] = dname;
+                values["tsym"] = encodeURIComponent(tsym);
+                values["dname"] = encodeURIComponent(dname);
                 values["token"] = token;
                 values["instrument_token"] = instrument_token;
                 values["qty"] = qty;
@@ -370,7 +370,7 @@ client_api = function () {
                 values["uid"] = user_id;
                 values["actid"] = user_id;
                 values["exch"] = tr_elm.attr('exch');
-                values["tsym"] = tr_elm.attr('tsym');
+                values["tsym"] = encodeURIComponent(tr_elm.attr('tsym'));
                 values["qty"] = qty;
                 values["prctyp"] = prctyp;
                 values["prc"] = price;
@@ -885,7 +885,7 @@ client_api = function () {
                     autoFocus: true,
                     appendTo: '#instr-drop-down',
                     source: function (request, response) {
-                        const results = kite.search.search_for_key(request.term)
+                        const results = kite.search.search_for_key(encodeURIComponent(request.term))
                         response(results)
                     },
 
@@ -1052,7 +1052,7 @@ client_api = function () {
                 let payload = {
                     variety: variety,
                     exchange: tr_elm.attr('exch'),
-                    tradingsymbol: tr_elm.attr('tsym'),
+                    tradingsymbol: encodeURIComponent(tr_elm.attr('tsym')),
                     transaction_type: tr_elm.attr('trtype') == 'B' ? 'BUY' : 'SELL',
                     order_type: prctyp,
                     quantity: qty,
@@ -1103,8 +1103,8 @@ client_api = function () {
                 } else price = entry_obj.value;
 
                 let remarks = "";
-                let tsym = tr_elm.attr('tsym');
-                let dname = tr_elm.attr('dname');
+                let tsym = encodeURIComponent(tr_elm.attr('tsym'));
+                let dname = encodeURIComponent(tr_elm.attr('dname'));
                 let token = tr_elm.attr('token');
                 let instrument_token = tr_elm.attr('instrument_token');
                 if (entry_obj.value == '') {

@@ -300,7 +300,7 @@ client_api = function () {
                     autoFocus: true,
                     appendTo: '#instr-drop-down',
                     source: function (request, response) {
-                        params = {"uid": user_id, "stext": request.term}
+                        params = {"uid": user_id, "stext": encodeURIComponent(request.term)}
                         $.ajax({
                             url: shoonya.url.search_instrument,
                             type: "POST",
@@ -359,8 +359,8 @@ client_api = function () {
 
                 let prctyp = 'LMT', price = "0.0";
                 let remarks = "";
-                let tsym = elm.attr('tsym');
-                let dname = elm.attr('dname');
+                let tsym = encodeURIComponent(elm.attr('tsym'));
+                let dname = encodeURIComponent(elm.attr('dname'));
                 let token = elm.attr('token');
                 let instrument_token = elm.attr('instrument_token');
                 if (entry.value == '') {
@@ -409,8 +409,8 @@ client_api = function () {
             get_algo_order_params : function(params, buy_or_sell) {
                 let prctyp = 'MKT', price = "0.0";
                 let remarks = "";
-                let tsym = params.tsym;
-                let dname = params.dname;
+                let tsym = encodeURIComponent(params.tsym);
+                let dname = encodeURIComponent(params.dname);
                 let token = params.token;
                 let qty = params.qty.toString();
                 let instrument_token = params.instrument_token;
@@ -485,7 +485,7 @@ client_api = function () {
                 values["uid"] = user_id;
                 values["actid"] = user_id;
                 values["exch"] = tr_elm.attr('exch');
-                values["tsym"] = tr_elm.attr('tsym');
+                values["tsym"] = encodeURIComponent(tr_elm.attr('tsym'));
                 values["qty"] = qty;
                 values["prctyp"] = prctyp;
                 values["prc"] = price;
