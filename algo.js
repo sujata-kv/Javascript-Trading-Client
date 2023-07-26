@@ -1261,6 +1261,9 @@ client_api = function () {
             order.remarks = (order.remarks === undefined)? order.tag : order.remarks
             order.tsym = (order.tsym === undefined)? order.tradingsymbol : order.tsym
 
+            order.tsym = decodeURIComponent(order.tsym)
+            order.dname = decodeURIComponent(order.dname)
+
             ++unique_row_id;
             let row_id = "row_id_" + unique_row_id;
             milestone_manager.add_order_id(row_id, order_id);
