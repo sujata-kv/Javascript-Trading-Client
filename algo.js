@@ -1933,9 +1933,9 @@ client_api = function () {
                             cur_spot_value = parseFloat(cur_spot_value)
                     }
                     else {
-                        // cur_spot_value = live_data[mile_stone.token]; //Check for LTP of the instrument
-                        let pnl = $(`#${row_id}`).find('.pnl').text()
-                        cur_spot_value = parseFloat(pnl)
+                        cur_spot_value = live_data[mile_stone.token]; //Check for LTP of the instrument
+                        /*let pnl = $(`#${row_id}`).find('.pnl').text()
+                        cur_spot_value = parseFloat(pnl)*/
                     }
                 }
 
@@ -1952,22 +1952,22 @@ client_api = function () {
                         }
                     }
                 } else if(target_obj.instrument === "price") {  //Price based
-                    // if(row_id.startsWith("summary-")) {
-                    if (cur_spot_value >= trig_value) {
-                        target_triggered()
+                    if(row_id.startsWith("summary-")) {
+                        if (cur_spot_value >= trig_value) {
+                            target_triggered()
+                        }
+                    } else {
+                        // Instrument LTP based checking
+                        if (buy_sell === 'B') {
+                            if (cur_spot_value >= trig_value) {
+                                target_triggered()
+                            }
+                        } else if (buy_sell === 'S') {
+                            if (cur_spot_value <= trig_value) {
+                                target_triggered()
+                            }
+                        }
                     }
-                    // }
-                    /*
-                    // Instrument LTP based checking
-                    if (buy_sell === 'B') {
-                        if(cur_spot_value >= trig_value) {
-                            target_triggered()
-                        }
-                    } else if (buy_sell === 'S') {
-                        if(cur_spot_value <= trig_value) {
-                            target_triggered()
-                        }
-                    }*/
                 }
 
                 function target_triggered() {
@@ -2010,9 +2010,9 @@ client_api = function () {
                         if (cur_spot_value != undefined)
                             cur_spot_value = parseFloat(cur_spot_value)
                     } else {
-                        // cur_spot_value = live_data[mile_stone.token];  //Check for LTP of the instrument
-                        let pnl = $(`#${row_id}`).find('.pnl').text()
-                        cur_spot_value = parseFloat(pnl)
+                        cur_spot_value = live_data[mile_stone.token];  //Check for LTP of the instrument
+                        /*let pnl = $(`#${row_id}`).find('.pnl').text()
+                        cur_spot_value = parseFloat(pnl)*/
                     }
                 }
 
@@ -2028,11 +2028,11 @@ client_api = function () {
                         }
                     }
                 } else if(sl_obj.instrument === "price") {
-                    // if(row_id.startsWith("summary-")) {
-                    if (cur_spot_value <= trig_value) {
-                        sl_triggered()
-                    }
-                    /*} else {      // Instrument LTP based checking has to be this way
+                    if(row_id.startsWith("summary-")) {
+                        if (cur_spot_value <= trig_value) {
+                            sl_triggered()
+                        }
+                    } else {      // Instrument LTP based checking has to be this way
                         if (buy_sell === 'B') {
                             if (cur_spot_value <= trig_value) {
                                 sl_triggered()
@@ -2042,7 +2042,7 @@ client_api = function () {
                                 sl_triggered()
                             }
                         }
-                    }*/
+                    }
                 }
 
                 function sl_triggered() {
@@ -2108,7 +2108,7 @@ client_api = function () {
             }
 
             let ticker = broker.get_ticker(order)
-            let className= "";//(ttype==="bear")?"table-danger":" ";
+            let className= (ttype==="bear")?"table-danger":" ";
 
             let tbody_elm = $('#at-pool');
             // let remarks = order.remarks.substring(0, order.remarks.indexOf(" Vix"));
@@ -2315,7 +2315,8 @@ client_api = function () {
                     let position = trade.getTradePosition(ticker, pos.exch, trtype, qty);
                     if(position.length == 0) { //Add new position only if it doesn't exist
                         console.log("Position doesn't exist in active trades. So adding it..")
-                        $('#at-pool').append(`<tr id="row_id_${++unique_row_id}" exch="${pos.exch}" token="${ticker}" instrument_token="${ticker}" tsym="${pos.tsym}" qty="${qty}" ttype="${ttype}" trtype="${trtype}" prd="${pos.prd}" trade="active">
+                        let className= (ttype==="bear")?"table-danger":" ";
+                        $('#at-pool').append(`<tr id="row_id_${++unique_row_id}" class="${className}" exch="${pos.exch}" token="${ticker}" instrument_token="${ticker}" tsym="${pos.tsym}" qty="${qty}" ttype="${ttype}" trtype="${trtype}" prd="${pos.prd}" trade="active">
                             <td> <input type="checkbox" class="select_box" value="" onclick="client_api.util.uncheck(this)"> </td>
                             <td>${buy_sell}</td>
                             <td>${dname}</td>
