@@ -1288,7 +1288,6 @@ client_api = function () {
                 broker.order.exit_order(values, function (data) {
                     if (data.stat.toUpperCase() === "OK") {
                         let orderno = data.norenordno;
-                        orderbook.update_open_orders();
 
                         open_order_mgr.add_exit(orderno)
 
@@ -1298,6 +1297,8 @@ client_api = function () {
                                 open_order_mgr.remove_order_id(orderno)
                             }
                         })(tr_elm))
+
+                        orderbook.update_open_orders();  // This line was before add_exit() call above. Moved to see if it fixes the kill-switch bug
                     } else
                         show_error_msg(data.emsg);
                 });
@@ -2335,7 +2336,7 @@ client_api = function () {
             }
         },
 
-        exit_all_positions : function() {
+        exit_all_positions : function(kill_switch_btn) {
             conf.algo.retry_count = 0;  //To make sure that algo doesn't place new trade
             if(!is_paper_trade()) {
                 $('#open_orders tr').each(function (index, tr_elm) {
@@ -2345,6 +2346,7 @@ client_api = function () {
 
             trade.close_all_trades()
             console.log("Switching off algo. Page needs to be refreshed before placing new algo");
+            setTimeout(function(btn) {$(btn).removeAttr('disabled')}, 5000, kill_switch_btn)
         },
     };
 

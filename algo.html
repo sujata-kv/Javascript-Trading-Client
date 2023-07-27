@@ -22,7 +22,7 @@
                             <input type="text"  class="form-control form-control-sm user-id"  placeholder="User" value="FA90807">
                         </div>
                         <div class="col-auto">
-                            <input type="text" class="form-control form-control-sm session-token" placeholder="Session Token" value="19047c7c654a3e049865f8e8e1660848bf3e441f0fc86ee526d68c98e1d25c9c">
+                            <input type="text" class="form-control form-control-sm session-token" placeholder="Session Token" value="0c7085d4ee6fc8db799e20b054d9de32cbc0d09d9593429a5839596224e12ecf">
                         </div>
                     </div>
                 </div>
@@ -160,7 +160,7 @@
             </div>
 
             <div class="col-sm-2">
-                <button class="btn btn-danger" type="button" style="float:right" onclick="client_api.trade.exit_all_positions()" title="Cancels all the open orders and closes all the open positions">
+                <button class="btn btn-danger" type="button" style="float:right" onclick="$(this).attr('disabled', 'disabled');client_api.trade.exit_all_positions(this)" title="Cancels all the open orders and closes all the open positions">
                     KILL SWITCH
                 </button>
             </div>
