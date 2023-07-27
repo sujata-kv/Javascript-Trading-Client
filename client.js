@@ -286,7 +286,7 @@ client_api = function () {
         },
 
         order : {
-            get_order_params: function (elm, buy_or_sell, entry, qty) {
+            get_order_params: function (elm, buy_or_sell, entry, qty, prd='') {
 
                 let prctyp = 'LMT', price = "0.0";
                 let remarks = "";
@@ -301,9 +301,9 @@ client_api = function () {
                 let exch = elm.attr('exch');
                 /* "C" For CNC, "M" FOR NRML, "I" FOR MIS, "B" FOR BRACKET ORDER, "H" FOR COVER ORDER*/
                 if (exch == "NSE" || exch == "BSE") {
-                    prd = "I";
+                    prd = prd==""?"I":prd;
                 } else {
-                    prd = "M";
+                    prd = prd==""?"M":prd;
                     if (tsym != undefined) {
                         if (tsym.startsWith("NIFTY"))
                             remarks = "N-" + Math.round(live_data[nifty_tk])
@@ -1095,7 +1095,7 @@ client_api = function () {
                 })
             },
 
-            get_order_params: function (tr_elm, buy_or_sell, entry_obj, qty) {
+            get_order_params: function (tr_elm, buy_or_sell, entry_obj, qty, prd='') {
 
                 let prctyp = 'LIMIT', price = "0.0";
                 if (entry_obj.value == '') {
@@ -1114,9 +1114,9 @@ client_api = function () {
                 let exch = tr_elm.attr('exch');
 
                 if (exch == "NSE" || exch == "BSE") {
-                    prd = "MIS";
+                    prd = prd==""?"MIS":prd;
                 } else {
-                    prd = "NRML";
+                    prd = prd==""?"MIS":prd;
                     if (tsym != undefined) {
                         if (tsym.startsWith("NIFTY"))
                             remarks = "N-" + Math.round(live_data[nifty_tk])
@@ -1783,10 +1783,11 @@ client_api = function () {
             let to_be_closed_order_id = tr_elm.attr('ordid')
             let limit_value = tr_elm.find('.exit-limit').val()
             let qty = tr_elm.find('.qty').val()
+            let prd = tr_elm.attr('prd')
 
             let buy_sell= tr_elm.attr('trtype') == 'B' ? 'S' : 'B'; // Do the opposite
             let exit_limit = milestone_manager.get_value_object(limit_value);
-            let values = broker.order.get_order_params(tr_elm, buy_sell, exit_limit, qty)
+            let values = broker.order.get_order_params(tr_elm, buy_sell, exit_limit, qty, prd)
 
             if(!is_paper_trade()) {
                 broker.order.exit_order(values, function (data) {
@@ -1805,6 +1806,8 @@ client_api = function () {
                     } else
                         show_error_msg(data.emsg);
                 });
+                $(td_elm).attr('disabled', 'disabled');
+                setTimeout(function(td_elm){$(td_elm).removeAttr('disabled')}, 5000, td_elm)
             } else {
                 values.avgprc = tr_elm.find('.ltp').text()
                 values.norentm = new Date().toLocaleTimeString()
@@ -1868,14 +1871,14 @@ client_api = function () {
                                 console.log("Calling " + action + " on complete cb")
                                 oncomplete_cb(matching_order, orders);
                                 setTimeout(function(){
-                                    console.log("Playing sound now..")
+                                    console.log("Playing complete order sound..")
                                     document.getElementById('notify3').play()
                                 }, 10);
                                 break;
                             case "REJECTED":
                                 orderbook.display_order_exec_msg(matching_order);
                                 setTimeout(function(){
-                                    console.log("Playing sound now..")
+                                    console.log("Playing rejected order sound..")
                                     document.getElementById('notify1').play()
                                 }, 10);
                                 break;
@@ -2611,7 +2614,7 @@ client_api = function () {
             // let remarks = order.remarks.substring(0, order.remarks.indexOf(" Vix"));
             let remarks = order.remarks;
 
-            tbody_elm.append(`<tr id="${row_id}" class="${className}" ordid="${order.norenordno}"  exch="${order.exch}" token="${order.token}" instrument_token="${order.instrument_token}" qty="${order.qty}" tsym="${order.tsym}" ttype="${ttype}" trtype="${order.trantype}" trade="active">
+            tbody_elm.append(`<tr id="${row_id}" class="${className}" ordid="${order.norenordno}"  exch="${order.exch}" token="${order.token}" instrument_token="${order.instrument_token}" qty="${order.qty}" tsym="${order.tsym}" ttype="${ttype}" trtype="${order.trantype}" prd="${order.prd}" trade="active">
                         <td> <input type="checkbox" class="select_box" value="" onclick="client_api.util.uncheck(this)"> </td>
                         <td>${buy_sell}</td>
                         <td class="instrument">${dname}</td>
@@ -2812,7 +2815,7 @@ client_api = function () {
                     let position = trade.getTradePosition(ticker, pos.exch, trtype, qty);
                     if(position.length == 0) { //Add new position only if it doesn't exist
                         console.log("Position doesn't exist in active trades. So adding it..")
-                        $('#at-pool').append(`<tr id="row_id_${++unique_row_id}" exch="${pos.exch}" token="${ticker}" instrument_token="${ticker}" tsym="${pos.tsym}" qty="${qty}" ttype="${ttype}" trtype="${trtype}" trade="active">
+                        $('#at-pool').append(`<tr id="row_id_${++unique_row_id}" exch="${pos.exch}" token="${ticker}" instrument_token="${ticker}" tsym="${pos.tsym}" qty="${qty}" ttype="${ttype}" trtype="${trtype}" prd="${pos.prd}" trade="active">
                             <td> <input type="checkbox" class="select_box" value="" onclick="client_api.util.uncheck(this)"> </td>
                             <td>${buy_sell}</td>
                             <td>${dname}</td>
