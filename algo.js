@@ -1059,7 +1059,7 @@ client_api = function () {
                     }
                 })
             } else {
-                orderbook.place_paper_trade(params, broker.get_ticker(params))
+                orderbook.place_paper_trade(params, live_data[broker.get_ticker(params)])
             }
         },
 
