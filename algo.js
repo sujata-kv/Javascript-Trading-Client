@@ -2303,7 +2303,7 @@ client_api = function () {
                     buy_sell = '<span class="badge bg-danger">Sell</span>'
                     trtype='S'
                 }
-                pos.transtype = trtype;
+                pos.trantype = trtype;
                 let ttype = orderbook.know_bull_or_bear(pos)
                 qty = (qty < 0)? -1 * qty:qty; // Make it positive if it is negative
                 let dname = (pos.dname != undefined) ? pos.dname : pos.tsym;

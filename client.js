@@ -763,7 +763,7 @@ client_api = function () {
                     if (columns[i_name] != undefined) {
                         const name = columns[i_name].replace(/"/g, '');
                         const dname = getDname(name, columns)
-                        if (name === "NIFTY" || name === "BANKNIFTY" || name === "FINNIFTY" || columns[i_instrument_type] === "FUT") {
+                        if (name === "NIFTY" || name === "BANKNIFTY" || name === "FINNIFTY" || name === "SENSEX" || columns[i_instrument_type] === "FUT") {
                             let obj = {
                                 'value': dname,
                                 // 'label' : columns[i_tradingsymbol],
@@ -2803,7 +2803,7 @@ client_api = function () {
                     buy_sell = '<span class="badge bg-danger">Sell</span>'
                     trtype='S'
                 }
-                pos.transtype = trtype;
+                pos.trantype = trtype;
                 let ttype = orderbook.know_bull_or_bear(pos)
                 qty = (qty < 0)? -1 * qty:qty; // Make it positive if it is negative
                 let dname = (pos.dname != undefined) ? pos.dname : pos.tsym;
