@@ -2281,7 +2281,7 @@ client_api = function () {
                 console.log('total now = ' + total + ' group_pnl = ' + group_pnl)
             })
 
-            $('#gross_pnl').text(total.toFixed(2))
+            $('#gross_pnl').text(total.toFixed(0))
             if(total < 0) {
                 $('#gross_pnl').removeClass('pos-mtm')
                 $('#gross_pnl').addClass('neg-mtm')
