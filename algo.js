@@ -8,8 +8,8 @@ client_api = function () {
         target_sl_check_interval: 1000,
         algo: {
             atm_pct_diff: 10,
-            profit_pct : 10,
-            loss_pct : 10,
+            profit : 1000,
+            loss : -1000,
             monitor_interval: 1000,
             retry_count : 4,
             bank_nifty: {
@@ -687,7 +687,8 @@ client_api = function () {
             let entry_price1 = parseFloat($(`#${algo.deploy_stats[instrument].ce_leg}`).find('.entry .price').text());
             let entry_price2 = parseFloat($(`#${algo.deploy_stats[instrument].pe_leg}`).find('.entry .price').text());
             let total_prem = entry_price1 + entry_price2;
-            let target = (Math.round((total_prem * conf.algo.profit_pct * conf.algo[instrument].qty)/ 100)).toString();
+            // let target = (Math.round((total_prem * conf.algo.profit_pct * conf.algo[instrument].qty)/ 100)).toString();
+            let target = conf.algo.profit.toString();
             let row_id = `summary-${algo.deploy_stats[instrument].group.id}`;
             $(`#${row_id}`).find('.target').val(target)
 
@@ -702,7 +703,8 @@ client_api = function () {
             let entry_price1 = parseFloat($(`#${algo.deploy_stats[instrument].ce_leg}`).find('.entry .price').text());
             let entry_price2 = parseFloat($(`#${algo.deploy_stats[instrument].pe_leg}`).find('.entry .price').text());
             let total_prem = entry_price1 + entry_price2;
-            let sl = (-Math.round((total_prem * conf.algo.loss_pct * conf.algo[instrument].qty)/ 100)).toString();
+            // let sl = (-Math.round((total_prem * conf.algo.loss_pct * conf.algo[instrument].qty)/ 100)).toString();
+            let sl = conf.algo.loss.toString();
             let row_id = `summary-${algo.deploy_stats[instrument].group.id}`;
             $(`#${row_id}`).find('.sl').val(sl)
 
@@ -1772,6 +1774,25 @@ client_api = function () {
             }
         },
 
+        update_gross_pnl : function() {
+            let total = 0
+            $('#active_trades_div tfoot th.pnl').each(function() {
+                let group_pnl = parseFloat($(this).text().trim());
+                if(!isNaN(group_pnl))
+                    total += group_pnl;
+                console.log('total now = ' + total + ' group_pnl = ' + group_pnl)
+            })
+
+            $('#gross_pnl').text(total.toFixed(2))
+            if(total < 0) {
+                $('#gross_pnl').removeClass('pos-mtm')
+                $('#gross_pnl').addClass('neg-mtm')
+            } else {
+                $('#gross_pnl').removeClass('neg-mtm')
+                $('#gross_pnl').addClass('pos-mtm')
+            }
+        },
+
         update_total_pnl : function(group_id) {
             let total = 0
 
@@ -1794,6 +1815,7 @@ client_api = function () {
                 $('#ms-profit-' + group_id).text(ret['profit'].toFixed(2))
                 $('#ms-loss-' + group_id).text(ret['loss'].toFixed(2))
             }
+            return total
         },
 
         calculate_pnl: function(params)  {
@@ -1864,6 +1886,8 @@ client_api = function () {
                     check_sl_trigger(row_id, mile_stone)
                 }
             }
+
+            trade.update_gross_pnl();
 
             setTimeout(trade.trigger, conf.target_sl_check_interval)
 

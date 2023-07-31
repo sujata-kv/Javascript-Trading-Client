@@ -2272,6 +2272,26 @@ client_api = function () {
             }
         },
 
+        update_gross_pnl : function() {
+            let total = 0
+            $('#active_trades_div tfoot th.pnl').each(function() {
+                let group_pnl = parseFloat($(this).text().trim());
+                if(!isNaN(group_pnl))
+                    total += group_pnl;
+                console.log('total now = ' + total + ' group_pnl = ' + group_pnl)
+            })
+
+            $('#gross_pnl').text(total.toFixed(2))
+            if(total < 0) {
+                $('#gross_pnl').removeClass('pos-mtm')
+                $('#gross_pnl').addClass('neg-mtm')
+            } else {
+                $('#gross_pnl').removeClass('neg-mtm')
+                $('#gross_pnl').addClass('pos-mtm')
+            }
+        },
+
+
         update_total_pnl : function(group_id) {
             let total = 0
 
@@ -2294,6 +2314,7 @@ client_api = function () {
                 $('#ms-profit-' + group_id).text(ret['profit'].toFixed(2))
                 $('#ms-loss-' + group_id).text(ret['loss'].toFixed(2))
             }
+            return total;
         },
 
         calculate_pnl: function(params)  {
@@ -2364,6 +2385,8 @@ client_api = function () {
                     check_sl_trigger(row_id, mile_stone)
                 }
             }
+
+            trade.update_gross_pnl();
 
             setTimeout(trade.trigger, 500)
 
