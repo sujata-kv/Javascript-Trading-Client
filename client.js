@@ -1782,6 +1782,7 @@ client_api = function () {
             let tr_elm = $(td_elm).parent().parent();
             let to_be_closed_order_id = tr_elm.attr('ordid')
             let limit_value = tr_elm.find('.exit-limit').val()
+            tr_elm.find('.exit-limit').val(''); //Reset once used
             let qty = tr_elm.find('.qty').val()
             let prd = tr_elm.attr('prd')
 
@@ -2650,7 +2651,7 @@ client_api = function () {
                         <td class="pnl"></td>
                         <td><input type="text" disabled class="form-control target" placeholder="" value=""></td>
                         <td><input type="text" disabled class="form-control sl" placeholder="" value="" ></td>
-                        <td><input type="text" class="form-control exit-limit" placeholder="" ></td>
+                        <td><input type="text" class="form-control exit-limit" placeholder="" onclick="client_api.watch_list.add_ltp(this); $(this).unbind('click');"></td>
                         <td><input type="text" class="form-control qty" placeholder=""  value="${order.qty}"></td>
                         <td><button type="button" class="btn btn-success modify" onclick="client_api.trade.modify(this, $(this).text())">Edit</button></td>
                         <td><button type="button" class="btn btn-danger exit" onclick="client_api.trade.exit(this)">Exit</button></td>
@@ -2852,7 +2853,7 @@ client_api = function () {
                             <td class="pnl"></td>
                             <td><input type="text" disabled class="form-control target" placeholder="" ></td>
                             <td><input type="text" disabled class="form-control sl" placeholder="" ></td>
-                            <td><input type="text" class="form-control exit-limit" placeholder="" ></td>
+                            <td><input type="text" class="form-control exit-limit" placeholder="" onclick="client_api.watch_list.add_ltp(this); $(this).unbind('click');"></td>
                             <td><input type="text" class="form-control qty" placeholder=""  value="${qty}"></td>
                             <td><button type="button" class="btn btn-success modify" onclick="client_api.trade.modify(this, $(this).text())">Edit</button></td>
                             <td><button type="button" class="btn btn-danger exit" onclick="client_api.trade.exit(this)">Exit</button></td>
