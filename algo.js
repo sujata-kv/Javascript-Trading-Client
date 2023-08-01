@@ -11,7 +11,7 @@ client_api = function () {
             profit : 1000,
             loss : -1000,
             monitor_interval: 1000,
-            retry_count : 4,
+            retry_count : 2,
             bank_nifty: {
                 tolerate_deviation: 180,
                 qty: 15,
@@ -1783,7 +1783,7 @@ client_api = function () {
                     total += group_pnl;
             })
 
-            $('#gross_pnl').text(total.toFixed(0))
+            $('#gross_pnl').text(new Intl.NumberFormat().format(total.toFixed(0)))
             if(total < 0) {
                 $('#gross_pnl').removeClass('pos-mtm')
                 $('#gross_pnl').addClass('neg-mtm')

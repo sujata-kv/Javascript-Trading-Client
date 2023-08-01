@@ -2281,7 +2281,7 @@ client_api = function () {
                     total += group_pnl;
             })
 
-            $('#gross_pnl').text(total.toFixed(0))
+            $('#gross_pnl').text(new Intl.NumberFormat().format(total.toFixed(0)))
             if(total < 0) {
                 $('#gross_pnl').removeClass('pos-mtm')
                 $('#gross_pnl').addClass('neg-mtm')
