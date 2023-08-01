@@ -957,7 +957,7 @@ client_api = function () {
                     'prctyp': kite_order.order_type,
                     'norentm': kite_order.exchange_timestamp,
                     'exch_time': kite_order.exchange_timestamp,
-                    'reject_reason': kite_order.status_message,
+                    'rejreason': kite_order.status_message,
                     'remarks': kite_order.tag,
                     'prd': kite_order.product,
                     'exchordid': kite_order.exchange_order_id,
