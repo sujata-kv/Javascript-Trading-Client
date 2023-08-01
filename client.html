@@ -24,7 +24,7 @@
                             <input type="text"  class="form-control form-control-sm user-id"  placeholder="User" value="FA90807">
                         </div>
                         <div class="col-auto">
-                            <input type="text" class="form-control form-control-sm session-token" placeholder="Session Token" value="2c31c73502767851d07854f81b02ede3785cc4bfbcc18beadeb4b7c3b95e58a6">
+                            <input type="text" class="form-control form-control-sm session-token" placeholder="Session Token" value="a652efb3dd3970dbca460c0965f52a6380a89895f4fe32e7bb900c33bd6dc077">
                         </div>
                     </div>
 
@@ -33,7 +33,7 @@
                             <input type="text"  class="form-control form-control-sm user-id"  placeholder="User" value="VC1177">    <!-- FZ0468 -->
                         </div>
                         <div class="col-auto">
-                            <input type="text" class="form-control form-control-sm session-token" placeholder="Session Token" value="m8MCQr7XFVioIg/4D+omVS3A01Mu4sTVcCV+90I8NVyF9u3/AK6ZTYWZHC97nqY9xqyFLFyBD3/UrQFEgHP+vAwTiSKXU/eH/GO7UIhb9XdPUWpo3hfWOA==">
+                            <input type="text" class="form-control form-control-sm session-token" placeholder="Session Token" value="iNMgkvkYRVEI1z7JY18DK+915EsI+rNV8F4jusF02ndw9mTvNdvZ7mOaLvwdZ0FvuZdHgFQvBAc1Pj6k4RNXNUcMiId0u7RunAoQys4htnvBn9BZaIlPWg==">
                         </div>
                     </div>
                 </div>
@@ -166,9 +166,9 @@
                         <path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/>
                     </svg>
                 </span>
-                <div class='gross-pnl' style="float:right">
+                <div class='gross-pnl'>
                     <span class="pnl">Total P&L: </span>
-                    <span id="gross_pnl" class="pnl"></span>
+                    <span id="gross_pnl" class="pnl" style="float:right;"></span>
                 </div>
             </div>
 
@@ -445,6 +445,14 @@
     #tabs {
         padding-bottom: 15px;
     }
+
+    div.gross-pnl {
+        float: right;
+        width: 225px;
+        border: 2px solid orange;
+        padding: 5px 15px;
+    }
+
     .gross-pnl span {
         font-size: 25px;
         color:darkcyan;

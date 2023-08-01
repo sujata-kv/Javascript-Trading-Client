@@ -2279,7 +2279,6 @@ client_api = function () {
                 let group_pnl = parseFloat($(this).text().trim());
                 if(!isNaN(group_pnl))
                     total += group_pnl;
-                console.log('total now = ' + total + ' group_pnl = ' + group_pnl)
             })
 
             $('#gross_pnl').text(total.toFixed(0))
