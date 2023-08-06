@@ -7,6 +7,7 @@ client_api = function () {
         atm_premium_monitor_interval : 30000,
         target_sl_check_interval: 1000,
         algo: {
+            strategy : "short",  // "long" or "short"..  Long straddle or Short straddle
             atm_pct_diff: 10,
             profit : 1000,
             loss : -1000,
@@ -640,10 +641,15 @@ client_api = function () {
         deploy_straddle: function(instrument, atm_ce_pe) {
             algo.deploy_stats[instrument] = algo.deploy_stats[instrument] || {}      //Initialize empty object
             algo.deploy_stats[instrument].spot_value = atm_tracker.get_ltp(instrument); // Record the spot value
+            let buy_or_sell = "S";
+            let strategy = conf.algo.strategy.trim().toLowerCase()
+            if( strategy == "long") {
+                buy_or_sell = "B";      //Default is sell
+            }
 
             //Deploy straddle
             atm_ce_pe.forEach(function (ce_pe_params) {
-                orderbook.place_order(broker.order.get_algo_order_params(ce_pe_params, "S"))
+                orderbook.place_order(broker.order.get_algo_order_params(ce_pe_params, buy_or_sell))
                 algo.deployed = true;
                 algo.deploying = false;
                 let selector = (`#at-pool tr[token=${ce_pe_params.token}][exch=${ce_pe_params.exch}][qty=${ce_pe_params.qty}][trtype='S']`)
