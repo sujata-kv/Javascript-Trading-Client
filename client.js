@@ -3190,8 +3190,13 @@ client_api = function () {
 
             exit_group : function(group_selector, target_sl_triggered=false) {
                 let count = 0;
-                $(group_selector).find('tr[trtype="S"]').each(function(){close(this);})
-                $(group_selector).find('tr[trtype="B"]').each(function(){close(this);})
+                if($(group_selector).find('tr[trtype="S"]').length > 0) {
+                    $(group_selector).find('tr[trtype="S"]').each(function (){ close(this);})
+                    setTimeout(function() {
+                        $(group_selector).find('tr[trtype="B"]').each(function () {close(this);})
+                    }, 500);
+                } else
+                    $(group_selector).find('tr[trtype="B"]').each(function () {close(this);})       //Only buy positions are present
 
                 if(count == 0)
                     show_error_msg("No position selected to exit")
