@@ -2875,6 +2875,15 @@ client_api = function () {
             trade.close_all_trades()
             setTimeout(function(btn) {$(btn).removeAttr('disabled')}, 5000, kill_switch_btn)
         },
+
+        exit_at_eom : function() {  //Exit @ End of market hours, i.e. @ 3:25 PM
+            var now = new Date();
+            var timeDiff = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 15, 25, 0, 0) - now;
+            client_api.trade.exit_handler = setTimeout(function(){
+                client_api.trade.exit_all_positions();
+                client_api.show_success_msg("Exited all positions")
+            }, timeDiff);
+        },
     };
 
     const watch_list = {
@@ -3267,6 +3276,16 @@ client_api = function () {
         }
     };
 
+    const toggle_exit_at_eom = function() {
+        let exit_on = document.getElementById('exit_at_eom').checked == false
+        if(exit_on) {
+            client_api.trade.exit_at_eom();
+        } else {
+            clearTimeout(client_api.trade.exit_handler);
+            delete client_api.trade.exit_handler
+        }
+    };
+
     const is_paper_trade = function() {
         return document.getElementById('trade_type').checked == true
     };
@@ -3324,6 +3343,7 @@ client_api = function () {
         "show_success_msg" : show_success_msg,
         "show_error_msg" : show_error_msg,
         "toggle_paper_trade": toggle_paper_trade,
+        "toggle_exit_at_eom" : toggle_exit_at_eom,
         "connect_to_server" : connect_to_server,
         "select_broker" : select_broker,
     }

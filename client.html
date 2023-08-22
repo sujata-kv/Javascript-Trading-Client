@@ -24,17 +24,16 @@
                             <input type="text"  class="form-control form-control-sm user-id"  placeholder="User" value="FA90807">
                         </div>
                         <div class="col-auto">
-                            <input type="text" class="form-control form-control-sm session-token" placeholder="Session Token" value="a652efb3dd3970dbca460c0965f52a6380a89895f4fe32e7bb900c33bd6dc077">
+                            <input type="text" class="form-control form-control-sm session-token" placeholder="Session Token" value="edea0b995e301436a75715895dfe8fbade28395eabdde09a92bb40eaab0464e5">
                         </div>
                     </div>
 
                     <div class="form-row align-items-center kite-creds d-none"  style="padding-top:10px;">
                         <div class="col-auto">
-                            <input type="text"  class="form-control form-control-sm user-id"  placeholder="User" value="VC1177">    <!--  FZ0468-->
+                            <input type="text"  class="form-control form-control-sm user-id"  placeholder="User" value="FZ0468">    <!-- VC1177 -->
                         </div>
-                        <div class="col-auto"> <!--
-                                                    iNMgkvkYRVEI1z7JY18DK+915EsI+rNV8F4jusF02ndw9mTvNdvZ7mOaLvwdZ0FvuZdHgFQvBAc1Pj6k4RNXNUcMiId0u7AoQys4htnvBn9BZaIlPWg==    -->
-                            <input type="text" class="form-control form-control-sm session-token" placeholder="Session Token" value="Yn7sP7y4tyfi+lpOJ9vBqIpf/6GbTPm5c+jsGg1zwYqT//ehhj0VR2nyR8sUrnGVjIjdwIgdtl9SROhrROZ2RFwdobW2sxwB7PbvtOVC7tYJiviCeFzmvw==">
+                        <div class="col-auto"> <!-- A7gLqregLSx8AH8caQhi5hG1gpsf5/mzt+jhzxLjsIz43eOE1du2RNyfzh5ddOl2y2W9PQwLMJgk5WF6xu9Uc3U1kmUZHBGFJX44yMOxKCOZONOj6e+nqQ== -->
+                            <input type="text" class="form-control form-control-sm session-token" placeholder="Session Token" value="Y5wG9aApUECPUt81RTCWo/0VBAmT59Z8RhtW7nZ3UwMttsFNUnH3PIKO9Vp8zeIycxaZQFYaQJYTQY4Z0qIK6zpRXw8CFZVDNDVoiw/LuDp9/SaD+Hikiw==">
                         </div>
                     </div>
                 </div>
@@ -105,7 +104,12 @@
                 </span>
             </div>
 
-            <div class="col-sm-4" style="text-align: right;">
+            <div class="col-sm-2" style="text-align: right;">
+                <input id="exit_at_eom" type="checkbox" checked data-toggle="toggle"
+                       onchange="client_api.toggle_exit_at_eom()"
+                       data-on="No auto exit" data-off="Exit @ 3:25" data-onstyle="info" data-offstyle="danger">
+            </div>
+            <div class="col-sm-2" style="text-align: right;">
                 <input id="trade_type" type="checkbox" checked data-toggle="toggle"
                        onchange="client_api.toggle_paper_trade()"
                        data-on="Paper Trade" data-off="Real Trade" data-onstyle="warning" data-offstyle="success">
