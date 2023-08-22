@@ -2879,10 +2879,12 @@ client_api = function () {
         exit_at_eom : function() {  //Exit @ End of market hours, i.e. @ 3:25 PM
             var now = new Date();
             var timeDiff = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 15, 25, 0, 0) - now;
-            client_api.trade.exit_handler = setTimeout(function(){
-                client_api.trade.exit_all_positions();
-                client_api.show_success_msg("Exited all positions")
-            }, timeDiff);
+            if (timeDiff > 0) {
+                client_api.trade.exit_handler = setTimeout(function () {
+                    client_api.trade.exit_all_positions();
+                    client_api.show_success_msg("Exited all positions")
+                }, timeDiff);
+            }
         },
     };
 
