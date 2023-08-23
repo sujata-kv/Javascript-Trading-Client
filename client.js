@@ -2880,9 +2880,9 @@ client_api = function () {
             var now = new Date();
             var timeDiff = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 15, 25, 0, 0) - now;
             if (timeDiff > 0) {
-                client_api.trade.exit_handler = setTimeout(function () {
-                    client_api.trade.exit_all_positions();
-                    client_api.show_success_msg("Exited all positions")
+                trade.exit_handler = setTimeout(function () {
+                    trade.close_all_trades();
+                    show_success_msg("Exited all positions")
                 }, timeDiff);
             }
         },
@@ -3284,7 +3284,7 @@ client_api = function () {
             client_api.trade.exit_at_eom();
         } else {
             clearTimeout(client_api.trade.exit_handler);
-            delete client_api.trade.exit_handler
+            delete trade.exit_handler
         }
     };
 
