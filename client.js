@@ -3,7 +3,7 @@ client_api = window.client_api || {};
 client_api = function () {
     let conf = {
         alert_profit_threshold : 25, //Alert once the profit % exceeds the specified value
-        alert_loss_threshold : 25, //Alert once the loss % exceeds the specified value
+        alert_loss_threshold : 50, //Alert once the loss % exceeds the specified value
     }
 
     let alert_msg_disappear_after = 3000; // Unit milliseconds
@@ -2309,6 +2309,7 @@ client_api = function () {
             if (!isNaN(total)) {
                 let total_pnl_elm = $('#pnl-' + group_id)
                 const row_id = 'summary-' + group_id;
+                const notify = $('#notify-' + group_id)
                 if (total < 0) {
                     total_pnl_elm.css('color', 'red')
 
@@ -2316,16 +2317,22 @@ client_api = function () {
                     let total_margin = parseFloat($(`#${group_id}`).attr('total-margin'))
                     let loss_pct = (total*(-1)*100)/total_margin
                     if (loss_pct >= conf.alert_loss_threshold) {
-                        document.getElementById('notify2').play()
+                        if(notify.children().length == 0) {
+                            document.getElementById('notify2').play()
+                            notify.html('<i class="bi bi-bell-fill neg-mtm" style="cursor:pointer" onclick="client_api.trade.ack_notify(this)" title="Acknowledge"> </i>')
+                        }
                     }
                 } else {
                     total_pnl_elm.css('color', 'green')
 
                     //Check if the profit exceeds the alert threshold
                     let total_margin = parseFloat($(`#${group_id}`).attr('total-margin'))
-                    let profit_pct = (total*(-1)*100)/total_margin
+                    let profit_pct = (total*100)/total_margin
                     if (profit_pct >= conf.alert_profit_threshold) {
-                        document.getElementById('notify1').play()
+                        if(notify.children().length == 0) {
+                            document.getElementById('notify1').play()
+                            notify.html('<i class="bi bi-bell-fill pos-mtm" style="cursor:pointer" onclick="client_api.trade.ack_notify(this)" title="Acknowledge"> </i>')
+                        }
                     }
                 }
                 let ret = this.get_max_profit_loss(row_id, total);
@@ -2631,6 +2638,12 @@ client_api = function () {
             $('#active_trades_div tfoot tr').each(function(index, tr_elm) {
                 milestone_manager.remove_milestone($(tr_elm).attr('id'));
             })
+        },
+
+        ack_notify(elm){
+            /*$(elm).removeClass("bi-bell-fill");
+            $(elm).addClass("bi-bell-slash-fill");*/
+            $(elm).parent().html('')
         },
 
         update_total_margin: function (tbody_elm) {
@@ -3293,7 +3306,7 @@ client_api = function () {
                     <tbody id="${group.id}" name="${group.name}"> </tbody>
                     <tfoot>
                         <tr id="summary-${group.id}" token="${group.id}" ttype="bull">
-                            <th scope="col"></th>
+                            <th scope="col" id="notify-${group.id}"></th>
                             <th scope="col"></th>
                             <th scope="col" class="max-profit-loss"></th>
                             <th scope="col">${group.name.toUpperCase()}</th>

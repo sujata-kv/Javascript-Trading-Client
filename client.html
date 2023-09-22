@@ -24,16 +24,16 @@
                             <input type="text"  class="form-control form-control-sm user-id"  placeholder="User" value="FA90807">
                         </div>
                         <div class="col-auto">
-                            <input type="text" class="form-control form-control-sm session-token" placeholder="Session Token" value="edea0b995e301436a75715895dfe8fbade28395eabdde09a92bb40eaab0464e5">
+                            <input type="text" class="form-control form-control-sm session-token" placeholder="Session Token" value="c7a1a9cce887bd7985614b42234e3d302d34937134a30a1eeee6e61712418906">
                         </div>
                     </div>
 
                     <div class="form-row align-items-center kite-creds d-none"  style="padding-top:10px;">
                         <div class="col-auto">
-                            <input type="text"  class="form-control form-control-sm user-id"  placeholder="User" value="FZ0468">    <!-- VC1177 -->
+                            <input type="text"  class="form-control form-control-sm user-id"  placeholder="User" value="VC1177">    <!--  FZ0468 -->
                         </div>
-                        <div class="col-auto"> <!-- A7gLqregLSx8AH8caQhi5hG1gpsf5/mzt+jhzxLjsIz43eOE1du2RNyfzh5ddOl2y2W9PQwLMJgk5WF6xu9Uc3U1kmUZHBGFJX44yMOxKCOZONOj6e+nqQ== -->
-                            <input type="text" class="form-control form-control-sm session-token" placeholder="Session Token" value="Y5wG9aApUECPUt81RTCWo/0VBAmT59Z8RhtW7nZ3UwMttsFNUnH3PIKO9Vp8zeIycxaZQFYaQJYTQY4Z0qIK6zpRXw8CFZVDNDVoiw/LuDp9/SaD+Hikiw==">
+                        <div class="col-auto"> <!--  B4eKtIHA0QwbX7KWia1umFbRKle1nLuQpb/hnkXV4Q2nZELsJCZBZWColRXFLhM6QS9lgVz4RmGXjOaeAXb2UBFTdT0ZI9EPglZuqT9uysOr7mHmhFhLxA==  -->
+                            <input type="text" class="form-control form-control-sm session-token" placeholder="Session Token" value="awAxpcK389XzciuKQ/lOLucWApxz+acKaQLJ0+Vwt2PkBWsMhsDcaLAibazvUDyHEMdjrANpef1WeBEkiLI254P2aWAFDv1a9MqgJbCbQFxY5Z6xVQjALA==">
                         </div>
                     </div>
                 </div>
@@ -107,7 +107,7 @@
             <div class="col-sm-2" style="text-align: right;">
                 <input id="exit_at_eom" type="checkbox" checked data-toggle="toggle"
                        onchange="client_api.toggle_exit_at_eom()"
-                       data-on="No auto exit" data-off="Exit @ 3:25" data-onstyle="info" data-offstyle="danger">
+                       data-on="No auto exit" data-off="Exit @ 3:20" data-onstyle="info" data-offstyle="danger">
             </div>
             <div class="col-sm-2" style="text-align: right;">
                 <input id="trade_type" type="checkbox" checked data-toggle="toggle"
@@ -205,7 +205,7 @@
                 <tbody id="at-pool"> </tbody>
                 <tfoot>
                     <tr id="summary-at-pool" token="all_trades" ttype="bull">
-                        <th scope="col"></th>
+                        <th scope="col" id="notify-at-pool"></th>
                         <th scope="col"></th>
                         <th scope="col" class="max-profit-loss"></th>
                         <th scope="col"></th>
@@ -367,6 +367,7 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.min.js" integrity="sha384-fbbOQedDUMZZ5KreZpsbe1LCZPVmfTnH7ois6mU1QK+m14rQ1l2bGBq41eYeM/fS" crossorigin="anonymous"></script>
 <script src="client.js"></script>
 <link href="https://cdn.jsdelivr.net/gh/gitbrent/bootstrap4-toggle@3.6.1/css/bootstrap4-toggle.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.2/font/bootstrap-icons.css" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/gh/gitbrent/bootstrap4-toggle@3.6.1/js/bootstrap4-toggle.min.js"></script>
 <style>
 
