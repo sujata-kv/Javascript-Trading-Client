@@ -2,7 +2,7 @@ client_api = window.client_api || {};
 
 client_api = function () {
     let conf = {
-        alert_profit_threshold : 25, //Alert once the profit % exceeds the specified value
+        alert_profit_threshold : 50, //Alert once the profit % exceeds the specified value
         alert_loss_threshold : 50, //Alert once the loss % exceeds the specified value
     }
 
@@ -3210,6 +3210,7 @@ client_api = function () {
 
                     trade.update_total_margin(tbody_elm)      // Update group's margin
                     trade.update_total_margin($('#at-pool'))  // Update pool's margin as well
+                    $('#notify-at-pool').html('')             // Remove the alert on grouping
 
                     if($('#at-pool').children().length === 0) {
                         let parent_checkbox = $('#at-pool').parent().find('thead input:checkbox');
