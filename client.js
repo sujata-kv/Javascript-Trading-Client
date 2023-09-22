@@ -2,8 +2,8 @@ client_api = window.client_api || {};
 
 client_api = function () {
     let conf = {
-        alert_profit_threshold : 50, //Alert once the profit % exceeds the specified value
-        alert_loss_threshold : 50, //Alert once the loss % exceeds the specified value
+        alert_profit_threshold : 1, //Alert once the profit % exceeds the specified value
+        alert_loss_threshold : 1, //Alert once the loss % exceeds the specified value
     }
 
     let alert_msg_disappear_after = 3000; // Unit milliseconds
@@ -2319,7 +2319,8 @@ client_api = function () {
                     if (loss_pct >= conf.alert_loss_threshold) {
                         if(notify.children().length == 0) {
                             document.getElementById('notify2').play()
-                            notify.html('<i class="bi bi-bell-fill neg-mtm" style="cursor:pointer" onclick="client_api.trade.ack_notify(this)" title="Acknowledge"> </i>')
+                            let message = "Loss threshold of " + conf.alert_loss_threshold + "% reached. Click to acknowledge";
+                            notify.html(`<i class="bi bi-bell-fill neg-mtm" style="cursor:pointer" onclick="client_api.trade.ack_notify(this)" title="${message}"> </i>`)
                         }
                     }
                 } else {
@@ -2331,7 +2332,8 @@ client_api = function () {
                     if (profit_pct >= conf.alert_profit_threshold) {
                         if(notify.children().length == 0) {
                             document.getElementById('notify1').play()
-                            notify.html('<i class="bi bi-bell-fill pos-mtm" style="cursor:pointer" onclick="client_api.trade.ack_notify(this)" title="Acknowledge"> </i>')
+                            let message = "Profit threshold of " + conf.alert_profit_threshold + "% reached. Click to acknowledge";
+                            notify.html(`<i class="bi bi-bell-fill pos-mtm" style="cursor:pointer" onclick="client_api.trade.ack_notify(this)" title="${message}"> </i>`)
                         }
                     }
                 }
