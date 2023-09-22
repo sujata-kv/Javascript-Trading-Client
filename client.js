@@ -2,8 +2,8 @@ client_api = window.client_api || {};
 
 client_api = function () {
     let conf = {
-        alert_profit_threshold : 1, //Alert once the profit % exceeds the specified value
-        alert_loss_threshold : 1, //Alert once the loss % exceeds the specified value
+        alert_profit_threshold : 50, //Alert once the profit % exceeds the specified value
+        alert_loss_threshold : 50, //Alert once the loss % exceeds the specified value
     }
 
     let alert_msg_disappear_after = 3000; // Unit milliseconds
