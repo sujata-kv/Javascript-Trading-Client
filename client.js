@@ -2872,12 +2872,14 @@ client_api = function () {
 
                         let className= (ttype==="bear")?"table-danger":" ";
                         let tbody_elm = $('#at-pool');
-                        tbody_elm.append(`<tr id="row_id_${++unique_row_id}" class="${className}" exch="${pos.exch}" token="${ticker}" instrument_token="${ticker}" tsym="${pos.tsym}" qty="${qty}" ttype="${ttype}" trtype="${trtype}" prd="${pos.prd}" trade="active">
+                        let margin_used = (pos.netavgprc * qty).toFixed(2);
+
+                        tbody_elm.append(`<tr id="row_id_${++unique_row_id}" class="${className}" exch="${pos.exch}" token="${ticker}" instrument_token="${ticker}" tsym="${pos.tsym}" qty="${qty}" ttype="${ttype}" trtype="${trtype}" prd="${pos.prd}" trade="active" margin="${margin_used}">
                             <td> <input type="checkbox" class="select_box" value="" onclick="client_api.util.uncheck(this)"> </td>
                             <td>${buy_sell}</td>
                             <td>${dname}</td>
                             <td class="entry num">
-                                <span class="price">${pos.netavgprc}</span>
+                                <span class="price" title="Margin Used : ${margin_used}">${pos.netavgprc}</span>
                             </td>
                             <td class="trade_${ticker} ltp">${pos.lp}</td>
                             <td class="pnl"></td>
