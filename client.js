@@ -1,7 +1,11 @@
 client_api = window.client_api || {};
 
 client_api = function () {
-    
+    let conf = {
+        alert_profit_threshold : 25, //Alert once the profit % exceeds the specified value
+        alert_loss_threshold : 25, //Alert once the loss % exceeds the specified value
+    }
+
     let alert_msg_disappear_after = 3000; // Unit milliseconds
     let vix_tk, nifty_tk, bank_nifty_tk, fin_nifty_tk = '';
     let user_id = '', session_token='', ws = '';
@@ -2265,6 +2269,7 @@ client_api = function () {
             let group_id = tbody.attr('id')
             row_elm.remove();
 
+            trade.update_total_margin(tbody);
             trade.reset_max_profit_loss(group_id);
             if(tbody.children().length === 0) { //Remove group if no position is left in the group
                 tbody.parent().find('thead input:checkbox')[0].checked = false; //uncheck parent checkbox
@@ -2306,8 +2311,22 @@ client_api = function () {
                 const row_id = 'summary-' + group_id;
                 if (total < 0) {
                     total_pnl_elm.css('color', 'red')
+
+                    //Check if the loss exceeds the alert threshold
+                    let total_margin = parseFloat($(`#${group_id}`).attr('total-margin'))
+                    let loss_pct = (total*(-1)*100)/total_margin
+                    if (loss_pct >= conf.alert_loss_threshold) {
+                        document.getElementById('notify2').play()
+                    }
                 } else {
                     total_pnl_elm.css('color', 'green')
+
+                    //Check if the profit exceeds the alert threshold
+                    let total_margin = parseFloat($(`#${group_id}`).attr('total-margin'))
+                    let profit_pct = (total*(-1)*100)/total_margin
+                    if (profit_pct >= conf.alert_profit_threshold) {
+                        document.getElementById('notify1').play()
+                    }
                 }
                 let ret = this.get_max_profit_loss(row_id, total);
                 total_pnl_elm.text(total.toFixed(2))
@@ -2614,6 +2633,15 @@ client_api = function () {
             })
         },
 
+        update_total_margin: function (tbody_elm) {
+            //Update the total margin
+            let total_margin = 0;
+            tbody_elm.find('tr').each(function (i, row) {
+                total_margin += parseFloat($(row).attr('margin'))
+            })
+            tbody_elm.attr('total-margin', total_margin)
+        },
+
         display_active_trade : function(order, target, sl, paper_trade=false, row_id) {
             let ttype = orderbook.know_bull_or_bear(order)
             let buy_sell = '';
@@ -2636,12 +2664,13 @@ client_api = function () {
             let tbody_elm = $('#at-pool');
             // let remarks = order.remarks.substring(0, order.remarks.indexOf(" Vix"));
             let remarks = order.remarks;
+            let margin_used = (order.prc * order.qty).toFixed(2);
 
-            tbody_elm.append(`<tr id="${row_id}" class="${className}" ordid="${order.norenordno}"  exch="${order.exch}" token="${order.token}" instrument_token="${order.instrument_token}" qty="${order.qty}" tsym="${order.tsym}" ttype="${ttype}" trtype="${order.trantype}" prd="${order.prd}" trade="active">
+            tbody_elm.append(`<tr id="${row_id}" class="${className}" ordid="${order.norenordno}"  exch="${order.exch}" token="${order.token}" instrument_token="${order.instrument_token}" qty="${order.qty}" tsym="${order.tsym}" ttype="${ttype}" trtype="${order.trantype}" prd="${order.prd}" trade="active" margin="${margin_used}">
                         <td> <input type="checkbox" class="select_box" value="" onclick="client_api.util.uncheck(this)"> </td>
                         <td>${buy_sell}</td>
                         <td class="instrument">${dname}</td>
-                        <td class="entry num" title="Margin Used : ${(order.prc * order.qty).toFixed(2)}">
+                        <td class="entry num" title="Margin Used : ${margin_used}">
                             <span class="badge badge-pill bg-dark">${order.norentm.split(" ")[0]}</span>
                             </br><span class="badge bg-primary">${remarks}</span>
                             </br><span class="price">${order.prc}</span>
@@ -2655,6 +2684,8 @@ client_api = function () {
                         <td><button type="button" class="btn btn-success modify" onclick="client_api.trade.modify(this, $(this).text())">Edit</button></td>
                         <td><button type="button" class="btn btn-danger exit" onclick="client_api.trade.exit(this)">Exit</button></td>
                 </tr>`);
+
+            trade.update_total_margin(tbody_elm);
 
             if(target != undefined && target != '' ) {
                 milestone_manager.add_target(row_id, ticker, ttype, order.trantype, milestone_manager.get_value_object(target))
@@ -2748,7 +2779,7 @@ client_api = function () {
         getTradePosition : function(token, exch, trtype, qty) {
             let position;
             if(broker.name === "shoonya")
-                position = $(`#at-pool tr[token=${token}][exch=${exch}][qty=${qty}][trtype=${trtype}]`)
+                position = $(`#at-pool tr[token=${token}][exch=${exch}][qty=${qty}][trtype=${trtype}]`)     //Search by attribute value
             else if(broker.name === "kite")
                 position = $(`#at-pool tr[instrument_token=${token}][exch=${exch}][qty=${qty}][trtype=${trtype}]`)
             return position;
@@ -2840,8 +2871,8 @@ client_api = function () {
                         console.log("Position doesn't exist in active trades. So adding it..")
 
                         let className= (ttype==="bear")?"table-danger":" ";
-
-                        $('#at-pool').append(`<tr id="row_id_${++unique_row_id}" class="${className}" exch="${pos.exch}" token="${ticker}" instrument_token="${ticker}" tsym="${pos.tsym}" qty="${qty}" ttype="${ttype}" trtype="${trtype}" prd="${pos.prd}" trade="active">
+                        let tbody_elm = $('#at-pool');
+                        tbody_elm.append(`<tr id="row_id_${++unique_row_id}" class="${className}" exch="${pos.exch}" token="${ticker}" instrument_token="${ticker}" tsym="${pos.tsym}" qty="${qty}" ttype="${ttype}" trtype="${trtype}" prd="${pos.prd}" trade="active">
                             <td> <input type="checkbox" class="select_box" value="" onclick="client_api.util.uncheck(this)"> </td>
                             <td>${buy_sell}</td>
                             <td>${dname}</td>
@@ -2858,6 +2889,8 @@ client_api = function () {
                             <td><button type="button" class="btn btn-danger exit" onclick="client_api.trade.exit(this)">Exit</button></td>
                         </tr>`);
                         /*${live_data[ticker]}*/
+
+                        trade.update_total_margin(tbody_elm);
                     }else {
                         console.log("Position is already present in active trades")
                     }
@@ -2876,9 +2909,9 @@ client_api = function () {
             setTimeout(function(btn) {$(btn).removeAttr('disabled')}, 5000, kill_switch_btn)
         },
 
-        exit_at_eom : function() {  //Exit @ End of market hours, i.e. @ 3:25 PM
+        exit_at_eom : function() {  //Exit @ End of market hours, i.e. @ 3:20 PM
             var now = new Date();
-            var timeDiff = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 15, 25, 0, 0) - now;
+            var timeDiff = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 15, 20, 0, 0) - now;
             if (timeDiff > 0) {
                 trade.exit_handler = setTimeout(function () {
                     trade.close_all_trades();
@@ -3159,6 +3192,9 @@ client_api = function () {
                         tbody_elm.append(cl_row)
                         row_elm.remove()
                     })
+
+                    trade.update_total_margin(tbody_elm)      // Update group's margin
+                    trade.update_total_margin($('#at-pool'))  // Update pool's margin as well
 
                     if($('#at-pool').children().length === 0) {
                         let parent_checkbox = $('#at-pool').parent().find('thead input:checkbox');
