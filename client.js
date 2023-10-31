@@ -2294,6 +2294,11 @@ client_api = function () {
                 $('#gross_pnl').removeClass('neg-mtm')
                 $('#gross_pnl').addClass('pos-mtm')
             }
+
+            const row_id = 'gross_pnl';
+            let ret = this.get_max_profit_loss(row_id, total);
+            $('#gross_max_profit').text(ret['profit'].toFixed(2))
+            $('#gross_max_loss').text(ret['loss'].toFixed(2))
         },
 
 

@@ -15,25 +15,25 @@
 
                 <div id="login-creds">
                     <select class="form-select" id="broker_option" onchange="client_api.select_broker()">
-                        <option selected value="shoonya">Shoonya</option>
-                        <option value="kite">Kite</option>
+                        <option selected value="kite">Kite</option>
+                        <option value="shoonya">Shoonya</option>
                     </select>
 
-                    <div class="form-row align-items-center shoonya-creds" style="padding-top:10px;">
+                    <div class="form-row align-items-center kite-creds"  style="padding-top:10px;">
+                        <div class="col-auto">
+                            <input type="text"  class="form-control form-control-sm user-id"  placeholder="User" value="VC1177">    <!--  FZ0468 -->
+                        </div>
+                        <div class="col-auto"> <!--  bFKGykcV3yxiBujdLSK5Y1Y/qtDW2AsdaamtKTgvb0nC1sneP6FY0cUsSWFMmi5OBykZuDYhlG7/KzPVHFtpiIlSza2p8xi+ONZjZ8V1Ao6fmylp98YMEw==  -->
+                            <input type="text" class="form-control form-control-sm session-token" placeholder="Session Token" value="6cHctELTJYHTlOK0Bgw8OfCrTo9G80DDi72+r1cseQUaSxao6IV8tXiNFFndrrtVI6cij5R5beLjhiYyaY/1Jpju+W/7DRxneUmz8IalMYHGiBQCdhcnOQ==">
+                        </div>
+                    </div>
+
+                    <div class="form-row align-items-center shoonya-creds d-none" style="padding-top:10px;">
                         <div class="col-auto">
                             <input type="text"  class="form-control form-control-sm user-id"  placeholder="User" value="FA90807">
                         </div>
                         <div class="col-auto">
-                            <input type="text" class="form-control form-control-sm session-token" placeholder="Session Token" value="c7a1a9cce887bd7985614b42234e3d302d34937134a30a1eeee6e61712418906">
-                        </div>
-                    </div>
-
-                    <div class="form-row align-items-center kite-creds d-none"  style="padding-top:10px;">
-                        <div class="col-auto">
-                            <input type="text"  class="form-control form-control-sm user-id"  placeholder="User" value="VC1177">    <!--  FZ0468 -->
-                        </div>
-                        <div class="col-auto"> <!--  B4eKtIHA0QwbX7KWia1umFbRKle1nLuQpb/hnkXV4Q2nZELsJCZBZWColRXFLhM6QS9lgVz4RmGXjOaeAXb2UBFTdT0ZI9EPglZuqT9uysOr7mHmhFhLxA==  -->
-                            <input type="text" class="form-control form-control-sm session-token" placeholder="Session Token" value="awAxpcK389XzciuKQ/lOLucWApxz+acKaQLJ0+Vwt2PkBWsMhsDcaLAibazvUDyHEMdjrANpef1WeBEkiLI254P2aWAFDv1a9MqgJbCbQFxY5Z6xVQjALA==">
+                            <input type="text" class="form-control form-control-sm session-token" placeholder="Session Token" value="99203e94bc1791ef6ac464f657df9459dfa692b0288a73f460f4ec1a6f7cec1d">
                         </div>
                     </div>
                 </div>
@@ -172,8 +172,12 @@
                     </svg>
                 </span>
                 <div class='gross-pnl'>
-                    <span class="pnl">Total P&L: </span>
+<!--                    <span class="pnl">Total P&L: </span>-->
                     <span id="gross_pnl" class="pnl" style=""></span>
+                    <span>
+                        <span id="gross_max_profit" class="pos-mtm" style="" title="Max profit seen"></span>
+                        <span id="gross_max_loss" class="neg-mtm" style="" title="Max loss seen"></span>
+                    </span>
                 </div>
             </div>
 
@@ -459,10 +463,16 @@
         padding: 5px 10px;
     }
 
-    .gross-pnl span {
-        font-size: 24px;
+    .gross-pnl .pnl {
+        font-size: 72px;
         color:darkcyan;
     }
+
+    #gross_max_loss, #gross_max_profit{
+        padding-left: 12px;
+        font-size: 25px;
+    }
+
     .pos-mtm, .pnl, .margin_req, .neg-mtm, .ltp {
         font-weight:bold;
         text-align:right;
