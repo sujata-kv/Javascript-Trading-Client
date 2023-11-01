@@ -24,7 +24,7 @@
                             <input type="text"  class="form-control form-control-sm user-id"  placeholder="User" value="VC1177">    <!--  FZ0468 -->
                         </div>
                         <div class="col-auto"> <!--  bFKGykcV3yxiBujdLSK5Y1Y/qtDW2AsdaamtKTgvb0nC1sneP6FY0cUsSWFMmi5OBykZuDYhlG7/KzPVHFtpiIlSza2p8xi+ONZjZ8V1Ao6fmylp98YMEw==  -->
-                            <input type="text" class="form-control form-control-sm session-token" placeholder="Session Token" value="6cHctELTJYHTlOK0Bgw8OfCrTo9G80DDi72+r1cseQUaSxao6IV8tXiNFFndrrtVI6cij5R5beLjhiYyaY/1Jpju+W/7DRxneUmz8IalMYHGiBQCdhcnOQ==">
+                            <input type="text" class="form-control form-control-sm session-token" placeholder="Session Token" value="R47U6elEMeZ1/ELGZJc11dFpKTFa3cQZ/GyUPFP12cvA8eymzVJJQjJcxp75eTgtax9ZLi3No1njBowofQPdFgEXpGHZCuNTydEym2dJGh9lGJYYLN7flQ==">
                         </div>
                     </div>
 
@@ -33,7 +33,7 @@
                             <input type="text"  class="form-control form-control-sm user-id"  placeholder="User" value="FA90807">
                         </div>
                         <div class="col-auto">
-                            <input type="text" class="form-control form-control-sm session-token" placeholder="Session Token" value="99203e94bc1791ef6ac464f657df9459dfa692b0288a73f460f4ec1a6f7cec1d">
+                            <input type="text" class="form-control form-control-sm session-token" placeholder="Session Token" value="47109603d0c6208da7a28eda5587fce4bd0bc79c9e23b602058fbf3f4229fc06">
                         </div>
                     </div>
                 </div>
@@ -174,7 +174,7 @@
                 <div class='gross-pnl'>
 <!--                    <span class="pnl">Total P&L: </span>-->
                     <span id="gross_pnl" class="pnl" style=""></span>
-                    <span>
+                    <span class="min-max">
                         <span id="gross_max_profit" class="pos-mtm" style="" title="Max profit seen"></span>
                         <span id="gross_max_loss" class="neg-mtm" style="" title="Max loss seen"></span>
                     </span>
@@ -458,19 +458,19 @@
 
     div.gross-pnl {
         float: right;
-        width: 42%;
-        /*border: 2px solid orange;*/
-        padding: 5px 10px;
     }
 
     .gross-pnl .pnl {
         font-size: 72px;
-        color:darkcyan;
+        display: inline-block;
     }
 
-    #gross_max_loss, #gross_max_profit{
-        padding-left: 12px;
-        font-size: 25px;
+    div.gross-pnl .min-max {
+        display: inline-grid;
+        position: relative;
+        top : -35px;
+        /*padding-left: 12px;*/
+        font-size: 22px;
     }
 
     .pos-mtm, .pnl, .margin_req, .neg-mtm, .ltp {
