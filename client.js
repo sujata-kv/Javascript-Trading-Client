@@ -1889,6 +1889,13 @@ client_api = function () {
                                 break;
                             default:
                                 orderbook.display_order_exec_msg(matching_order);
+                                setTimeout(function(){
+                                    console.log("Unknown order status.. Rechecking on the order status in 2 seconds..")
+                                    document.getElementById('notify1').play()
+                                }, 10);
+                                setTimeout(function () {
+                                    orderbook.get_order_status(orderno, action, oncomplete_cb);
+                                }, 2000)
                         }
                     }
                 })
