@@ -3251,6 +3251,10 @@ client_api = function () {
                     if($(tbody_selector).children().length === 0) { //Remove group if no position is left in the group
                         $(tbody_selector).parent().parent().remove(); //Remove the div
                     }
+
+                    trade.update_total_margin($(tbody_selector))      // Update group's margin
+                    trade.update_total_margin($('#at-pool'))  // Update pool's margin as well
+                    $('#notify-at-pool').html('')             // Remove the alert on grouping
                 } else {
                     show_error_msg("No position is selected")
                 }
