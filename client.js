@@ -781,7 +781,7 @@ client_api = function () {
                                 'optt': columns[i_instrument_type],
                                 'expiry': columns[i_expiry],
                             }
-                            console.log(dname)
+                            // console.log(dname)
                             parsedData.push(obj);
                         }
                     }
@@ -826,7 +826,7 @@ client_api = function () {
                             'optt': columns[i_instrument_type],
                             'expiry': columns[i_expiry],
                         }
-                        console.log(dname)
+                        // console.log(dname)
                         parsedData.push(obj);
                     }
                 }
@@ -1461,6 +1461,7 @@ client_api = function () {
                     show_success_msg("Order " + order.norenordno + " cancelled. Symbol: " + order.tsym + " Qty: " + order.qty );
                     break;
                 default:
+                    show_error_msg("Received invalid status for the order: " + order.norenordno + " Please verify the order status in the broker client" );
                     console.log('Default order status : ')
                     console.log(JSON.stringify(order))
                     break;
@@ -1890,8 +1891,9 @@ client_api = function () {
                             default:
                                 orderbook.display_order_exec_msg(matching_order);
                                 setTimeout(function(){
-                                    console.log("Unknown order status.. Rechecking on the order status in 2 seconds..")
-                                    document.getElementById('notify1').play()
+                                    console.log("Unknown order status.. Please verify the order status manually in the broker client");  //Rechecking on the order status in 2 seconds..
+                                    console.log("Playing default status sound..")
+                                    document.getElementById('notify3').play()
                                 }, 10);
                                 setTimeout(function () {
                                     orderbook.get_order_status(orderno, action, oncomplete_cb);
