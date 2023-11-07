@@ -927,7 +927,7 @@ client_api = function () {
         },
 
         get_remarks: function (params) {
-            return params.tag;
+            return params.tag; //TODO - Check this
         },
 
         order : {
@@ -1462,8 +1462,6 @@ client_api = function () {
                     break;
                 default:
                     show_error_msg("Received invalid status for the order: " + order.norenordno + " Please verify the order status in the broker client" );
-                    console.log('Default order status : ')
-                    console.log(JSON.stringify(order))
                     break;
             }
         },
@@ -1888,16 +1886,21 @@ client_api = function () {
                                     document.getElementById('notify1').play()
                                 }, 10);
                                 break;
-                            default:
+                            case "CANCELED":
                                 orderbook.display_order_exec_msg(matching_order);
                                 setTimeout(function(){
-                                    console.log("Unknown order status.. Please verify the order status manually in the broker client");  //Rechecking on the order status in 2 seconds..
-                                    console.log("Playing default status sound..")
-                                    document.getElementById('notify3').play()
+                                    console.log("Playing cancelled order sound..")
+                                    document.getElementById('notify1').play()
                                 }, 10);
-                                setTimeout(function () {
-                                    orderbook.get_order_status(orderno, action, oncomplete_cb);
-                                }, 2000)
+                                break;
+                            default:
+                                console.log("Unknown order status.. Please verify the order status manually in the broker client")
+                                console.log(matching_order)
+                                orderbook.display_order_exec_msg(matching_order);
+                                setTimeout(function(){
+                                    console.log("Playing default status sound..")
+                                    document.getElementById('notify1').play()
+                                }, 10);
                         }
                     }
                 })
