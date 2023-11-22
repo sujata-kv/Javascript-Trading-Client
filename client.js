@@ -1120,7 +1120,7 @@ client_api = function () {
                 if (exch == "NSE" || exch == "BSE") {
                     prd = prd==""?"MIS":prd;
                 } else {
-                    prd = prd==""?"MIS":prd;
+                    prd = prd==""?"NRML":prd;
                     if (tsym != undefined) {
                         if (tsym.startsWith("NIFTY"))
                             remarks = "N-" + Math.round(live_data[nifty_tk])
