@@ -6,15 +6,15 @@ client_api = function () {
         alert_loss_threshold : 50, //Alert once the loss % exceeds the specified value
         delay_SL : 60,          // In seconds.. Delay SL by these many seconds
         target_sl_check_interval : 500, // In Milliseconds. Check for target and SL after every 500 ms
+        heartbeat_timeout : 7000,
+        alert_msg_disappear_after : 3000, // Unit milliseconds
     }
 
-    let alert_msg_disappear_after = 3000; // Unit milliseconds
     let vix_tk, nifty_tk, bank_nifty_tk, fin_nifty_tk = '';
     let user_id = '', session_token='', ws = '';
     let subscribed_symbols = []
     let pending_to_subscribe_tokens = new Set();
     let logged_in = false;
-    let heartbeat_timeout = 7000;
     let live_data = {};
     let broker = '';
 
@@ -88,7 +88,7 @@ client_api = function () {
                         var _hb_req = '{"t":"h"}';
                         ws.send(_hb_req);
                     }
-                }, heartbeat_timeout);
+                }, conf.heartbeat_timeout);
             };
 
             ws.onmessage = function (event) {
@@ -1307,7 +1307,7 @@ client_api = function () {
         $('#order_success_alert').show();
         setTimeout(function(){
             // $('#order_success_msg').html("");
-            $('#order_success_alert').hide()}, alert_msg_disappear_after);
+            $('#order_success_alert').hide()}, conf.alert_msg_disappear_after);
     }
 
     function show_error_msg(msg, auto_hide=true) {
@@ -1316,7 +1316,7 @@ client_api = function () {
         if(auto_hide)
             setTimeout(function(){
                 // $('#order_error_msg').html("");
-                $('#order_error_alert').hide()}, alert_msg_disappear_after);
+                $('#order_error_alert').hide()}, conf.alert_msg_disappear_after);
     }
 
     const ACTION = Object.freeze({
