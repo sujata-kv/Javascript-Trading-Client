@@ -4,6 +4,8 @@ client_api = function () {
     let conf = {
         alert_profit_threshold : 50, //Alert once the profit % exceeds the specified value
         alert_loss_threshold : 50, //Alert once the loss % exceeds the specified value
+        delay_SL : 60,          // In seconds.. Delay SL by these many seconds
+        target_sl_check_interval : 500, // In Milliseconds. Check for target and SL after every 500 ms
     }
 
     let alert_msg_disappear_after = 3000; // Unit milliseconds
@@ -1681,7 +1683,7 @@ client_api = function () {
                                     milestone_manager.add_order_id(row_id, order_id);
 
                                     matching_order.prc = matching_order.avgprc; // When order status is COMPLETE avgprc field contains the correct price
-                                    const ms_obj = milestone_manager.get_milestone(order_id);
+                                    const ms_obj = milestone_manager.get_milestone_by_order_id(order_id);
                                     let target = '';
                                     let sl = '';
                                     if (ms_obj != undefined) {
@@ -1742,7 +1744,7 @@ client_api = function () {
             milestone_manager.add_order_id(row_id, order_id);
 
             matching_order.prc = matching_order.avgprc; // When order status is COMPLETE avgprc field contains the correct price
-            const ms_obj = milestone_manager.get_milestone(order_id);
+            const ms_obj = milestone_manager.get_milestone_by_order_id(order_id);
             let target = '';
             let sl = '';
             if (ms_obj != undefined) {
@@ -1997,6 +1999,7 @@ client_api = function () {
             this.ttype = ttype ; //bull or bear trade
             this.buy_sell = buy_sell;
             this.token = token;
+            this.sl_hit_count = 0;
         }
 
         add_order_id(order_id) {
@@ -2037,10 +2040,19 @@ client_api = function () {
 
         set_sl(sl) {
             this.sl = sl;
+            this.sl_hit_count = 0;
         }
 
         get_sl() {
             return this.sl;
+        }
+
+        get_sl_hit_count() {
+            return this.sl_hit_count;
+        }
+
+        increment_sl_hit_count() {
+            this.sl_hit_count++;
         }
 
         del_entry() {
@@ -2052,6 +2064,7 @@ client_api = function () {
         }
 
         del_sl() {
+            this.sl_hit_count = 0;
             delete this.sl
         }
     }
@@ -2124,7 +2137,11 @@ client_api = function () {
             }
         }
 
-        get_milestone(order_id) {
+        get_milestone_by_row_id(row_id) {
+            return this.milestones[row_id]
+        }
+
+        get_milestone_by_order_id(order_id) {
             for(const [row_id, milestone] of Object.entries(this.milestones)) {
                 if(milestone.get_order_id() === order_id) {
                     return {
@@ -2198,6 +2215,13 @@ client_api = function () {
                 if( old_ms.get_entry()=='undefined' && old_ms.get_target() == 'undefined') {
                     delete this.milestones[row_id]
                 }
+            }
+        }
+
+        increment_sl_hit_count(row_id) {
+            let ms = this.milestones[row_id]
+            if (ms != undefined) {
+                ms.increment_sl_hit_count()
             }
         }
 
@@ -2413,6 +2437,7 @@ client_api = function () {
 
         trigger: function() {
             let ms_list = milestone_manager.get_milestones();
+            sl_action_threshold = conf.delay_SL * 1000 / conf.target_sl_check_interval; //Calculated every time. So, using debug mode can be updated
 
             for( const [row_id, mile_stone] of Object.entries(ms_list)) {
                 if(mile_stone.get_entry() != undefined) {// If it has entry object
@@ -2433,7 +2458,7 @@ client_api = function () {
 
             trade.update_gross_pnl();
 
-            setTimeout(trade.trigger, 500)
+            setTimeout(trade.trigger, conf.target_sl_check_interval)
 
             function check_entry_trigger(row_id, mile_stone) {
                 let cur_value = 0;
@@ -2492,7 +2517,7 @@ client_api = function () {
                         case "nifty" : cur_spot_value = live_data[nifty_tk]; break;
                         case "bank_nifty" : cur_spot_value = live_data[bank_nifty_tk]; break;
                         case "fin_nifty" : cur_spot_value = live_data[fin_nifty_tk]; break;
-                        default : console.error(row_id + " .. Something is wrong .. " + mile_stone.token); break;
+                        default : console.error(row_id + "Wrong instrument name detected for target .. " + mile_stone.token); break;
                     }
                 } else { // Price based
                     if(row_id.startsWith("summary-")) { // Use total P & L value in case of cumulative target and SL
@@ -2571,6 +2596,7 @@ client_api = function () {
                         case "nifty" : cur_spot_value = live_data[nifty_tk]; break;
                         case "bank_nifty" : cur_spot_value = live_data[bank_nifty_tk]; break;
                         case "fin_nifty" : cur_spot_value = live_data[fin_nifty_tk]; break;
+                        default : console.error(row_id + "Wrong instrument name detected for SL .. " + mile_stone.token); break;
                     }
                 } else { // Price based
                     if (row_id.startsWith("summary-")) { // Use total P & L value in case of cumulative target and SL
@@ -2616,22 +2642,28 @@ client_api = function () {
                 function sl_triggered() {
                     let msg, group_name='';
 
-                    if(row_id.startsWith("summary-")) {
-                        let group_id = row_id.replace('summary-', '')
-                        group_name = row_id.replace('summary-at-', '').toUpperCase()
-                        let group_selector = '#' + group_id;
-                        util.grouping.exit_group(group_selector, true)
-                    }
-                    else {
-                        let tr_elm = $(`#${row_id}`)
-                        tr_elm.find('.exit').click();
-                    }
-                    let name = (group_name=='')? "row: "+row_id : "group: " + group_name
-                    msg = "SL triggered for " + name + " Trigger value = " + trig_value + " Current value = " + cur_spot_value
-                    show_error_msg(msg)
-                    console.log(msg)
+                    let ms = milestone_manager.get_milestone_by_row_id(row_id)
+                    if( ms.get_sl_hit_count() >= sl_action_threshold ) { //Take action only if sl_action_threshold is exceeded
 
-                    milestone_manager.remove_milestone(row_id)
+                        if (row_id.startsWith("summary-")) {
+                            let group_id = row_id.replace('summary-', '')
+                            group_name = row_id.replace('summary-at-', '').toUpperCase()
+                            let group_selector = '#' + group_id;
+                            util.grouping.exit_group(group_selector, true)
+                        } else {
+                            let tr_elm = $(`#${row_id}`)
+                            tr_elm.find('.exit').click();
+                        }
+                        let name = (group_name == '') ? "row: " + row_id : "group: " + group_name
+                        msg = "SL triggered for " + name + " Trigger value = " + trig_value + " Current value = " + cur_spot_value
+                        show_error_msg(msg)
+                        console.log(msg)
+
+                        milestone_manager.remove_milestone(row_id)
+                    } else {
+                        milestone_manager.increment_sl_hit_count(row_id)
+                        console.log("SL hit count = " + ms.get_sl_hit_count() + ", Trigger threshold count = " + sl_action_threshold + " Delay-SL by: " + conf.delay_SL + " seconds")
+                    }
                 }
             }
         },
@@ -3423,6 +3455,7 @@ client_api = function () {
         "toggle_exit_at_eom" : toggle_exit_at_eom,
         "connect_to_server" : connect_to_server,
         "select_broker" : select_broker,
+        "conf": conf,
     }
 
 }();
