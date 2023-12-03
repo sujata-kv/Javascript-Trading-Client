@@ -41,7 +41,8 @@ client_api = function () {
     let logged_in = false;
     let live_data = {};
     let broker = '';
-    let instruments = ['nifty', 'bank_nifty', 'fin_nifty']
+    // let instruments = ['nifty', 'bank_nifty', 'fin_nifty']
+    let instruments = ['bank_nifty']
 
     function select_broker() {
         let broker_name = $('#broker_option')[0].value
@@ -121,6 +122,115 @@ client_api = function () {
         },
     }
 
+    const algo = {
+        deploy_stats : {},
+        deployed : false,
+        deploying : false,
+        run : function(instrument) {
+            console.log("Algo run function called for " + instrument)
+            if(!algo.deployed && !algo.deploying) {
+                algo.deploying = true;
+                let ce_pe_legs = strangle_tracker.strangle_strike_details[instrument]
+                if (ce_pe_legs != undefined && ce_pe_legs.length == 2) {   // CE and PE both present
+                    console.log(`Deploying strangle for ${instrument}..`)
+                    algo.deploy_strangle(instrument, ce_pe_legs)
+                } else {
+                    algo.deploying = false;
+                    setTimeout(function() {algo.run(instrument);}, conf.algo.monitor_interval)
+                }
+            }
+        },
+
+        deploy_strangle: function(instrument, ce_pe_params) {
+            algo.deploy_stats[instrument] = algo.deploy_stats[instrument] || {}      //Initialize empty object
+            algo.deploy_stats[instrument].spot_value = strangle_tracker.get_ltp(instrument); // Record the spot value
+            let buy_or_sell = "S";
+
+            //Deploy STRANGLE
+            ce_pe_params.forEach(function (ce_pe_params) {
+                orderbook.place_order(broker.order.get_algo_order_params(ce_pe_params, buy_or_sell))
+                algo.deployed = true;
+                algo.deploying = false;
+                let selector = (`#at-pool tr[token=${ce_pe_params.token}][exch=${ce_pe_params.exch}][qty=${ce_pe_params.qty}][trtype='S']`)
+                algo[ce_pe_params.optt + "-interval"] = setInterval(group_legs, conf.algo.monitor_interval, selector, ce_pe_params.optt)
+            })
+
+            function group_legs(row_sel, optt) {
+                let row_id = $(row_sel).attr('id');
+                console.log("Group legs : ", row_id)
+                if(row_id != undefined) {
+                    clearInterval(algo[optt + "-interval"])
+                    if (optt == "CE") {
+                        algo.deploy_stats[instrument].ce_leg = row_id;
+                    } else if (optt == "PE") {
+                        algo.deploy_stats[instrument].pe_leg = row_id;
+                    }
+                    $(row_sel).find('input:checkbox')[0].checked = true;
+
+                    if (algo.deploy_stats[instrument].ce_leg != undefined
+                        && algo.deploy_stats[instrument].pe_leg != undefined) {
+                        algo.deploy_stats[instrument].deploy_count = algo.deploy_stats[instrument].deploy_count == undefined ? 1 : algo.deploy_stats[instrument].deploy_count + 1;
+                        $('#group_name').val(algo.get_strangle_name(instrument, algo.deploy_stats[instrument].deploy_count))
+                        algo.deploy_stats[instrument].group = util.grouping.group_selected();
+                        let row_id = `summary-${algo.deploy_stats[instrument].group.id}`;
+                        $(`#${row_id}`).attr('ttype', 'algo')
+                        $(`#${row_id}`).attr('instrument', instrument)
+
+                        algo.set_target(instrument);
+                        algo.set_sl(instrument);
+                    }
+                }
+            }
+        },
+
+        get_strangle_name : function(instrument, count) {
+            return instrument.toUpperCase().replace('_', '') + '-STRANGLE-' + count
+        },
+
+        set_target : function(instrument) {
+            let entry_price1 = parseFloat($(`#${algo.deploy_stats[instrument].ce_leg}`).find('.entry .price').text());
+            let entry_price2 = parseFloat($(`#${algo.deploy_stats[instrument].pe_leg}`).find('.entry .price').text());
+            let total_prem = entry_price1 + entry_price2;
+            // let target = (Math.round((total_prem * conf.algo.profit_pct * conf.algo[instrument].qty)/ 100)).toString();
+            let target = conf.algo.profit.toString();
+            let row_id = `summary-${algo.deploy_stats[instrument].group.id}`;
+            $(`#${row_id}`).find('.target').val(target)
+
+            let ticker = broker.get_ticker({'token': 'algo-token', 'instrument_token': 'algo-instrument_token'})
+            if(target != undefined && target != '' ) {
+                milestone_manager.add_target(row_id, ticker, instrument + '_straddle', 'sell', milestone_manager.get_value_object(target))
+            } else
+                milestone_manager.remove_target(row_id)
+        },
+
+        set_sl : function(instrument) {
+            let entry_price1 = parseFloat($(`#${algo.deploy_stats[instrument].ce_leg}`).find('.entry .price').text());
+            let entry_price2 = parseFloat($(`#${algo.deploy_stats[instrument].pe_leg}`).find('.entry .price').text());
+            let total_prem = entry_price1 + entry_price2;
+            // let sl = (-Math.round((total_prem * conf.algo.loss_pct * conf.algo[instrument].qty)/ 100)).toString();
+            let sl = conf.algo.loss.toString();
+            let row_id = `summary-${algo.deploy_stats[instrument].group.id}`;
+            $(`#${row_id}`).find('.sl').val(sl)
+
+            let ticker = broker.get_ticker({'token': 'algo-token', 'instrument_token': 'algo-instrument_token'})
+            if(sl != undefined && sl != '' ) {
+                milestone_manager.add_sl(row_id, ticker, instrument + '_straddle', 'sell', milestone_manager.get_value_object(sl))
+            } else
+                milestone_manager.remove_sl(row_id)
+        },
+
+        exit_cb : function(instrument) {
+            algo.deployed = false
+            console.log("Exit callback for algo called")
+
+            let deploy_count = algo.deploy_stats[instrument].deploy_count
+            algo.deploy_stats[instrument] = {}      //Initialize empty object
+            algo.deploy_stats[instrument].deploy_count = deploy_count
+
+            if(deploy_count < conf.algo.retry_count)
+                algo.run(instrument);   //Re-deploy if the premiums of ATM strikes are close enough
+        },
+    }
 
     let shoonya = {
         name: "shoonya",
@@ -316,7 +426,8 @@ client_api = function () {
                     success: function (data, textStatus, jqXHR) {
                         // console.log("Ajax success")
                         let info1 = data.values[0];
-                        strangle_tracker.strangle_strike_details[ce_pe] = [ get_strike_details(info1, strike)]
+                        strangle_tracker.strangle_strike_details[instrument] = strangle_tracker.strangle_strike_details[instrument]  || [ ]
+                        strangle_tracker.strangle_strike_details[instrument].push(get_strike_details(info1, strike))
 
                         function get_strike_details(info, strike) {
                             return {
@@ -535,11 +646,54 @@ client_api = function () {
             exit_order : function(values, success_cb) {
                 shoonya.post_request(shoonya.url.place_order, values, success_cb);
             },
+
+            get_algo_order_params : function(params, buy_or_sell) {
+                let prctyp = 'MKT', price = "0.0";
+                let remarks = "";
+                let tsym = encodeURIComponent(params.tsym);
+                let dname = encodeURIComponent(params.dname);
+                let token = params.token;
+                let qty = params.qty.toString();
+                let instrument_token = params.instrument_token;
+                let exch = params.exch;
+
+                /* "C" For CNC, "M" FOR NRML, "I" FOR MIS, "B" FOR BRACKET ORDER, "H" FOR COVER ORDER*/
+                if (exch == "NSE" || exch == "BSE") {
+                    prd = "I";
+                } else {
+                    prd = "M";
+                    if (tsym != undefined) {
+                        if (tsym.startsWith("NIFTY"))
+                            remarks = "N-" + Math.round(live_data[nifty_tk])
+                        else if (tsym.startsWith("BANKNIFTY"))
+                            remarks = "B-" + Math.round(live_data[bank_nifty_tk])
+                        else if (tsym.startsWith("FINNIFTY"))
+                            remarks = "F-" + Math.round(live_data[fin_nifty_tk])
+                        remarks += " Vix " + live_data[vix_tk]
+                    }
+                }
+
+                let values = {'ordersource': 'WEB'};
+                values["uid"] = user_id;
+                values["actid"] = user_id;
+                values["trantype"] = buy_or_sell;
+                values["prd"] = prd;
+                values["exch"] = exch;
+                values["tsym"] = tsym;
+                values["dname"] = dname;
+                values["token"] = token;
+                values["instrument_token"] = instrument_token;
+                values["qty"] = qty;
+                values["dscqty"] = qty;
+                values["prctyp"] = prctyp       /*  LMT / MKT / SL-LMT / SL-MKT / DS / 2L / 3L */
+                values["prc"] = price;
+                values["ret"] = 'DAY';
+                values["remarks"] = remarks;
+
+                return values;
+            },
         },
 
-        algo : {
-
-        }
     }
     
     let kite = {
@@ -1641,6 +1795,23 @@ client_api = function () {
                     }})(row_id)
                     )
                 }
+            }
+        },
+
+        place_order : function(params, success_cb) {
+            console.log("Going to place order " + JSON.stringify(params))
+            if(!is_paper_trade()) {
+                broker.order.place_order(params, function (data) {
+                    if (success_cb != undefined) {  // Call custom function provided.. In case of exit, it needs to remove tr
+                        console.log("Success call back is provided. Will be called")
+                        success_cb(data)
+                    } else { // No custom function provided. Default actions
+                        console.log("Default place order call back called")
+                        orderbook.place_order_cb_carry_target_sl_to_active_trade(data)
+                    }
+                })
+            } else {
+                orderbook.place_paper_trade(params, live_data[broker.get_ticker(params)])
             }
         },
 
@@ -3384,6 +3555,7 @@ client_api = function () {
 
                     trade.reset_max_profit_loss('at-pool');
                     $('#group_name').val(''); //Reset group name
+                    return group
                 } else {
                     show_error_msg("No position is selected")
                 }
@@ -3545,6 +3717,7 @@ client_api = function () {
         setTimeout(client_api.trade.trigger, 1000);
 
         setTimeout(strangle_tracker.find_strangle_strikes, 1000);
+        setTimeout(algo.run("bank_nifty"), 1500);
         //Uncomment below line to enable spreads dynamic calculation
         // setTimeout(trade.calculate_spreads, 2000);
     }
