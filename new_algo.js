@@ -3706,6 +3706,16 @@ client_api = function () {
         })
     };
 
+    function schedule_algo() {
+        var now = new Date();
+        var millis = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 9, 15, 29, 0) - now;
+        setTimeout(function(){
+            strangle_tracker.find_strangle_strikes();
+            setTimeout(function() {algo.run("bank_nifty")}, 100);
+        }, millis);
+
+    }
+
     function connect_to_server(){
         select_broker()
         broker.init();
@@ -3716,10 +3726,9 @@ client_api = function () {
         setTimeout(client_api.watch_list.restore_watch_list, 100);
         setTimeout(client_api.trade.trigger, 1000);
 
-        setTimeout(strangle_tracker.find_strangle_strikes, 1000);
-        setTimeout(algo.run("bank_nifty"), 1500);
-        //Uncomment below line to enable spreads dynamic calculation
-        // setTimeout(trade.calculate_spreads, 2000);
+        schedule_algo()
+        // setTimeout(strangle_tracker.find_strangle_strikes, 1000);
+        // setTimeout(function() {algo.run("bank_nifty")}, 1500);
     }
 
     /*Attach functions to connect, add to watch list button, etc*/
