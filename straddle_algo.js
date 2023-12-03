@@ -3,7 +3,7 @@ client_api = window.client_api || {};
 client_api = function () {
 
     let conf = {
-        atm_strike_check_interval : 60000,
+        // atm_strike_check_interval : 60000,
         atm_premium_monitor_interval : 30000,
         target_sl_check_interval: 1000,
         algo: {
