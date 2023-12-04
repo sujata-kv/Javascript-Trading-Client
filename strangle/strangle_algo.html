@@ -1,28 +1,39 @@
 <head>
+<!--    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.3.1/dist/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">-->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6FUUVM" crossorigin="anonymous">
-    <title>Algo client</title>
+    <title>Strangle</title>
 </head>
 <body class="paper_trade">
 <div class="container-fluid">
 
     <div class="d-flex flex-column align-items-stretch flex-shrink-0 stats-bar sidebar">
         <div class="d-flex align-items-center flex-shrink-0 p-3 link-dark text-decoration-none border-bottom">
-            <h3 class="card-subtitle mb-2">Login</h3>
+            <h3 class="card-subtitle mb-2">Strangle Algo </h3>
         </div>
         <div class="list-group list-group-flush border-bottom">
             <a href="#" class="list-group-item list-group-item-action py-3 lh-tight" aria-current="true">
 
                 <div id="login-creds">
                     <select class="form-select" id="broker_option" onchange="client_api.select_broker()">
-                        <option selected value="shoonya">Shoonya</option>
+                        <option selected value="kite">Kite</option>
+                        <option value="shoonya">Shoonya</option>
                     </select>
 
-                    <div class="form-row align-items-center shoonya-creds" style="padding-top:10px;">
+                    <div class="form-row align-items-center kite-creds"  style="padding-top:10px;">
+                        <div class="col-auto">
+                            <input type="text"  class="form-control form-control-sm user-id"  placeholder="User" value="VC1177">    <!--  FZ0468 -->
+                        </div>
+                        <div class="col-auto"> <!--  bFKGykcV3yxiBujdLSK5Y1Y/qtDW2AsdaamtKTgvb0nC1sneP6FY0cUsSWFMmi5OBykZuDYhlG7/KzPVHFtpiIlSza2p8xi+ONZjZ8V1Ao6fmylp98YMEw==  -->
+                            <input type="text" class="form-control form-control-sm session-token" placeholder="Session Token" value="hghOowlLPwt7Ki+Pr6x/PLBgI6E66BeVWn+bCinvSXRtHVaaXvUyQul9vqX1zpSAsUlXCdf0oaqvhaB1lmw/TeDYQ8NLGpc93LbNMq9lidAOpBx7Vmlhiw==">
+                        </div>
+                    </div>
+
+                    <div class="form-row align-items-center shoonya-creds d-none" style="padding-top:10px;">
                         <div class="col-auto">
                             <input type="text"  class="form-control form-control-sm user-id"  placeholder="User" value="FA90807">
                         </div>
                         <div class="col-auto">
-                            <input type="text" class="form-control form-control-sm session-token" placeholder="Session Token" value="a652efb3dd3970dbca460c0965f52a6380a89895f4fe32e7bb900c33bd6dc077">
+                            <input type="text" class="form-control form-control-sm session-token" placeholder="Session Token" value="b6ca03da74ef733d1a7a86fc32cfcb51f9df74504e7c3353c47593e760f6408c">
                         </div>
                     </div>
                 </div>
@@ -43,35 +54,39 @@
 
             </a>
             <div class="list-group-item list-group-item-action py-3 lh-tight">
-                <div class="row">
-                    <div class="card-body col-sm-6">
+                <div class="col">
+                    <div class="card-body">
                         <h5 class="card-title">NIFTY</h5>
                         <h3 class="card-subtitle mb-2" id="nifty"> &nbsp; </h3>
                     </div>
-                    <div class="card-body col-sm-6">
-                        <h5 class="card-title">BANKNIFTY</h5>
+                </div>
+            </div>
+            <div class="list-group-item list-group-item-action py-3 lh-tight">
+                <div class="col">
+                    <div class="card-body">
+                        <h5 class="card-title">BANK_NIFTY</h5>
                         <h3 class="card-subtitle mb-2" id="bank_nifty"> &nbsp; </h3>
                     </div>
                 </div>
-                <div class="row">
-                    <div class="card-body col-sm-6">
-                        <h5 class="card-title">FINNIFTY</h5>
+            </div>
+            <div class="list-group-item list-group-item-action py-3 lh-tight" aria-current="true">
+                <div class="col">
+                    <div class="card-body">
+                        <h5 class="card-title">FIN_NIFTY</h5>
                         <h3 class="card-subtitle mb-2" id="fin_nifty"> &nbsp; </h3>
                     </div>
-                    <div class="card-body col-sm-6">
+                </div>
+            </div>
+            <div class="list-group-item list-group-item-action py-3 lh-tight" aria-current="true">
+                <div class="col">
+                    <div class="card-body">
                         <h5 class="card-title">VIX</h5>
                         <h3 class="card-subtitle mb-2" id="vix"> &nbsp; </h3>
                     </div>
                 </div>
             </div>
-            <div class="d-flex flex-column align-items-stretch prem-disp" >
-                <div class="col"  id="prem-display">
-
-                </div>
-            </div>
         </div>
     </div>
-
     <div class="d-flex flex-column align-items-stretch trade-panel">
         <div class="row">
             <div class=" col-sm-3">
@@ -79,27 +94,28 @@
                 <div id="instr-drop-down" class="ui-front" style=""></div>
             </div>
             <div class=" col-sm-3" style="padding-left:0px">
-                <button class="btn btn-primary mb-3" id="add_to_watchlist" onclick="client_api.watch_list.add_to_watchlist()">Add To Watchlist</button>
+                <button class="btn btn-primary mb-3" id="add_to_watchlist" onclick="client_api.watch_list.add_to_watchlist()">Watch</button>
                 <button class="btn btn-secondary mb-3" onclick="$('input.search-instrument').val('')">Clear</button>
-                <span class="del-icon" onclick="client_api.watch_list.delete()" title="Delete selected rows" style="position: relative; top:-7px;">
+                <span class="del-icon" onclick="client_api.watch_list.delete()" title="Delete selected rows" style="position: relative;top: -5px; padding: 0 !important;">
                     <svg xmlns="http://www.w3.org/2000/svg" width="28" height="32" fill="currentColor" class="bi bi-trash" viewBox="0 0 16 16">
                         <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/>
                         <path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/>
                     </svg>
                 </span>
             </div>
-
-            <div class="col-sm-6" style="text-align: right;">
-                <select id="select_instrument" onchange="" style="width:20%">
-                    <option selected value="bank_nifty">Bank-Nifty</option>
-                    <option value="nifty">Nifty</option>
-                    <option value="fin_nifty">Fin-Nifty</option>
-                </select>
-                <button type="button" class="btn btn-success" onclick="$(this).attr('disabled', 'disabled');client_api.algo.run($('#select_instrument')[0].value);">Run Algo</button>
-                <input id="trade_type" type="checkbox" checked data-toggle="toggle"
-                       onchange="client_api.toggle_paper_trade()"
-                       data-on="Paper Trade" data-off="Real Trade" data-onstyle="warning" data-offstyle="success">
+            <div class="col-sm-3" id="time_selector">
+                <select id="hours" onchange="client_api.util.time.activate_run_button()"></select>
+                <span>:</span>
+                <select id="minutes" onchange="client_api.util.time.activate_run_button()"></select>
+                <span>:</span>
+                <select id="seconds" onchange="client_api.util.time.activate_run_button()"></select>
+                <button id="run_algo" class="active" onclick="client_api.util.time.submit_time()">Run</button>
             </div>
+
+            <div class="col-sm-3" style="text-align: right;">
+                <button id="auto_exit" title="Auto exit @ 3:20 PM is OFF" onclick="client_api.toggle_exit_at_eom()">Auto Exit</button>
+                <button id="trade_type"  onclick="client_api.toggle_paper_trade()">Paper Trade</button>
+             </div>
         </div>
 
         <table class="table table-secondary table-condensed table-striped table-bordered">
@@ -146,25 +162,29 @@
 
             <div class="col-sm-2">
                 <input id="group_name" style="text-transform: uppercase"  type="text" class="form-control"  value="" placeholder="Group name" >
-                <!--                <div class="ui-front" style=""></div>-->
+<!--                <div class="ui-front" style=""></div>-->
             </div>
             <div class="col-sm-6" style="padding-left:0px">
                 <button class="btn btn-primary mb-3" onclick="client_api.util.grouping.group_selected()">Group Selected</button>
                 <button class="btn btn-danger mb-3" onclick="client_api.util.grouping.exit_group('#at-pool')" title="Close selected trades">Exit</button>
-                <span class="del-icon" onclick="client_api.util.grouping.delete('#at-pool')" title="Delete the closed trades" style="position: relative; top:-7px;">
+                <span class="del-icon" onclick="client_api.util.grouping.delete('#at-pool')" title="Delete the closed trades" style="position: relative; top:-7px;left:-12px">
                     <svg xmlns="http://www.w3.org/2000/svg" width="28" height="32" fill="currentColor" class="bi bi-trash" viewBox="0 0 16 16">
                         <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/>
                         <path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/>
                     </svg>
                 </span>
                 <div class='gross-pnl'>
-                    <span class="pnl">Total P&L: </span>
+<!--                    <span class="pnl">Total P&L: </span>-->
                     <span id="gross_pnl" class="pnl" style=""></span>
+                    <span class="min-max">
+                        <span id="gross_max_profit" class="pos-mtm" style="" title="Max profit seen"></span>
+                        <span id="gross_max_loss" class="neg-mtm" style="" title="Max loss seen"></span>
+                    </span>
                 </div>
             </div>
 
             <div class="col-sm-2">
-                <button class="btn btn-danger" type="button" style="float:right" onclick="$(this).attr('disabled', 'disabled');client_api.trade.exit_all_positions(this)" title="Cancels all the open orders and closes all the open positions">
+                <button class="btn btn-danger" type="button" style="float:right; font-size:16px" onclick="$(this).attr('disabled', 'disabled');client_api.trade.exit_all_positions(this)" title="Cancels all the open orders and closes all the open positions">
                     KILL SWITCH
                 </button>
             </div>
@@ -173,42 +193,42 @@
         <div id="active_trades_div">
             <table  class="table table-success table-condensed table-striped table-bordered">
                 <thead>
-                <tr>
-                    <th> <input type="checkbox" value="" onclick="client_api.util.select_all(this, '#at-pool .select_box')"> </th>
-                    <th scope="col">Type</th>
-                    <th scope="col">Instrument</th>
-                    <th scope="col">Entry</th>
-                    <th scope="col">LTP</th>
-                    <th scope="col">P&L</th>
-                    <th scope="col">Target</th>
-                    <th scope="col">SL</th>
-                    <th scope="col">Exit Limit</th>
-                    <th scope="col">Quantity</th>
-                    <th scope="col">Modify</th>
-                    <th scope="col">Exit</th>
-                </tr>
+                    <tr>
+                        <th> <input type="checkbox" value="" onclick="client_api.util.select_all(this, '#at-pool .select_box')"> </th>
+                        <th scope="col">Type</th>
+                        <th scope="col">Instrument</th>
+                        <th scope="col">Entry</th>
+                        <th scope="col">LTP</th>
+                        <th scope="col">P&L</th>
+                        <th scope="col">Target</th>
+                        <th scope="col">SL</th>
+                        <th scope="col">Exit Limit</th>
+                        <th scope="col">Quantity</th>
+                        <th scope="col">Modify</th>
+                        <th scope="col">Exit</th>
+                    </tr>
                 </thead>
                 <tbody id="at-pool"> </tbody>
                 <tfoot>
-                <tr id="summary-at-pool" token="all_trades" ttype="bull">
-                    <th scope="col"></th>
-                    <th scope="col"></th>
-                    <th scope="col" class="max-profit-loss"></th>
-                    <th scope="col"></th>
-                    <th scope="col">Total</th>
-                    <th scope="col" class="pnl" id="pnl-at-pool"></th>
-                    <th><input type="text" disabled class="form-control target" placeholder="" value=""></th>
-                    <th><input type="text" disabled class="form-control sl" placeholder="" value=""></th>
-                    <th>
-                        <select disabled class="form-select" onchange="client_api.trade.select_trade_type(this, $(this).parent().parent())" title="Trade type Bull/Bear">
-                            <option selected value="bull">Bull</option>
-                            <option value="bear">Bear</option>
-                        </select>
-                    </th>
-                    <th scope="col"><button type="button" class="btn btn-success btn-sm modify" onclick="client_api.trade.modify(this, $(this).text(), true)">Edit</button></th>
-                    <th scope="col" class="pos-mtm" id="ms-profit-at-pool" title="Max Profit Seen"></th>
-                    <th scope="col" class="neg-mtm" id="ms-loss-at-pool" title="Max Loss Seen"></th>
-                </tr>
+                    <tr id="summary-at-pool" token="all_trades" ttype="bull">
+                        <th scope="col" id="notify-at-pool"></th>
+                        <th scope="col"></th>
+                        <th scope="col" class="max-profit-loss"></th>
+                        <th scope="col"></th>
+                        <th scope="col">Total</th>
+                        <th scope="col" class="pnl" id="pnl-at-pool"></th>
+                        <th><input type="text" disabled class="form-control target" placeholder="" value=""></th>
+                        <th><input type="text" disabled class="form-control sl" placeholder="" value=""></th>
+                        <th>
+                            <select disabled class="form-select" onchange="client_api.trade.select_trade_type(this, $(this).parent().parent())" title="Trade type Bull/Bear">
+                                <option selected value="bull">Bull</option>
+                                <option value="bear">Bear</option>
+                            </select>
+                        </th>
+                        <th scope="col"><button type="button" class="btn btn-success btn-sm modify" onclick="client_api.trade.modify(this, $(this).text(), true)">Edit</button></th>
+                        <th scope="col" class="pos-mtm" id="ms-profit-at-pool" title="Max Profit Seen"></th>
+                        <th scope="col" class="neg-mtm" id="ms-loss-at-pool" title="Max Loss Seen"></th>
+                    </tr>
                 </tfoot>
             </table>
         </div>
@@ -276,7 +296,7 @@
                     <th scope="col">Exch</th>
                     <th scope="col">Prod</th>
                     <th scope="col">Token</th>
-                    <!--                <th scope="col">TSym</th>-->
+    <!--                <th scope="col">TSym</th>-->
                     <th scope="col">Exch Order ID</th>
                 </tr>
                 </thead>
@@ -328,15 +348,15 @@
 
         <div>
             <audio id="notify1">
-                <source src="audio/notify1.mp3" type="audio/mp3">
+                <source src="../audio/notify1.mp3" type="audio/mp3">
                 Your browser does not support the audio element.
             </audio>
             <audio id="notify2">
-                <source src="audio/notify2.mp3" type="audio/mp3">
+                <source src="../audio/notify2.mp3" type="audio/mp3">
                 Your browser does not support the audio element.
             </audio>
             <audio id="notify3">
-                <source src="audio/notify3.mp3" type="audio/mp3">
+                <source src="../audio/notify3.mp3" type="audio/mp3">
                 Your browser does not support the audio element.
             </audio>
         </div>
@@ -349,9 +369,11 @@
 <script src="https://code.jquery.com/jquery-3.6.4.min.js" integrity="sha256-oP6HI9z1XaZNBrJURtCoUT5SUnxFr8s3BzRl+cbzUq8=" crossorigin="anonymous"></script>
 <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js" integrity="sha256-lSjKY0/srUM9BE3dPm+c4fBo1dky2v27Gdjm2uoZaL0=" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/popper.js@1.14.7/dist/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
+<!--<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.3.1/dist/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>-->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.min.js" integrity="sha384-fbbOQedDUMZZ5KreZpsbe1LCZPVmfTnH7ois6mU1QK+m14rQ1l2bGBq41eYeM/fS" crossorigin="anonymous"></script>
-<script src="algo.js"></script>
+<script src="strangle_algo.js"></script>
 <link href="https://cdn.jsdelivr.net/gh/gitbrent/bootstrap4-toggle@3.6.1/css/bootstrap4-toggle.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.2/font/bootstrap-icons.css" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/gh/gitbrent/bootstrap4-toggle@3.6.1/js/bootstrap4-toggle.min.js"></script>
 <style>
 
@@ -362,23 +384,16 @@
         top: 0; /* Stay at the top */
         left: 0;
         overflow-x: hidden; /* Disable horizontal scroll */
-        width: 23%;
+        width: 18%;
     }
 
     .trade-panel {
-        margin-left: 23%; /* Same as the width of the sidebar */
+        margin-left: 18%; /* Same as the width of the sidebar */
         padding: 30px 10px 20px 10px;
-        width: 77%;
+        width: 80%;
         padding-left:20px;
     }
 
-    .prem-disp {
-        width:100%;
-        height: 350px;
-        overflow-y:scroll;
-        background-color: white;
-        padding-left: 5px;
-    }
 
     table {
         table-layout: fixed;
@@ -445,16 +460,22 @@
 
     div.gross-pnl {
         float: right;
-        width: 42%;
-        /*border: 2px solid orange;*/
-        padding: 5px 10px;
     }
 
-    .gross-pnl span {
-        font-size: 24px;
-        color:darkcyan;
+    .gross-pnl .pnl {
+        font-size: 72px;
+        display: inline-block;
     }
-    .pos-mtm, .pnl, .margin_req, .neg-mtm, .ltp, .strike, .prem {
+
+    div.gross-pnl .min-max {
+        display: inline-grid;
+        position: relative;
+        top : -35px;
+        /*padding-left: 12px;*/
+        font-size: 22px;
+    }
+
+    .pos-mtm, .pnl, .margin_req, .neg-mtm, .ltp {
         font-weight:bold;
         text-align:right;
     }
@@ -465,7 +486,7 @@
         color: red !important;
     }
 
-    .ltp, .prem{
+    .ltp{
         color: #0001f7 !important;
     }
 
@@ -542,6 +563,48 @@
     input[type=checkbox] {
         width: 20px;
         height: 20px;
+    }
+
+    .trade-panel button, .trade-panel .form-control {
+        font-size: 12px;
+    }
+
+    #auto_exit, #trade_type, #run_algo {
+        padding: 5px 10px;
+        font-size: 12px;
+        cursor: pointer;
+        border: none;
+        border-radius: 5px;
+    }
+
+    #auto_exit {
+        background-color: rgba(164, 164, 164, 0.92);
+        color: #fff;
+    }
+
+    #auto_exit.active {
+        background-color: #f63e3e;
+    }
+
+    #trade_type {
+        background-color: #ffc107;
+        color: #252424;
+        width: 85px;
+    }
+
+    #trade_type.active {
+        background-color: #198754;
+        color: #fff
+    }
+
+    #run_algo {
+        background-color: grey;
+        color: #fff;
+    }
+
+    #run_algo.active {
+        background-color: #198754;
+        color: #fff
     }
 
     /*    @media screen and (max-width: 900px) {
