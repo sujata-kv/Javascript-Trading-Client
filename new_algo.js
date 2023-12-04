@@ -140,6 +140,9 @@ client_api = function () {
                     algo.deploying = false;
                     setTimeout(function() {algo.run(instrument);}, conf.algo.monitor_interval)
                 }
+            } else {
+                console.log("Algo is already running.")
+                show_error_msg("Algo is already running.")
             }
         },
 
