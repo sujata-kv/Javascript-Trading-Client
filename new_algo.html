@@ -1,14 +1,14 @@
 <head>
 <!--    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.3.1/dist/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">-->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6FUUVM" crossorigin="anonymous">
-    <title>Client</title>
+    <title>Strangle</title>
 </head>
 <body class="paper_trade">
 <div class="container-fluid">
 
     <div class="d-flex flex-column align-items-stretch flex-shrink-0 stats-bar sidebar">
         <div class="d-flex align-items-center flex-shrink-0 p-3 link-dark text-decoration-none border-bottom">
-            <h3 class="card-subtitle mb-2">Login </h3>
+            <h3 class="card-subtitle mb-2">Strangle Algo </h3>
         </div>
         <div class="list-group list-group-flush border-bottom">
             <a href="#" class="list-group-item list-group-item-action py-3 lh-tight" aria-current="true">
@@ -33,7 +33,7 @@
                             <input type="text"  class="form-control form-control-sm user-id"  placeholder="User" value="FA90807">
                         </div>
                         <div class="col-auto">
-                            <input type="text" class="form-control form-control-sm session-token" placeholder="Session Token" value="0fbf3b2d96145ac386d580a978af8788d32c43839a6815e6179246d5f7458f59">
+                            <input type="text" class="form-control form-control-sm session-token" placeholder="Session Token" value="b6ca03da74ef733d1a7a86fc32cfcb51f9df74504e7c3353c47593e760f6408c">
                         </div>
                     </div>
                 </div>
@@ -89,31 +89,33 @@
     </div>
     <div class="d-flex flex-column align-items-stretch trade-panel">
         <div class="row">
-            <div class=" col-sm-4">
+            <div class=" col-sm-3">
                 <input type="text" class="form-control search-instrument watch_item"  value="" placeholder="Instrument" >
                 <div id="instr-drop-down" class="ui-front" style=""></div>
             </div>
-            <div class=" col-sm-4" style="padding-left:0px">
-                <button class="btn btn-primary mb-3" id="add_to_watchlist" onclick="client_api.watch_list.add_to_watchlist()">Add To Watchlist</button>
+            <div class=" col-sm-3" style="padding-left:0px">
+                <button class="btn btn-primary mb-3" id="add_to_watchlist" onclick="client_api.watch_list.add_to_watchlist()">Watch</button>
                 <button class="btn btn-secondary mb-3" onclick="$('input.search-instrument').val('')">Clear</button>
-                <span class="del-icon" onclick="client_api.watch_list.delete()" title="Delete selected rows" style="position: relative; top:-7px;">
+                <span class="del-icon" onclick="client_api.watch_list.delete()" title="Delete selected rows" style="position: relative;top: -5px; padding: 0 !important;">
                     <svg xmlns="http://www.w3.org/2000/svg" width="28" height="32" fill="currentColor" class="bi bi-trash" viewBox="0 0 16 16">
                         <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/>
                         <path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/>
                     </svg>
                 </span>
             </div>
+            <div class="col-sm-3" id="time_selector">
+                <select id="hours" onchange="client_api.util.time.activate_run_button()"></select>
+                <span>:</span>
+                <select id="minutes" onchange="client_api.util.time.activate_run_button()"></select>
+                <span>:</span>
+                <select id="seconds" onchange="client_api.util.time.activate_run_button()"></select>
+                <button id="run_algo" class="active" onclick="client_api.util.time.submit_time()">Run</button>
+            </div>
 
-            <div class="col-sm-2" style="text-align: right;">
-                <input id="exit_at_eom" type="checkbox" checked data-toggle="toggle"
-                       onchange="client_api.toggle_exit_at_eom()"
-                       data-on="No auto exit" data-off="Exit @ 3:20" data-onstyle="info" data-offstyle="danger">
-            </div>
-            <div class="col-sm-2" style="text-align: right;">
-                <input id="trade_type" type="checkbox" checked data-toggle="toggle"
-                       onchange="client_api.toggle_paper_trade()"
-                       data-on="Paper Trade" data-off="Real Trade" data-onstyle="warning" data-offstyle="success">
-            </div>
+            <div class="col-sm-3" style="text-align: right;">
+                <button id="auto_exit" title="Auto exit @ 3:20 PM is OFF" onclick="client_api.toggle_exit_at_eom()">Auto Exit</button>
+                <button id="trade_type"  onclick="client_api.toggle_paper_trade()">Paper Trade</button>
+             </div>
         </div>
 
         <table class="table table-secondary table-condensed table-striped table-bordered">
@@ -165,7 +167,7 @@
             <div class="col-sm-6" style="padding-left:0px">
                 <button class="btn btn-primary mb-3" onclick="client_api.util.grouping.group_selected()">Group Selected</button>
                 <button class="btn btn-danger mb-3" onclick="client_api.util.grouping.exit_group('#at-pool')" title="Close selected trades">Exit</button>
-                <span class="del-icon" onclick="client_api.util.grouping.delete('#at-pool')" title="Delete the closed trades" style="position: relative; top:-7px;">
+                <span class="del-icon" onclick="client_api.util.grouping.delete('#at-pool')" title="Delete the closed trades" style="position: relative; top:-7px;left:-12px">
                     <svg xmlns="http://www.w3.org/2000/svg" width="28" height="32" fill="currentColor" class="bi bi-trash" viewBox="0 0 16 16">
                         <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/>
                         <path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/>
@@ -182,7 +184,7 @@
             </div>
 
             <div class="col-sm-2">
-                <button class="btn btn-danger" type="button" style="float:right" onclick="$(this).attr('disabled', 'disabled');client_api.trade.exit_all_positions(this)" title="Cancels all the open orders and closes all the open positions">
+                <button class="btn btn-danger" type="button" style="float:right; font-size:16px" onclick="$(this).attr('disabled', 'disabled');client_api.trade.exit_all_positions(this)" title="Cancels all the open orders and closes all the open positions">
                     KILL SWITCH
                 </button>
             </div>
@@ -561,6 +563,48 @@
     input[type=checkbox] {
         width: 20px;
         height: 20px;
+    }
+
+    .trade-panel button, .trade-panel .form-control {
+        font-size: 12px;
+    }
+
+    #auto_exit, #trade_type, #run_algo {
+        padding: 5px 10px;
+        font-size: 12px;
+        cursor: pointer;
+        border: none;
+        border-radius: 5px;
+    }
+
+    #auto_exit {
+        background-color: rgba(164, 164, 164, 0.92);
+        color: #fff;
+    }
+
+    #auto_exit.active {
+        background-color: #f63e3e;
+    }
+
+    #trade_type {
+        background-color: #ffc107;
+        color: #252424;
+        width: 85px;
+    }
+
+    #trade_type.active {
+        background-color: #198754;
+        color: #fff
+    }
+
+    #run_algo {
+        background-color: grey;
+        color: #fff;
+    }
+
+    #run_algo.active {
+        background-color: #198754;
+        color: #fff
     }
 
     /*    @media screen and (max-width: 900px) {

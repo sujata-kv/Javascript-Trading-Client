@@ -126,6 +126,8 @@ client_api = function () {
         deploy_stats : {},
         deployed : false,
         deploying : false,
+        schedulerHandler : undefined,
+
         run : function(instrument) {
             console.log("Algo run function called for " + instrument)
             if(!algo.deployed && !algo.deploying) {
@@ -229,6 +231,39 @@ client_api = function () {
 
             if(deploy_count < conf.algo.retry_count)
                 algo.run(instrument);   //Re-deploy if the premiums of ATM strikes are close enough
+        },
+
+        schedule_algo: function(hours, minutes, seconds) {
+            const currentTime = new Date();
+            const scheduledTime = new Date(
+                currentTime.getFullYear(),
+                currentTime.getMonth(),
+                currentTime.getDate(),
+                hours,
+                minutes,
+                seconds
+            );
+
+            const timeDifference = scheduledTime - currentTime;
+
+            $('#run_algo').toggleClass('active');
+            $('#run_algo').text("Scheduled")
+
+            if (timeDifference > 0) {
+                console.log("Scheduling algo to run @ " + hours + ":" + minutes + ":" + seconds)
+                if(this.schedulerHandler != undefined) {
+                    clearTimeout(this.schedulerHandler)
+                }
+                this.schedulerHandler = setTimeout(function () {
+                    strangle_tracker.find_strangle_strikes();
+                    algo.run("bank_nifty")
+                }, timeDifference);
+                $('#run_algo').attr('disabled','disabled');
+            } else {
+                show_error_msg("Selected time has already passed. Please reschedule the algo", false);
+                $('#run_algo').toggleClass('active');
+                $('#run_algo').text("Run")
+            }
         },
     }
 
@@ -3668,27 +3703,68 @@ client_api = function () {
                         </tr>
                     </tfoot> </table></div>`)
             },
-        }
+        },
+
+        time : {
+            populate_selected(id, max, defaultValue) {
+                const selectElement = $(`#${id}`);
+                for (let i = 0; i < max; i++) {
+                    const optionValue = String(i).padStart(2, '0');
+                    const isSelected = optionValue === defaultValue ? 'selected' : '';
+                    selectElement.append(`<option value="${optionValue}" ${isSelected}>${optionValue}</option>`);
+                }
+            },
+
+            populate_time() {
+                this.populate_selected('hours', 24, '09');
+                this.populate_selected('minutes', 60, '15');
+                this.populate_selected('seconds', 60, '30');
+            },
+
+            activate_run_button() {
+                $('#run_algo').addClass('active');
+                $('#run_algo').text("Run");
+                $('#run_algo').removeAttr('disabled')
+            },
+
+            submit_time() {
+                const hours = $('#hours').val();
+                const minutes = $('#minutes').val();
+                const seconds = $('#seconds').val();
+
+                const selectedTime = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+
+                $('#selected-time').text(`Selected Time: ${selectedTime}`);
+
+                // Run the function to print "Hello Su" at the selected time
+                algo.schedule_algo(hours, minutes, seconds);
+            },
+        },
     };
 
     const toggle_exit_at_eom = function() {
-        let exit_on = document.getElementById('exit_at_eom').checked == false
-        if(exit_on) {
+        $('#auto_exit').toggleClass('active');
+        if($('#auto_exit').hasClass('active')) {
             client_api.trade.exit_at_eom();
+            $('#auto_exit').attr("title", "Auto exit @ 3:20 PM is ON");
         } else {
+            $('#auto_exit').attr("title", "Auto exit @ 3:20 PM is OFF");
             clearTimeout(client_api.trade.exit_handler);
             delete trade.exit_handler
         }
     };
 
     const is_paper_trade = function() {
-        return document.getElementById('trade_type').checked == true
+        return !$('#trade_type').hasClass('active');
     };
 
     const toggle_paper_trade = function() {
+        $('#trade_type').toggleClass('active');
         if(is_paper_trade()) {
+            $('#trade_type').text("Paper Trade")
             document.body.className = 'paper_trade';
         } else {
+            $('#trade_type').text("Real Trade")
             document.body.className = 'real_trade';
         }
     };
@@ -3706,15 +3782,6 @@ client_api = function () {
         })
     };
 
-    function schedule_algo() {
-        var now = new Date();
-        var millis = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 9, 15, 29, 0) - now;
-        setTimeout(function(){
-            strangle_tracker.find_strangle_strikes();
-            setTimeout(function() {algo.run("bank_nifty")}, 100);
-        }, millis);
-
-    }
 
     function connect_to_server(){
         select_broker()
@@ -3726,7 +3793,7 @@ client_api = function () {
         setTimeout(client_api.watch_list.restore_watch_list, 100);
         setTimeout(client_api.trade.trigger, 1000);
 
-        schedule_algo()
+        util.time.submit_time()
         // setTimeout(strangle_tracker.find_strangle_strikes, 1000);
         // setTimeout(function() {algo.run("bank_nifty")}, 1500);
     }
@@ -3734,6 +3801,7 @@ client_api = function () {
     /*Attach functions to connect, add to watch list button, etc*/
     $(document).ready(function() {
         hide_other_tabs('#open_orders')
+        util.time.populate_time()
     });
 
     return {
@@ -3753,6 +3821,7 @@ client_api = function () {
         "connect_to_server" : connect_to_server,
         "select_broker" : select_broker,
         "conf": conf,
+        "algo": algo,
     }
 
 }();
