@@ -3421,7 +3421,6 @@ client_api = function () {
     };
 
     function connect_to_server(){
-        select_broker()
         broker.init();
         broker.connect();
         broker.search.attach_search_autocomplete();
@@ -3436,6 +3435,7 @@ client_api = function () {
 
     /*Attach functions to connect, add to watch list button, etc*/
     $(document).ready(function() {
+        select_broker();
         hide_other_tabs('#open_orders')
     });
 

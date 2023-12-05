@@ -15,9 +15,18 @@
 
                 <div id="login-creds">
                     <select class="form-select" id="broker_option" onchange="client_api.select_broker()">
-                        <option selected value="kite">Kite</option>
-                        <option value="shoonya">Shoonya</option>
+                        <option selected value="shoonya">Shoonya</option>
+                        <option value="kite">Kite</option>
                     </select>
+
+                    <div class="form-row align-items-center shoonya-creds" style="padding-top:10px;">
+                        <div class="col-auto">
+                            <input type="text"  class="form-control form-control-sm user-id"  placeholder="User" value="FA90807">
+                        </div>
+                        <div class="col-auto">
+                            <input type="text" class="form-control form-control-sm session-token" placeholder="Session Token" value="b2e0270ac79f2ed72fdfb475d07a3acb642af7ff9d9fe310dc2ca207317e2236">
+                        </div>
+                    </div>
 
                     <div class="form-row align-items-center kite-creds"  style="padding-top:10px;">
                         <div class="col-auto">
@@ -25,15 +34,6 @@
                         </div>
                         <div class="col-auto"> <!--  bFKGykcV3yxiBujdLSK5Y1Y/qtDW2AsdaamtKTgvb0nC1sneP6FY0cUsSWFMmi5OBykZuDYhlG7/KzPVHFtpiIlSza2p8xi+ONZjZ8V1Ao6fmylp98YMEw==  -->
                             <input type="text" class="form-control form-control-sm session-token" placeholder="Session Token" value="hghOowlLPwt7Ki+Pr6x/PLBgI6E66BeVWn+bCinvSXRtHVaaXvUyQul9vqX1zpSAsUlXCdf0oaqvhaB1lmw/TeDYQ8NLGpc93LbNMq9lidAOpBx7Vmlhiw==">
-                        </div>
-                    </div>
-
-                    <div class="form-row align-items-center shoonya-creds d-none" style="padding-top:10px;">
-                        <div class="col-auto">
-                            <input type="text"  class="form-control form-control-sm user-id"  placeholder="User" value="FA90807">
-                        </div>
-                        <div class="col-auto">
-                            <input type="text" class="form-control form-control-sm session-token" placeholder="Session Token" value="b6ca03da74ef733d1a7a86fc32cfcb51f9df74504e7c3353c47593e760f6408c">
                         </div>
                     </div>
                 </div>
