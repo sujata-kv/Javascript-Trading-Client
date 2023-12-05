@@ -249,9 +249,6 @@ client_api = function () {
 
             const timeDifference = scheduledTime - currentTime;
 
-            $('#run_algo').toggleClass('active');
-            $('#run_algo').text("Scheduled")
-
             if (timeDifference > 0) {
                 console.log("Scheduling algo to run @ " + hours + ":" + minutes + ":" + seconds)
                 if(this.schedulerHandler != undefined) {
@@ -261,11 +258,10 @@ client_api = function () {
                     strangle_tracker.find_strangle_strikes();
                     algo.run("bank_nifty")
                 }, timeDifference);
-                $('#run_algo').attr('disabled','disabled');
+                util.time.deactivate_run_button();
             } else {
-                show_error_msg("Selected time has already passed. Please reschedule the algo", false);
-                $('#run_algo').toggleClass('active');
-                $('#run_algo').text("Run")
+                show_error_msg("Selected time has already passed. Please reschedule the algo");
+                util.time.activate_run_button()
             }
         },
     }
@@ -3728,6 +3724,14 @@ client_api = function () {
                 $('#run_algo').addClass('active');
                 $('#run_algo').text("Run");
                 $('#run_algo').removeAttr('disabled')
+                $('#run_algo').css('cursor', 'pointer');
+            },
+
+            deactivate_run_button() {
+                $('#run_algo').removeClass('active');
+                $('#run_algo').text("Scheduled");
+                $('#run_algo').attr('disabled','disabled');
+                $('#run_algo').css('cursor', 'default');
             },
 
             submit_time() {
