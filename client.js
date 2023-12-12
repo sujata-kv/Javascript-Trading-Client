@@ -4,7 +4,7 @@ client_api = function () {
     let conf = {
         alert_profit_threshold : 50, //Alert once the profit % exceeds the specified value
         alert_loss_threshold : 50, //Alert once the loss % exceeds the specified value
-        delay_SL : 60,          // In seconds.. Delay SL by these many seconds
+        delay_SL : 5,          // In seconds.. Delay SL by these many seconds
         target_sl_check_interval : 500, // In Milliseconds. Check for target and SL after every 500 ms
         heartbeat_timeout : 7000,
         alert_msg_disappear_after : 3000, // Unit milliseconds
@@ -19,7 +19,7 @@ client_api = function () {
     let broker = '';
 
     function select_broker() {
-        let broker_name = $('#broker_option')[0].value
+        let broker_name = $('#broker_option').val();
 
         if (broker_name === "kite") {
             broker = kite
