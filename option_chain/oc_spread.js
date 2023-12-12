@@ -51,8 +51,11 @@ client_api = function () {
         },
 
         init: function () {
-            vix_tk = '26017', nifty_tk = '26000', bank_nifty_tk = '26009', fin_nifty_tk = '26037';
-            subscribed_symbols = ["NSE|26017", "NSE|26000", "NSE|26009", "NSE|26037"];
+            // vix_tk = '26017', nifty_tk = '26000', bank_nifty_tk = '26009', fin_nifty_tk = '26037';
+            // subscribed_symbols = ["NSE|26017", "NSE|26000", "NSE|26009", "NSE|26037"];
+
+            bank_nifty_tk = '26009'
+            subscribed_symbols = ["NSE|26009"];
         },
 
         connect: function () {
@@ -180,7 +183,8 @@ client_api = function () {
                     success: function (data, textStatus, jqXHR) {
                         // console.log("Ajax success")
                         let info = data.values[0];
-                        option_chain_tracker.monitored_strikes_details.push({"token": info.token, "stkprc": strike, "optt": ce_pe});
+                        option_chain_tracker.monitored_strikes.push({"token": info.token, "strike": strike, "optt": ce_pe});
+                        option_chain_tracker.strikeMapping[info.token] = {strike : strike, optt: ce_pe};
                         shoonya.subscribe_token('NFO|' + info.token);
                     },
                     error: function (jqXHR, textStatus, errorThrown) {
@@ -193,8 +197,8 @@ client_api = function () {
     }
 
     const option_chain_tracker = {
-        monitored_strikes_details: [],
-        stkprcMapping : {},
+        monitored_strikes: [],
+        strikeMapping : {},
 
         prev_atm_strike : "",
         atm_changed : false,
@@ -235,13 +239,12 @@ client_api = function () {
                     this.prev_atm_strike = atm_strike
 
                     this.monitored_strikes = []
-                    this.monitored_strikes_details = []
                     console.log(instr + ": ATM strike : " + atm_strike)
 
                     this.subscribe_strike(instr, atm_strike)
 
                     let cnt = 1; //ATM + 3 above + 3 below
-                    while (cnt < conf.strikes_after_before_atm) {
+                    while (cnt <= conf.strikes_after_before_atm) {
                         let strike = atm_strike + cnt * conf[instr].round_to
                         this.subscribe_strike(instr, strike)
 
@@ -250,11 +253,6 @@ client_api = function () {
                         cnt = cnt + 1;
                     }
 
-                    // Populate the mapping variable
-                    this.monitored_strikes_details.forEach(item => {
-                        const strprc = `${item.stkprc}${item.optt === 'CE' ? 'CE' : 'PE'}`;
-                        this.stkprcMapping[item.token] = {strike : strprc, optt: item.optt};
-                    });
                 } else {
                     this.atm_changed = false
                 }
@@ -264,12 +262,12 @@ client_api = function () {
 
         subscribe_strike : function(instr, strike) {
             console.log(instr + ": " + strike)
-            this.monitored_strikes.push(strike)
             broker.search.search_subscribe_strike(instr, strike, "CE")
             broker.search.search_subscribe_strike(instr, strike, "PE")
         },
 
         update_table : function(token, lp) {
+            console.log("Update table called for " + token + " LP = " + lp)
             const priceTableBody = document.querySelector('#option_chain_body');
             let data = this.get_strike_for_token(token)
 
@@ -287,22 +285,22 @@ client_api = function () {
                     const cellPE = row.insertCell(2);
 
                     // Set initial values for the cells
-                    cellCE.textContent = data.optt === 'CE' ? lp : '';
-                    cellStrprc.textContent = data.strprc;
-                    cellPE.textContent = data.optt === 'PE' ? lp : '';
-                    cellTotal.textContent = lp;
+                    if(data.optt === 'CE')
+                        cellCE.textContent = lp;
+                    else if(data.optt == 'PE')
+                        cellPE.textContent = lp;
+
+                    cellStrprc.textContent = data.strike;
                 } else {
                     // If the row exists, update the cells with the new data
                     const cellCE = row.cells[0];
                     const cellPE = row.cells[2];
-                    const cellTotal = row.cells[3];
 
                     if (data.optt === 'CE') {
-                        cellCE.textContent = data.lp;
+                        cellCE.textContent = lp;
                     } else if (data.optt === 'PE') {
-                        cellPE.textContent = data.lp;
+                        cellPE.textContent = lp;
                     }
-                    cellTotal.textContent = (parseFloat(cellCE.textContent || 0) + parseFloat(cellPE.textContent || 0)).toFixed(2);
                 }
             }
 
@@ -311,27 +309,13 @@ client_api = function () {
         // Function to get strprc value for a given token using the mapping variable
         get_strike_for_token : function(token) {
             // Check if the token exists in the mapping variable
-            if (this.stkprcMapping.hasOwnProperty(token)) {
-                return this.stkprcMapping[token];
+            if (this.strikeMapping.hasOwnProperty(token)) {
+                return this.strikeMapping[token];
             } else {
                 return null;
             }
         },
 
-        update_table_gpt : function(token, lp) {
-            var ceData = this.monitored_strikes_details.filter(item => item.optt === "CE");
-            var peData = this.monitored_strikes_details.filter(item => item.optt === "PE");
-
-            ceData.forEach(function (ceItem) {
-                var peItem = peData.find(item => item.stkprc === ceItem.stkprc);
-
-                var cePrice = liveData[ceItem.token];
-                var pePrice = peItem ? liveData[peItem.token] : "";
-
-                var row = `<tr><td>${cePrice}</td><td>${ceItem.stkprc}</td><td>${pePrice}</td></tr>`;
-                $("#optionsTableBody").append(row);
-            });
-        }
     }
 
     function connect_to_server(){
