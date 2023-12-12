@@ -5,8 +5,8 @@ client_api = function () {
         user_id : "FA90807",
         session_token: "60c9731d931f0156710a4c5828b362a120a54dfa972acfa4c796bc5e23e0a8e7",
 
+        instrument : "nifty",  // nifty, bank_nifty, fin_nifty
         atm_strike_check_interval : 60000,
-        instrument : "bank_nifty",  // nifty, bank_nifty, fin_nifty
         strikes_after_before_atm : 3,
 
         bank_nifty: {
@@ -23,8 +23,8 @@ client_api = function () {
         alert_msg_disappear_after : 3000, // Unit milliseconds
     }
 
-    let vix_tk, nifty_tk, bank_nifty_tk, fin_nifty_tk = '';
-    let user_id = '', session_token='', ws = '';
+    let nifty_tk, bank_nifty_tk, fin_nifty_tk = '';
+    let ws = '';
     let subscribed_symbols = []
     let pending_to_subscribe_tokens = new Set();
     let logged_in = false;
@@ -51,11 +51,11 @@ client_api = function () {
         },
 
         init: function () {
-            // vix_tk = '26017', nifty_tk = '26000', bank_nifty_tk = '26009', fin_nifty_tk = '26037';
-            // subscribed_symbols = ["NSE|26017", "NSE|26000", "NSE|26009", "NSE|26037"];
+            nifty_tk = '26000', bank_nifty_tk = '26009', fin_nifty_tk = '26037';
+            subscribed_symbols = ["NSE|26000", "NSE|26009", "NSE|26037"];
 
-            bank_nifty_tk = '26009'
-            subscribed_symbols = ["NSE|26009"];
+            // bank_nifty_tk = '26009'
+            // subscribed_symbols = ["NSE|26009"];
         },
 
         connect: function () {
@@ -97,7 +97,11 @@ client_api = function () {
                         let instr_token = result.tk
                         let ltpf = parseFloat(result.lp).toFixed(2)
                         live_data[instr_token] = ltpf
-                        option_chain_tracker.update_table(instr_token, ltpf)
+                        if(instr_token === nifty_tk || instr_token === bank_nifty_tk || instr_token === fin_nifty_tk) {
+                            $('#spot').html(ltpf)
+                        } else {
+                            option_chain_tracker.update_table(instr_token, ltpf)
+                        }
                     }
                 }
                 if (result.t == 'dk' || result.t == 'df') {
@@ -199,8 +203,17 @@ client_api = function () {
     const option_chain_tracker = {
         monitored_strikes: [],
         strikeMapping : {},
+        cell_mapping : {
+            left_spr1 : 0,
+            left_spr2 : 1,
+            ce : 2,
+            strike : 3,
+            pe : 4,
+            right_spr1 : 5,
+            right_spr2 : 6,
+        },
 
-        prev_atm_strike : "",
+        cur_atm_strike : "",
         atm_changed : false,
 
         find_atm_strike_price: function (instrument) {
@@ -215,6 +228,7 @@ client_api = function () {
         },
 
         get_sorted_strike_prices : function(instrument, atm_strike) {
+            console.log("Sorting the strike prices..")
             let selected_strikes = [atm_strike]
             let cnt = 1; //ATM + 3 above + 3 below
             while (cnt <= conf.strikes_after_before_atm) {
@@ -248,9 +262,9 @@ client_api = function () {
         find_atm_strikes: function (instr) {
             if(logged_in) {
                 let atm_strike = option_chain_tracker.find_atm_strike_price(instr);
-                if(atm_strike != this.prev_atm_strike) {
+                if(atm_strike != this.cur_atm_strike) {
                     this.atm_changed = true
-                    this.prev_atm_strike = atm_strike
+                    this.cur_atm_strike = atm_strike
 
                     this.monitored_strikes = []
                     console.log(instr + ": ATM strike : " + atm_strike)
@@ -262,7 +276,7 @@ client_api = function () {
                     this.atm_changed = false
                 }
             }
-            setTimeout(function() {option_chain_tracker.find_atm_strikes("bank_nifty")}, conf.atm_strike_check_interval); //Keep looping to find ATM strike price
+            setTimeout(function() {option_chain_tracker.find_atm_strikes(conf.instrument)}, conf.atm_strike_check_interval); //Keep looping to find ATM strike price
         },
 
         subscribe_strike : function(instr, strike) {
@@ -284,34 +298,33 @@ client_api = function () {
                     row = priceTableBody.insertRow();
                     row.id = rowId;
 
+                    if (data.strike === this.cur_atm_strike) {
+                        $(row).addClass('table-active');
+                    }
+
                     // Create cells for each column
-                    const cellCE = row.insertCell(0);
-                    const cellStrprc = row.insertCell(1);
-                    const cellPE = row.insertCell(2);
+                    const cellCnt = Object.keys(this.cell_mapping).length;
+                    for (let i = 0; i < cellCnt; i++) {
+                        row.insertCell(i);
+                    }
 
-                    // Set initial values for the cells
                     if(data.optt === 'CE')
-                        cellCE.textContent = lp;
+                        row.cells[this.cell_mapping.ce].textContent = lp;
                     else if(data.optt == 'PE')
-                        cellPE.textContent = lp;
+                        row.cells[this.cell_mapping.pe].textContent = lp;
 
-                    cellStrprc.textContent = data.strike;
+                    row.cells[this.cell_mapping.strike].textContent = data.strike;
                 } else {
-                    // If the row exists, update the cells with the new data
-                    const cellCE = row.cells[0];
-                    const cellPE = row.cells[2];
-
                     if (data.optt === 'CE') {
-                        cellCE.textContent = lp;
+                        row.cells[this.cell_mapping.ce].textContent = lp;
                     } else if (data.optt === 'PE') {
-                        cellPE.textContent = lp;
+                        row.cells[this.cell_mapping.pe].textContent = lp;
                     }
                 }
             }
 
         },
 
-        // Function to get strprc value for a given token using the mapping variable
         get_strike_for_token : function(token) {
             // Check if the token exists in the mapping variable
             if (this.strikeMapping.hasOwnProperty(token)) {
@@ -326,7 +339,11 @@ client_api = function () {
     function connect_to_server(){
         broker.init();
         broker.connect();
-        setTimeout(function() {option_chain_tracker.find_atm_strikes("bank_nifty")}, 1000)
+        conf.instrument_token = conf.instrument === "nifty"? nifty_tk
+                                    : conf.instrument === "bank_nifty"? bank_nifty_tk
+                                    : conf.instrument === "fin_nifty" ? fin_nifty_tk : "unknown_instrument";
+        $('#instrument').html(conf.instrument.toUpperCase())
+        setTimeout(function() {option_chain_tracker.find_atm_strikes(conf.instrument)}, 1000)
     }
 
     /*Attach functions to connect, add to watch list button, etc*/
