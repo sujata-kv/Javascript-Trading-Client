@@ -4,7 +4,6 @@ client_api = function () {
     let conf = {
         alert_profit_threshold : 50, //Alert once the profit % exceeds the specified value
         alert_loss_threshold : 50, //Alert once the loss % exceeds the specified value
-        delay_SL : 5,          // In seconds.. Delay SL by these many seconds
         target_sl_check_interval : 500, // In Milliseconds. Check for target and SL after every 500 ms
         heartbeat_timeout : 7000,
         alert_msg_disappear_after : 3000, // Unit milliseconds
@@ -2082,40 +2081,56 @@ client_api = function () {
             let spot_based = false;
             let instrument = 'price';
             let value = val_str;
+            let delay = null;
 
-            if(value != undefined && value != ''){
+            if (value != undefined && value != '') {
                 value = value.trim();
-                if(value.startsWith('N') || value.startsWith('n') || value.includes('B') || value.includes('b')
-                    || value.includes('F') || value.includes('f')) {
-                    spot_based = true
-                    value = value.replace(/-/, '')
-                    value = value.trim()
-                    let ii = (value).charAt(0).toUpperCase()
-                    if(ii === 'N')
-                        instrument = 'nifty';
-                    else if(ii === 'B')
-                        instrument = 'bank_nifty'
-                    else if(ii === 'F')
-                        instrument = 'fin_nifty'
-                    value = value.replace(/N|B|F|-| /i, '');
+
+                // Check if delay is specified
+                const delayMatch = value.match(/(\d+)\s*d/i);
+                if (delayMatch) {
+                    delay = parseInt(delayMatch[1], 10);
+                    value = value.replace(`${delayMatch[0]}`, '').trim();
+                }
+
+                if (
+                    value.startsWith('N') || value.startsWith('n') ||
+                    value.startsWith('B') || value.startsWith('b') ||
+                    value.startsWith('F') || value.startsWith('f')
+                ) {
+                    spot_based = true;
+                    value = value.replace(/-|\s/g, ''); // Remove hyphens and spaces
+                    let ii = value.charAt(0).toUpperCase();
+                    if (ii === 'N') instrument = 'nifty';
+                    else if (ii === 'B') instrument = 'bank_nifty';
+                    else if (ii === 'F') instrument = 'fin_nifty';
+                    value = value.replace(/N|B|F/i, '');
+                } else {
+                    // If not spot-based, remove hyphens and spaces from the value
+                    value = value.replace(/-|\s/g, '');
                 }
             }
 
-            return {spot_based : spot_based, value : value, instrument : instrument}
+            return { spot_based: spot_based, value: value, instrument: instrument, delay: delay };
         }
 
         get_value_string(value_obj) {
+            let value_str = '';
             if(value_obj.spot_based) {
-                let value_str = '';
                 switch(value_obj.instrument) {
                     case 'nifty' : value_str = 'N '; break;
                     case 'bank_nifty' : value_str = 'B '; break;
                     case 'fin_nifty' : value_str = 'F '; break;
                 }
-                return value_str + value_obj.value.trim();
+                value_str = value_str + value_obj.value.trim();
             } else {
-                return value_obj.value.trim()
+                value_str = value_obj.value.trim()
             }
+
+            if(value_obj.delay != null) {
+                value_str = `${value_str} - ${delay}D`;
+            }
+            return value_str;
         }
 
         add_entry(row_id, token, ttype, buy_sell, value_obj) {
@@ -2437,7 +2452,6 @@ client_api = function () {
 
         trigger: function() {
             let ms_list = milestone_manager.get_milestones();
-            sl_action_threshold = conf.delay_SL * 1000 / conf.target_sl_check_interval; //Calculated every time. So, using debug mode can be updated
 
             for( const [row_id, mile_stone] of Object.entries(ms_list)) {
                 if(mile_stone.get_entry() != undefined) {// If it has entry object
@@ -2591,6 +2605,8 @@ client_api = function () {
                 let trig_value = parseFloat(sl_obj.value);
                 let ttype = mile_stone.ttype;
                 let buy_sell = mile_stone.buy_sell;
+                let sl_action_threshold = 1;    //Default
+
                 if (sl_obj.spot_based) {
                     switch(sl_obj.instrument) {
                         case "nifty" : cur_spot_value = live_data[nifty_tk]; break;
@@ -2608,6 +2624,10 @@ client_api = function () {
                         // let pnl = $(`#${row_id}`).find('.pnl').text()    //Check for pnl
                         // cur_spot_value = parseFloat(pnl)
                     }
+                }
+
+                if(sl_obj.delay != null) {
+                    sl_action_threshold = parseInt(sl_obj.delay) * 1000 / (conf.target_sl_check_interval + 20); //20 milli seconds, extra execution time
                 }
 
                 console.log(`Checking SL : ${ttype}  current : ${cur_spot_value}  trig : ${trig_value}`)
@@ -2662,7 +2682,7 @@ client_api = function () {
                         milestone_manager.remove_milestone(row_id)
                     } else {
                         milestone_manager.increment_sl_hit_count(row_id)
-                        console.log("SL hit count = " + ms.get_sl_hit_count() + ", Trigger threshold count = " + sl_action_threshold + " Delay-SL by: " + conf.delay_SL + " seconds")
+                        console.log("SL hit count = " + ms.get_sl_hit_count() + ", Trigger threshold count = " + sl_action_threshold + " delay SL by: " + sl_obj.delay + " seconds")
                     }
                 }
             }
