@@ -53,9 +53,6 @@ client_api = function () {
         init: function () {
             nifty_tk = '26000', bank_nifty_tk = '26009', fin_nifty_tk = '26037';
             subscribed_symbols = ["NSE|26000", "NSE|26009", "NSE|26037"];
-
-            // bank_nifty_tk = '26009'
-            // subscribed_symbols = ["NSE|26009"];
         },
 
         connect: function () {
@@ -188,7 +185,7 @@ client_api = function () {
                         // console.log("Ajax success")
                         let info = data.values[0];
                         option_chain_tracker.monitored_strikes.push({"token": info.token, "strike": strike, "optt": ce_pe});
-                        option_chain_tracker.strikeMapping[info.token] = {strike : strike, optt: ce_pe};
+                        option_chain_tracker.token_details[info.token] = {strike : strike, optt: ce_pe};
                         shoonya.subscribe_token('NFO|' + info.token);
                     },
                     error: function (jqXHR, textStatus, errorThrown) {
@@ -201,8 +198,8 @@ client_api = function () {
     }
 
     const option_chain_tracker = {
-        monitored_strikes: [],
-        strikeMapping : {},
+        monitored_strikes: [],  //Contains details such as token, optt and strike for each monitored strike
+        token_details : {},     //Contains the strike price and optt
         cell_mapping : {
             left_spr1 : 0,
             left_spr2 : 1,
@@ -288,7 +285,7 @@ client_api = function () {
         update_table : function(token, lp) {
             console.log("Update table called for " + token + " LP = " + lp)
             const priceTableBody = document.querySelector('#option_chain_body');
-            let data = this.get_strike_for_token(token)
+            let data = this.get_token_details(token)
 
             if(data != null) {
                 const rowId = `row_${data.strike}`;
@@ -325,10 +322,10 @@ client_api = function () {
 
         },
 
-        get_strike_for_token : function(token) {
+        get_token_details : function(token) {
             // Check if the token exists in the mapping variable
-            if (this.strikeMapping.hasOwnProperty(token)) {
-                return this.strikeMapping[token];
+            if (this.token_details.hasOwnProperty(token)) {
+                return this.token_details[token];
             } else {
                 return null;
             }
