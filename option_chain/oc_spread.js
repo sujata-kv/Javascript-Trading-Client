@@ -3,7 +3,7 @@ client_api = window.client_api || {};
 client_api = function () {
     const conf = {
         user_id : "FA90807",
-        session_token: "73155f8b9edc727fb7c09a6893a07251755aa6171e7da8e8499123e13bec1bf0",
+        session_token: "60c9731d931f0156710a4c5828b362a120a54dfa972acfa4c796bc5e23e0a8e7",
 
         atm_strike_check_interval : 60000,
         instrument : "bank_nifty",  // nifty, bank_nifty, fin_nifty
@@ -94,6 +94,7 @@ client_api = function () {
                         let instr_token = result.tk
                         let ltpf = parseFloat(result.lp).toFixed(2)
                         live_data[instr_token] = ltpf
+                        option_chain_tracker.update_table(instr_token, ltpf)
                     }
                 }
                 if (result.t == 'dk' || result.t == 'df') {
@@ -179,7 +180,7 @@ client_api = function () {
                     success: function (data, textStatus, jqXHR) {
                         // console.log("Ajax success")
                         let info = data.values[0];
-                        option_chain_tracker.monitored_strikes.push(info.token);
+                        option_chain_tracker.monitored_strikes_details.push({"token": info.token, "stkprc": strike, "optt": ce_pe});
                         shoonya.subscribe_token('NFO|' + info.token);
                     },
                     error: function (jqXHR, textStatus, errorThrown) {
@@ -192,7 +193,9 @@ client_api = function () {
     }
 
     const option_chain_tracker = {
-        monitored_strikes: [],
+        monitored_strikes_details: [],
+        stkprcMapping : {},
+
         prev_atm_strike : "",
         atm_changed : false,
 
@@ -226,35 +229,109 @@ client_api = function () {
 
         find_atm_strikes: function (instr) {
             if(logged_in) {
-                // instruments.forEach(function (instr) {
-                    let atm_strike = option_chain_tracker.find_atm_strike_price(instr);
-                    if(atm_strike != this.prev_atm_strike) {
-                        this.atm_changed = true
-                        this.prev_atm_strike = atm_strike
+                let atm_strike = option_chain_tracker.find_atm_strike_price(instr);
+                if(atm_strike != this.prev_atm_strike) {
+                    this.atm_changed = true
+                    this.prev_atm_strike = atm_strike
 
-                        this.monitored_strikes = []
-                        console.log(instr + ": ATM strike : " + atm_strike)
+                    this.monitored_strikes = []
+                    this.monitored_strikes_details = []
+                    console.log(instr + ": ATM strike : " + atm_strike)
 
-                        let cnt = 0; //ATM + 3 above + 3 below
-                        while (cnt < conf.strikes_after_before_atm) {
-                            let strike = atm_strike + cnt * conf[instr].round_to
-                            console.log(instr + ": " + strike)
-                            broker.search.search_subscribe_strike(instr, strike, "CE")
-                            broker.search.search_subscribe_strike(instr, strike, "PE")
+                    this.subscribe_strike(instr, atm_strike)
 
-                            strike = atm_strike - cnt * conf[instr].round_to
-                            console.log(instr + ": " + strike)
-                            broker.search.search_subscribe_strike(instr, strike, "CE")
-                            broker.search.search_subscribe_strike(instr, strike, "PE")
-                            cnt = cnt + 1;
-                        }
-                    } else {
-                        this.atm_changed = false
+                    let cnt = 1; //ATM + 3 above + 3 below
+                    while (cnt < conf.strikes_after_before_atm) {
+                        let strike = atm_strike + cnt * conf[instr].round_to
+                        this.subscribe_strike(instr, strike)
+
+                        strike = atm_strike - cnt * conf[instr].round_to
+                        this.subscribe_strike(instr, strike)
+                        cnt = cnt + 1;
                     }
-                // })
+
+                    // Populate the mapping variable
+                    this.monitored_strikes_details.forEach(item => {
+                        const strprc = `${item.stkprc}${item.optt === 'CE' ? 'CE' : 'PE'}`;
+                        this.stkprcMapping[item.token] = {strike : strprc, optt: item.optt};
+                    });
+                } else {
+                    this.atm_changed = false
+                }
             }
             setTimeout(function() {option_chain_tracker.find_atm_strikes("bank_nifty")}, conf.atm_strike_check_interval); //Keep looping to find ATM strike price
         },
+
+        subscribe_strike : function(instr, strike) {
+            console.log(instr + ": " + strike)
+            this.monitored_strikes.push(strike)
+            broker.search.search_subscribe_strike(instr, strike, "CE")
+            broker.search.search_subscribe_strike(instr, strike, "PE")
+        },
+
+        update_table : function(token, lp) {
+            const priceTableBody = document.querySelector('#option_chain_body');
+            let data = this.get_strike_for_token(token)
+
+            if(data != null) {
+                const rowId = `row_${data.strike}`;
+                let row = priceTableBody.querySelector(`#${rowId}`);
+                if (!row) {
+                    // If the row doesn't exist, create a new one
+                    row = priceTableBody.insertRow();
+                    row.id = rowId;
+
+                    // Create cells for each column
+                    const cellCE = row.insertCell(0);
+                    const cellStrprc = row.insertCell(1);
+                    const cellPE = row.insertCell(2);
+
+                    // Set initial values for the cells
+                    cellCE.textContent = data.optt === 'CE' ? lp : '';
+                    cellStrprc.textContent = data.strprc;
+                    cellPE.textContent = data.optt === 'PE' ? lp : '';
+                    cellTotal.textContent = lp;
+                } else {
+                    // If the row exists, update the cells with the new data
+                    const cellCE = row.cells[0];
+                    const cellPE = row.cells[2];
+                    const cellTotal = row.cells[3];
+
+                    if (data.optt === 'CE') {
+                        cellCE.textContent = data.lp;
+                    } else if (data.optt === 'PE') {
+                        cellPE.textContent = data.lp;
+                    }
+                    cellTotal.textContent = (parseFloat(cellCE.textContent || 0) + parseFloat(cellPE.textContent || 0)).toFixed(2);
+                }
+            }
+
+        },
+
+        // Function to get strprc value for a given token using the mapping variable
+        get_strike_for_token : function(token) {
+            // Check if the token exists in the mapping variable
+            if (this.stkprcMapping.hasOwnProperty(token)) {
+                return this.stkprcMapping[token];
+            } else {
+                return null;
+            }
+        },
+
+        update_table_gpt : function(token, lp) {
+            var ceData = this.monitored_strikes_details.filter(item => item.optt === "CE");
+            var peData = this.monitored_strikes_details.filter(item => item.optt === "PE");
+
+            ceData.forEach(function (ceItem) {
+                var peItem = peData.find(item => item.stkprc === ceItem.stkprc);
+
+                var cePrice = liveData[ceItem.token];
+                var pePrice = peItem ? liveData[peItem.token] : "";
+
+                var row = `<tr><td>${cePrice}</td><td>${ceItem.stkprc}</td><td>${pePrice}</td></tr>`;
+                $("#optionsTableBody").append(row);
+            });
+        }
     }
 
     function connect_to_server(){
@@ -271,6 +348,8 @@ client_api = function () {
 
     return {
         "connect_to_server" : connect_to_server,
+        "live_data" : live_data,
+        "oc_tracker" : option_chain_tracker,
     }
 }();
 
