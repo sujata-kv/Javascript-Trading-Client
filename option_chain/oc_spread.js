@@ -214,6 +214,20 @@ client_api = function () {
             return strike_price
         },
 
+        get_sorted_strike_prices : function(instrument, atm_strike) {
+            let selected_strikes = [atm_strike]
+            let cnt = 1; //ATM + 3 above + 3 below
+            while (cnt <= conf.strikes_after_before_atm) {
+                let strike = atm_strike + cnt * conf[instrument].round_to
+                selected_strikes.push(strike)
+                strike = atm_strike - cnt * conf[instrument].round_to
+                selected_strikes.push(strike)
+                cnt = cnt + 1;
+            }
+            selected_strikes.sort((a, b) => a - b);
+            return selected_strikes;
+        },
+
         get_ltp: function (instrument) {
             switch (instrument) {
                 case 'nifty':
@@ -240,19 +254,10 @@ client_api = function () {
 
                     this.monitored_strikes = []
                     console.log(instr + ": ATM strike : " + atm_strike)
-
-                    this.subscribe_strike(instr, atm_strike)
-
-                    let cnt = 1; //ATM + 3 above + 3 below
-                    while (cnt <= conf.strikes_after_before_atm) {
-                        let strike = atm_strike + cnt * conf[instr].round_to
-                        this.subscribe_strike(instr, strike)
-
-                        strike = atm_strike - cnt * conf[instr].round_to
-                        this.subscribe_strike(instr, strike)
-                        cnt = cnt + 1;
-                    }
-
+                    let all_strikes = this.get_sorted_strike_prices(instr, atm_strike)
+                    all_strikes.forEach(function(strike) {
+                        option_chain_tracker.subscribe_strike(instr, strike)
+                    })
                 } else {
                     this.atm_changed = false
                 }
