@@ -5,7 +5,7 @@ client_api = function () {
         user_id : "FA90807",
         session_token: "60c9731d931f0156710a4c5828b362a120a54dfa972acfa4c796bc5e23e0a8e7",
 
-        instrument : "nifty",  // nifty, bank_nifty, fin_nifty
+        instrument : "bank_nifty",  // nifty, bank_nifty, fin_nifty
         atm_strike_check_interval : 60000,
         strikes_after_before_atm : 3,
 
@@ -171,10 +171,10 @@ client_api = function () {
         },
 
         search : {
-            search_subscribe_strike: function (instrument, strike, ce_pe) {
+            search_subscribe_strike: function (strike, ce_pe) {
                 let params = {
                     "uid": conf.user_id,
-                    "stext": instrument.replace('_', '') + " " + strike + " " + ce_pe
+                    "stext": conf.instrument.replace('_', '') + " " + strike + " " + ce_pe
                 }
                 $.ajax({
                     url: shoonya.url.search_instrument,
@@ -184,7 +184,7 @@ client_api = function () {
                     success: function (data, textStatus, jqXHR) {
                         // console.log("Ajax success")
                         let info = data.values[0];
-                        option_chain_tracker.monitored_strikes.push({"token": info.token, "strike": strike, "optt": ce_pe});
+                        option_chain_tracker.monitored_strikes.push({"token": parseInt(info.token), "strike": strike, "optt": ce_pe});
                         option_chain_tracker.token_details[info.token] = {strike : strike, optt: ce_pe};
                         shoonya.subscribe_token('NFO|' + info.token);
                     },
@@ -210,28 +210,41 @@ client_api = function () {
             right_spr2 : 6,
         },
 
+        spreads : {}, //Contains strike and the related row_spreads
+
+        //Contains spreads for a row, for a strike price
+        spreads_template : {
+            left_spr1 : {buy:"", sell:""},
+            left_spr2 : {buy:"", sell:""},
+            right_spr1 : {buy:"", sell:""},
+            right_spr2 : {buy:"", sell:""},
+            btfly1 : {},
+            btfly2 : {},
+            btfly3 : {},
+        },
+
         cur_atm_strike : "",
         atm_changed : false,
 
-        find_atm_strike_price: function (instrument) {
-            let round_to = conf[instrument].round_to;
-            let mod = Math.round(this.get_ltp(instrument) % round_to);
+        find_atm_strike_price: function () {
+            let round_to = conf[conf.instrument].round_to;
+            let mod = Math.round(this.get_ltp(conf.instrument) % round_to);
             let strike_price;
             if (mod < round_to / 2)
-                strike_price = Math.floor(this.get_ltp(instrument) / round_to) * round_to;
+                strike_price = Math.floor(this.get_ltp(conf.instrument) / round_to) * round_to;
             else
-                strike_price = Math.ceil(this.get_ltp(instrument) / round_to) * round_to;
+                strike_price = Math.ceil(this.get_ltp(conf.instrument) / round_to) * round_to;
             return strike_price
         },
 
-        get_sorted_strike_prices : function(instrument, atm_strike) {
+        get_sorted_strike_prices : function(atm_strike) {
             console.log("Sorting the strike prices..")
             let selected_strikes = [atm_strike]
             let cnt = 1; //ATM + 3 above + 3 below
             while (cnt <= conf.strikes_after_before_atm) {
-                let strike = atm_strike + cnt * conf[instrument].round_to
+                let strike = atm_strike + cnt * conf[conf.instrument].round_to
                 selected_strikes.push(strike)
-                strike = atm_strike - cnt * conf[instrument].round_to
+                strike = atm_strike - cnt * conf[conf.instrument].round_to
                 selected_strikes.push(strike)
                 cnt = cnt + 1;
             }
@@ -256,70 +269,31 @@ client_api = function () {
             }
         },
 
-        find_atm_strikes: function (instr) {
+        find_atm_strikes: function () {
             if(logged_in) {
-                let atm_strike = option_chain_tracker.find_atm_strike_price(instr);
+                let atm_strike = option_chain_tracker.find_atm_strike_price();
                 if(atm_strike != this.cur_atm_strike) {
                     this.atm_changed = true
                     this.cur_atm_strike = atm_strike
 
                     this.monitored_strikes = []
-                    console.log(instr + ": ATM strike : " + atm_strike)
-                    let all_strikes = this.get_sorted_strike_prices(instr, atm_strike)
+                    console.log("ATM strike : " + atm_strike)
+                    let all_strikes = this.get_sorted_strike_prices(atm_strike)
                     all_strikes.forEach(function(strike) {
-                        option_chain_tracker.subscribe_strike(instr, strike)
+                        option_chain_tracker.subscribe_strike(strike)
+                        option_chain_tracker.create_row(strike)
                     })
                 } else {
                     this.atm_changed = false
                 }
             }
-            setTimeout(function() {option_chain_tracker.find_atm_strikes(conf.instrument)}, conf.atm_strike_check_interval); //Keep looping to find ATM strike price
+            setTimeout(function() {option_chain_tracker.find_atm_strikes()}, conf.atm_strike_check_interval); //Keep looping to find ATM strike price
         },
 
-        subscribe_strike : function(instr, strike) {
-            console.log(instr + ": " + strike)
-            broker.search.search_subscribe_strike(instr, strike, "CE")
-            broker.search.search_subscribe_strike(instr, strike, "PE")
-        },
-
-        update_table : function(token, lp) {
-            console.log("Update table called for " + token + " LP = " + lp)
-            const priceTableBody = document.querySelector('#option_chain_body');
-            let data = this.get_token_details(token)
-
-            if(data != null) {
-                const rowId = `row_${data.strike}`;
-                let row = priceTableBody.querySelector(`#${rowId}`);
-                if (!row) {
-                    // If the row doesn't exist, create a new one
-                    row = priceTableBody.insertRow();
-                    row.id = rowId;
-
-                    if (data.strike === this.cur_atm_strike) {
-                        $(row).addClass('table-active');
-                    }
-
-                    // Create cells for each column
-                    const cellCnt = Object.keys(this.cell_mapping).length;
-                    for (let i = 0; i < cellCnt; i++) {
-                        row.insertCell(i);
-                    }
-
-                    if(data.optt === 'CE')
-                        row.cells[this.cell_mapping.ce].textContent = lp;
-                    else if(data.optt == 'PE')
-                        row.cells[this.cell_mapping.pe].textContent = lp;
-
-                    row.cells[this.cell_mapping.strike].textContent = data.strike;
-                } else {
-                    if (data.optt === 'CE') {
-                        row.cells[this.cell_mapping.ce].textContent = lp;
-                    } else if (data.optt === 'PE') {
-                        row.cells[this.cell_mapping.pe].textContent = lp;
-                    }
-                }
-            }
-
+        subscribe_strike : function(strike) {
+            console.log("Strike : " + strike)
+            broker.search.search_subscribe_strike(strike, "CE")
+            broker.search.search_subscribe_strike(strike, "PE")
         },
 
         get_token_details : function(token) {
@@ -328,6 +302,96 @@ client_api = function () {
                 return this.token_details[token];
             } else {
                 return null;
+            }
+        },
+
+        get_token_for_strike: function(strike, optt) {
+            const result = this.monitored_strikes.find(entry => entry.strike === strike && entry.optt === optt);
+            return result ? result.token : null;
+        },
+
+        get_row_id: function (strike) {
+            return `row_${strike}`;
+        },
+
+        create_row : function(strike) {
+            const rowId = this.get_row_id(strike);
+            const priceTableBody = document.querySelector('#option_chain_body');
+            let row = document.getElementById(`#${rowId}`);
+
+            if (!row) {
+                // If the row doesn't exist, create a new one
+                row = priceTableBody.insertRow();
+                row.id = rowId;
+
+                if (strike === this.cur_atm_strike) {
+                    $(row).addClass('table-active');
+                }
+
+                // Create cells for each column
+                const cellCnt = Object.keys(this.cell_mapping).length;
+                for (let i = 0; i < cellCnt; i++) {
+                    row.insertCell(i);
+                }
+
+                this.make_spreads(strike);
+            }
+        },
+
+        update_table : function(token, lp) {
+            console.log("Update table called for " + token + " LP = " + lp)
+            const priceTableBody = document.querySelector('#option_chain_body');
+            let data = this.get_token_details(token)
+
+            if(data != null) {
+                const rowId = this.get_row_id(data.strike);
+                let row = priceTableBody.querySelector(`#${rowId}`);
+
+                row.cells[this.cell_mapping.strike].textContent = data.strike;
+                if (data.optt === 'CE') {
+                    row.cells[this.cell_mapping.ce].textContent = lp;
+                } else if (data.optt === 'PE') {
+                    row.cells[this.cell_mapping.pe].textContent = lp;
+                }
+                this.update_spreads(data.strike, data.optt);
+            }
+        },
+
+        make_spreads : function(strike) {
+
+            const row_spread = { ...this.spreads_template };
+
+            //CE
+            let buy_leg_token = this.get_token_for_strike(strike, "CE");
+            let sell_leg_token = this.get_token_for_strike(strike + conf[conf.instrument].round_to );
+
+            row_spread.left_spr1.buy = buy_leg_token;
+            row_spread.left_spr2.sell = sell_leg_token;
+
+            //PE
+            buy_leg_token = this.get_token_for_strike(strike, "PE");
+            sell_leg_token = this.get_token_for_strike(strike - conf[conf.instrument].round_to );
+
+            row_spread.right_spr1.buy = buy_leg_token;
+            row_spread.right_spr2.sell = sell_leg_token;
+
+            this.spreads[strike] = row_spread;
+        },
+
+        update_spreads : function(strike, optt) {
+            let row_spread = this.spreads[strike]
+
+            let row_id = this.get_row_id(strike)
+            let row = document.getElementById(row_id)
+
+            if(optt === "CE") {
+                console.log(" CE spread 1 : " + (live_data[row_spread.left_spr1.buy] - live_data[row_spread.left_spr1.sell]));
+                row.cells[this.cell_mapping.left_spr1] = live_data[row_spread.left_spr1.buy] - live_data[row_spread.left_spr1.sell];
+                row.cells[this.cell_mapping.left_spr2] = live_data[row_spread.left_spr2.buy] - live_data[row_spread.left_spr2.sell];
+            } else if(optt === "PE") {
+                console.log(" PE spread 1 : " + (live_data[row_spread.right_spr1.buy] - live_data[row_spread.right_spr1.sell]))
+                row.cells[this.cell_mapping.right_spr1] = live_data[row_spread.right_spr1.buy] - live_data[row_spread.right_spr1.sell];
+                row.cells[this.cell_mapping.right_spr2] = live_data[row_spread.right_spr2.buy] - live_data[row_spread.right_spr2.sell];
             }
         },
 
@@ -340,7 +404,7 @@ client_api = function () {
                                     : conf.instrument === "bank_nifty"? bank_nifty_tk
                                     : conf.instrument === "fin_nifty" ? fin_nifty_tk : "unknown_instrument";
         $('#instrument').html(conf.instrument.toUpperCase())
-        setTimeout(function() {option_chain_tracker.find_atm_strikes(conf.instrument)}, 1000)
+        setTimeout(function() {option_chain_tracker.find_atm_strikes()}, 1000)
     }
 
     /*Attach functions to connect, add to watch list button, etc*/
