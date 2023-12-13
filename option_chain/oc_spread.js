@@ -189,7 +189,7 @@ client_api = function () {
                     dataType: "json",
                     data: shoonya.get_payload(params),
                     success: function (data, textStatus, jqXHR) {
-                        console.log("Ajax success")
+                        // console.log("Ajax success")
                         let info = data.values[0];
                         option_chain_tracker.monitored_strikes.push({"token": parseInt(info.token), "strike": strike, "optt": ce_pe});
                         option_chain_tracker.token_details[info.token] = {strike : strike, optt: ce_pe};
@@ -284,9 +284,8 @@ client_api = function () {
             if(logged_in) {
                 let atm_strike = option_chain_tracker.find_atm_strike_price();
                 if(atm_strike != this.cur_atm_strike) {
+                    this.reset();
                     this.cur_atm_strike = atm_strike
-
-                    this.monitored_strikes = [];
                     $('#option_chain_body').empty();
                     console.log("ATM strike : " + atm_strike)
                     let all_strikes = this.get_sorted_strike_prices(atm_strike)
