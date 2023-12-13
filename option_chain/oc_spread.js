@@ -167,6 +167,10 @@ client_api = function () {
             }
         },
 
+        unsubscribe_token: function(token) {
+
+        },
+
         get_payload: function (params) {
             let payload = 'jData=' + JSON.stringify(params);
             payload = payload + "&jKey=" + conf.session_token;
@@ -203,6 +207,10 @@ client_api = function () {
     const option_chain_tracker = {
         monitored_strikes: [],  //Contains details such as token, optt and strike for each monitored strike
         token_details : {},     //Contains the strike price and optt
+        spreads : {}, //Contains strike and the related row_spreads
+
+        cur_atm_strike : "",
+
         cell_mapping : {
             left_spr2 : 0,
             left_spr1 : 1,
@@ -213,10 +221,21 @@ client_api = function () {
             right_spr2 : 6,
         },
 
-        spreads : {}, //Contains strike and the related row_spreads
+        reset: function() {
+            this.monitored_strikes.forEach(entry => {
+                broker.unsubscribe_token(entry.token);
 
-        cur_atm_strike : "",
-        atm_changed : false,
+                let index = subscribed_symbols.indexOf(entry.token);
+                if (index !== -1) {
+                    // Use splice to remove the element at the found index
+                    subscribed_symbols.splice(index, 1);
+                }
+            })
+            this.monitored_strikes = []
+            this.token_details = {}
+            this.spreads = {}
+            this.cur_atm_strike = ''
+        },
 
         find_atm_strike_price: function () {
             let round_to = conf[conf.instrument].round_to;
@@ -265,7 +284,6 @@ client_api = function () {
             if(logged_in) {
                 let atm_strike = option_chain_tracker.find_atm_strike_price();
                 if(atm_strike != this.cur_atm_strike) {
-                    this.atm_changed = true
                     this.cur_atm_strike = atm_strike
 
                     this.monitored_strikes = [];
@@ -280,8 +298,6 @@ client_api = function () {
                     setTimeout(function() {
                         all_strikes.forEach(strike => option_chain_tracker.make_spreads(strike));
                     }, 1000)
-                } else {
-                    this.atm_changed = false
                 }
             }
             setTimeout(function() {option_chain_tracker.find_atm_strikes()}, conf.atm_strike_check_interval); //Keep looping to find ATM strike price
@@ -388,7 +404,7 @@ client_api = function () {
             row_spread.right_spr2.sell = this.get_token_for_strike(strike - 2 * conf[conf.instrument].round_to, "PE" );
 
             this.spreads[strike] = row_spread;
-            console.log(row_spread)
+            // console.log(row_spread)
         },
 
         update_spreads : function(strike, optt) {
@@ -417,15 +433,22 @@ client_api = function () {
                 }
             }
         },
-
     }
 
     function connect_to_server(){
         broker.init();
         broker.connect();
+        select_instrument()
+    }
+
+    function select_instrument() {
+        option_chain_tracker.reset()
+
+        conf.instrument = $('#select_instrument').val().toLowerCase();
+        console.log("Select instrument " + conf.instrument)
         conf.instrument_token = conf.instrument === "nifty"? nifty_tk
-                                    : conf.instrument === "bank_nifty"? bank_nifty_tk
-                                    : conf.instrument === "fin_nifty" ? fin_nifty_tk : "unknown_instrument";
+            : conf.instrument === "bank_nifty"? bank_nifty_tk
+                : conf.instrument === "fin_nifty" ? fin_nifty_tk : "unknown_instrument";
         $('#instrument').html(conf.instrument.toUpperCase())
         setTimeout(function() {option_chain_tracker.find_atm_strikes()}, 1000)
     }
@@ -440,6 +463,7 @@ client_api = function () {
         "connect_to_server" : connect_to_server,
         "live_data" : live_data,
         "oc_tracker" : option_chain_tracker,
+        "select_instrument" : select_instrument,
     }
 }();
 
