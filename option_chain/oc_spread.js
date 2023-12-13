@@ -11,12 +11,15 @@ client_api = function () {
 
         bank_nifty: {
             round_to: 100,
+            lot_size : 15,
         },
         nifty : {
             round_to: 50,
+            lot_size : 50,
         },
         fin_nifty : {
             round_to: 50,
+            lot_size : 40,
         },
 
         heartbeat_timeout : 7000,
@@ -406,8 +409,8 @@ client_api = function () {
 
             function get_max_loss(buy_leg, sell_leg) {
                 if( buy_leg != undefined && buy_leg !='' && sell_leg != undefined && sell_leg != '') {
-                    let loss = (live_data[buy_leg] - live_data[sell_leg]).toFixed(2)
-                    // console.log("Max loss : " + loss);
+                    let loss = live_data[buy_leg] - live_data[sell_leg]
+                    loss = (loss * conf[conf.instrument].lot_size).toFixed(2)
                     return loss;
                 } else {
                     return '';
