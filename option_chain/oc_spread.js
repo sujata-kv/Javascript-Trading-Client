@@ -6,7 +6,7 @@ client_api = function () {
         session_token: "842cab4a987c3cec514628f78b2082885d2a4ccbde6a6d2d114d2f0de32728eb",
 
         instrument : "bank_nifty",  // nifty, bank_nifty, fin_nifty
-        atm_strike_check_interval : 60000,
+        atm_strike_check_interval : 30000,
         strikes_after_before_atm : 3,
 
         bank_nifty: {
@@ -265,7 +265,8 @@ client_api = function () {
                     this.atm_changed = true
                     this.cur_atm_strike = atm_strike
 
-                    this.monitored_strikes = []
+                    this.monitored_strikes = [];
+                    $('#option_chain_body').empty();
                     console.log("ATM strike : " + atm_strike)
                     let all_strikes = this.get_sorted_strike_prices(atm_strike)
                     all_strikes.forEach(function(strike) {
