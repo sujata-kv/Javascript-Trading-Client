@@ -3,7 +3,7 @@ client_api = window.client_api || {};
 client_api = function () {
     const conf = {
         user_id : "FA90807",
-        session_token: "60c9731d931f0156710a4c5828b362a120a54dfa972acfa4c796bc5e23e0a8e7",
+        session_token: "842cab4a987c3cec514628f78b2082885d2a4ccbde6a6d2d114d2f0de32728eb",
 
         instrument : "bank_nifty",  // nifty, bank_nifty, fin_nifty
         atm_strike_check_interval : 60000,
@@ -94,7 +94,7 @@ client_api = function () {
                         let instr_token = result.tk
                         let ltpf = parseFloat(result.lp).toFixed(2)
                         live_data[instr_token] = ltpf
-                        if(instr_token === nifty_tk || instr_token === bank_nifty_tk || instr_token === fin_nifty_tk) {
+                        if(instr_token === conf.instrument_token) {
                             $('#spot').html(ltpf)
                         } else {
                             option_chain_tracker.update_table(instr_token, ltpf)
@@ -182,7 +182,7 @@ client_api = function () {
                     dataType: "json",
                     data: shoonya.get_payload(params),
                     success: function (data, textStatus, jqXHR) {
-                        // console.log("Ajax success")
+                        console.log("Ajax success")
                         let info = data.values[0];
                         option_chain_tracker.monitored_strikes.push({"token": parseInt(info.token), "strike": strike, "optt": ce_pe});
                         option_chain_tracker.token_details[info.token] = {strike : strike, optt: ce_pe};
@@ -201,8 +201,8 @@ client_api = function () {
         monitored_strikes: [],  //Contains details such as token, optt and strike for each monitored strike
         token_details : {},     //Contains the strike price and optt
         cell_mapping : {
-            left_spr1 : 0,
-            left_spr2 : 1,
+            left_spr2 : 0,
+            left_spr1 : 1,
             ce : 2,
             strike : 3,
             pe : 4,
@@ -211,17 +211,6 @@ client_api = function () {
         },
 
         spreads : {}, //Contains strike and the related row_spreads
-
-        //Contains spreads for a row, for a strike price
-        spreads_template : {
-            left_spr1 : {buy:"", sell:""},
-            left_spr2 : {buy:"", sell:""},
-            right_spr1 : {buy:"", sell:""},
-            right_spr2 : {buy:"", sell:""},
-            btfly1 : {},
-            btfly2 : {},
-            btfly3 : {},
-        },
 
         cur_atm_strike : "",
         atm_changed : false,
@@ -282,7 +271,11 @@ client_api = function () {
                     all_strikes.forEach(function(strike) {
                         option_chain_tracker.subscribe_strike(strike)
                         option_chain_tracker.create_row(strike)
-                    })
+                    });
+
+                    setTimeout(function() {
+                        all_strikes.forEach(strike => option_chain_tracker.make_spreads(strike));
+                    }, 1000)
                 } else {
                     this.atm_changed = false
                 }
@@ -333,13 +326,11 @@ client_api = function () {
                 for (let i = 0; i < cellCnt; i++) {
                     row.insertCell(i);
                 }
-
-                this.make_spreads(strike);
             }
         },
 
         update_table : function(token, lp) {
-            console.log("Update table called for " + token + " LP = " + lp)
+            // console.log("Update table called for " + token + " LP = " + lp)
             const priceTableBody = document.querySelector('#option_chain_body');
             let data = this.get_token_details(token)
 
@@ -359,39 +350,67 @@ client_api = function () {
 
         make_spreads : function(strike) {
 
-            const row_spread = { ...this.spreads_template };
+            let spreads_template = {                //Contains spreads for a row, for a strike price
+                left_spr1 : {buy:"", sell:""},
+                left_spr2 : {buy:"", sell:""},
+                right_spr1 : {buy:"", sell:""},
+                right_spr2 : {buy:"", sell:""},
+                btfly1 : {},
+                btfly2 : {},
+                btfly3 : {},
+            };
+
+            console.log("Making spreads for strike : " + strike)
+            const row_spread = { ...spreads_template };
 
             //CE
             let buy_leg_token = this.get_token_for_strike(strike, "CE");
-            let sell_leg_token = this.get_token_for_strike(strike + conf[conf.instrument].round_to );
+            // let sell_leg_token = this.get_token_for_strike(strike + conf[conf.instrument].round_to, "CE");
 
             row_spread.left_spr1.buy = buy_leg_token;
-            row_spread.left_spr2.sell = sell_leg_token;
+            row_spread.left_spr1.sell = this.get_token_for_strike(strike + conf[conf.instrument].round_to, "CE");
+
+            row_spread.left_spr2.buy = buy_leg_token;
+            row_spread.left_spr2.sell = this.get_token_for_strike(strike + 2 * conf[conf.instrument].round_to, "CE");
 
             //PE
             buy_leg_token = this.get_token_for_strike(strike, "PE");
-            sell_leg_token = this.get_token_for_strike(strike - conf[conf.instrument].round_to );
+            // sell_leg_token = this.get_token_for_strike(strike - conf[conf.instrument].round_to, "PE" );
 
             row_spread.right_spr1.buy = buy_leg_token;
-            row_spread.right_spr2.sell = sell_leg_token;
+            row_spread.right_spr1.sell = this.get_token_for_strike(strike - conf[conf.instrument].round_to, "PE" );
+
+            row_spread.right_spr2.buy = buy_leg_token;
+            row_spread.right_spr2.sell = this.get_token_for_strike(strike - 2 * conf[conf.instrument].round_to, "PE" );
 
             this.spreads[strike] = row_spread;
+            console.log(row_spread)
         },
 
         update_spreads : function(strike, optt) {
             let row_spread = this.spreads[strike]
 
-            let row_id = this.get_row_id(strike)
-            let row = document.getElementById(row_id)
+            if(row_spread != undefined) {
+                let row_id = this.get_row_id(strike)
+                let row = document.getElementById(row_id)
 
-            if(optt === "CE") {
-                console.log(" CE spread 1 : " + (live_data[row_spread.left_spr1.buy] - live_data[row_spread.left_spr1.sell]));
-                row.cells[this.cell_mapping.left_spr1] = live_data[row_spread.left_spr1.buy] - live_data[row_spread.left_spr1.sell];
-                row.cells[this.cell_mapping.left_spr2] = live_data[row_spread.left_spr2.buy] - live_data[row_spread.left_spr2.sell];
-            } else if(optt === "PE") {
-                console.log(" PE spread 1 : " + (live_data[row_spread.right_spr1.buy] - live_data[row_spread.right_spr1.sell]))
-                row.cells[this.cell_mapping.right_spr1] = live_data[row_spread.right_spr1.buy] - live_data[row_spread.right_spr1.sell];
-                row.cells[this.cell_mapping.right_spr2] = live_data[row_spread.right_spr2.buy] - live_data[row_spread.right_spr2.sell];
+                if (optt === "CE") {
+                    row.cells[this.cell_mapping.left_spr1].textContent = get_max_loss(row_spread.left_spr1.buy, row_spread.left_spr1.sell);
+                    row.cells[this.cell_mapping.left_spr2].textContent = get_max_loss(row_spread.left_spr2.buy, row_spread.left_spr2.sell);
+                } else if (optt === "PE") {
+                    row.cells[this.cell_mapping.right_spr1].textContent = get_max_loss(row_spread.right_spr1.buy, row_spread.right_spr1.sell);
+                    row.cells[this.cell_mapping.right_spr2].textContent = get_max_loss(row_spread.right_spr2.buy, row_spread.right_spr2.sell);
+                }
+            }
+
+            function get_max_loss(buy_leg, sell_leg) {
+                if( buy_leg != undefined && buy_leg !='' && sell_leg != undefined && sell_leg != '') {
+                    let loss = (live_data[buy_leg] - live_data[sell_leg]).toFixed(2)
+                    // console.log("Max loss : " + loss);
+                    return loss;
+                } else {
+                    return '';
+                }
             }
         },
 
