@@ -12,18 +12,23 @@ client_api = function () {
             loss : -1000,
             monitor_interval: 1000,
             retry_count : 2,
+            deploy_hedge : true,
+
             bank_nifty: {
                 strangle_distance_points : 500,
+                hedge_distance_points: 300,
                 qty: 15,
                 round_to: 100,
             },
             nifty : {
                 strangle_distance_points : 200,
+                hedge_distance_points: 100,
                 qty: 50,
                 round_to: 50,
             },
             fin_nifty : {
                 strangle_distance_points : 200,
+                hedge_distance_points: 100,
                 qty: 40,
                 round_to: 50,
             }
@@ -79,6 +84,8 @@ client_api = function () {
         strangle_strike_details: {},
         ce_leg: "",
         pe_leg: "",
+        ce_hedge: "",
+        pe_hedge: "",
 
         find_atm_strike_price: function (instrument) {
             let round_to = conf.algo[instrument].round_to;
@@ -114,7 +121,17 @@ client_api = function () {
                     let atm_strike = strangle_tracker.find_atm_strike_price(instr);
                     strangle_tracker.ce_leg = atm_strike + conf.algo[instr].strangle_distance_points
                     strangle_tracker.pe_leg = atm_strike - conf.algo[instr].strangle_distance_points
+
                     console.log(instr + ": ATM strike : " + atm_strike + " => Strangle : " + strangle_tracker.ce_leg  + " CE - " + strangle_tracker.pe_leg + " PE")
+                    // Deploying buy legs, i.e. hedge first
+                    if(conf.algo.deploy_hedge) {
+                        strangle_tracker.ce_hedge = strangle_tracker.ce_leg + conf.algo[instr].hedge_distance_points
+                        strangle_tracker.pe_hedge = strangle_tracker.pe_leg - conf.algo[instr].hedge_distance_points
+                        console.log("Hedge legs : " + strangle_tracker.ce_hedge  + " CE - " + strangle_tracker.pe_hedge + " PE")
+                        broker.search.search_subscribe_strike(instr, strangle_tracker.ce_hedge, "CE", true)
+                        broker.search.search_subscribe_strike(instr, strangle_tracker.pe_hedge, "PE", true)
+                    }
+
                     broker.search.search_subscribe_strike(instr, strangle_tracker.ce_leg, "CE")
                     broker.search.search_subscribe_strike(instr, strangle_tracker.pe_leg, "PE")
                 })
@@ -133,7 +150,7 @@ client_api = function () {
             if(!algo.deployed && !algo.deploying) {
                 algo.deploying = true;
                 let ce_pe_legs = strangle_tracker.strangle_strike_details[instrument]
-                if (ce_pe_legs != undefined && ce_pe_legs.length == 2) {   // CE and PE both present
+                if (ce_pe_legs != undefined && (ce_pe_legs.length == 2 || ce_pe_legs.length == 4)) {   // CE and PE both present
                     console.log(`Deploying strangle for ${instrument}..`)
                     algo.deploy_strangle(instrument, ce_pe_legs)
                 } else {
@@ -149,31 +166,42 @@ client_api = function () {
         deploy_strangle: function(instrument, ce_pe_params) {
             algo.deploy_stats[instrument] = algo.deploy_stats[instrument] || {}      //Initialize empty object
             algo.deploy_stats[instrument].spot_value = strangle_tracker.get_ltp(instrument); // Record the spot value
-            let buy_or_sell = "S";
 
             //Deploy STRANGLE
             ce_pe_params.forEach(function (ce_pe_params) {
-                orderbook.place_order(broker.order.get_algo_order_params(ce_pe_params, buy_or_sell))
+                orderbook.place_order(broker.order.get_algo_order_params(ce_pe_params, ce_pe_params.buy_or_sell))
                 algo.deployed = true;
                 algo.deploying = false;
-                let selector = (`#at-pool tr[token=${ce_pe_params.token}][exch=${ce_pe_params.exch}][qty=${ce_pe_params.qty}][trtype='S']`)
-                algo[ce_pe_params.optt + "-interval"] = setInterval(group_legs, conf.algo.monitor_interval, selector, ce_pe_params.optt)
+                let selector = (`#at-pool tr[token=${ce_pe_params.token}][exch=${ce_pe_params.exch}][qty=${ce_pe_params.qty}][trtype=${ce_pe_params.buy_or_sell}]`)
+                algo[ce_pe_params.optt + ce_pe_params.buy_or_sell + "-interval"] = setInterval(group_legs, conf.algo.monitor_interval, selector, ce_pe_params.optt, ce_pe_params.buy_or_sell)
             })
 
-            function group_legs(row_sel, optt) {
+            function group_legs(row_sel, optt, buy_or_sell) {
                 let row_id = $(row_sel).attr('id');
                 console.log("Group legs : ", row_id)
                 if(row_id != undefined) {
-                    clearInterval(algo[optt + "-interval"])
-                    if (optt == "CE") {
+                    clearInterval(algo[optt + buy_or_sell + "-interval"])
+                    if (optt == "CE" && buy_or_sell == "S") {
                         algo.deploy_stats[instrument].ce_leg = row_id;
-                    } else if (optt == "PE") {
+                    } else if (optt == "PE" && buy_or_sell == "S") {
                         algo.deploy_stats[instrument].pe_leg = row_id;
                     }
+
+                    if(conf.algo.deploy_hedge) {
+                        if (optt == "CE" && buy_or_sell == "B") {
+                            algo.deploy_stats[instrument].ce_hedge = row_id;
+                        } else if (optt == "PE" && buy_or_sell == "B") {
+                            algo.deploy_stats[instrument].pe_hedge = row_id;
+                        }
+                    }
+                    console.log(row_sel)
+                    console.log(algo.deploy_stats[instrument])
                     $(row_sel).find('input:checkbox')[0].checked = true;
 
                     if (algo.deploy_stats[instrument].ce_leg != undefined
-                        && algo.deploy_stats[instrument].pe_leg != undefined) {
+                        && algo.deploy_stats[instrument].pe_leg != undefined
+                        && algo.deploy_stats[instrument].ce_hedge != undefined
+                        && algo.deploy_stats[instrument].pe_hedge != undefined ) {
                         algo.deploy_stats[instrument].deploy_count = algo.deploy_stats[instrument].deploy_count == undefined ? 1 : algo.deploy_stats[instrument].deploy_count + 1;
                         $('#group_name').val(algo.get_strangle_name(instrument, algo.deploy_stats[instrument].deploy_count))
                         algo.deploy_stats[instrument].group = util.grouping.group_selected();
@@ -447,7 +475,7 @@ client_api = function () {
         },
 
         search: {
-            search_subscribe_strike: function (instrument, strike, ce_pe) {
+            search_subscribe_strike: function (instrument, strike, ce_pe, hedge=false) {
                 let params = {
                     "uid": user_id,
                     "stext": instrument.replace('_', '') + " " + strike + " " + ce_pe
@@ -461,11 +489,12 @@ client_api = function () {
                         // console.log("Ajax success")
                         let info1 = data.values[0];
                         strangle_tracker.strangle_strike_details[instrument] = strangle_tracker.strangle_strike_details[instrument]  || [ ]
-                        strangle_tracker.strangle_strike_details[instrument].push(get_strike_details(info1, strike))
+                        strangle_tracker.strangle_strike_details[instrument].push(get_strike_details(info1, strike, hedge))
 
-                        function get_strike_details(info, strike) {
+                        function get_strike_details(info, strike, hedge) {
                             return {
                                 strike: strike,
+                                buy_or_sell: hedge?"B":"S",
                                 optt: info.optt,
                                 token: info.token,
                                 exch: info.exch,
