@@ -123,7 +123,11 @@ client_api = function () {
                     strangle_tracker.pe_leg = atm_strike - conf.algo[instr].strangle_distance_points
 
                     console.log(instr + ": ATM strike : " + atm_strike + " => Strangle : " + strangle_tracker.ce_leg  + " CE - " + strangle_tracker.pe_leg + " PE")
-                    // Deploying buy legs, i.e. hedge first
+
+                    broker.search.search_subscribe_strike(instr, strangle_tracker.ce_leg, "CE")
+                    broker.search.search_subscribe_strike(instr, strangle_tracker.pe_leg, "PE")
+
+                    // Deploying buy legs, i.e. hedge later
                     if(conf.algo.deploy_hedge) {
                         strangle_tracker.ce_hedge = strangle_tracker.ce_leg + conf.algo[instr].hedge_distance_points
                         strangle_tracker.pe_hedge = strangle_tracker.pe_leg - conf.algo[instr].hedge_distance_points
@@ -132,8 +136,6 @@ client_api = function () {
                         broker.search.search_subscribe_strike(instr, strangle_tracker.pe_hedge, "PE", true)
                     }
 
-                    broker.search.search_subscribe_strike(instr, strangle_tracker.ce_leg, "CE")
-                    broker.search.search_subscribe_strike(instr, strangle_tracker.pe_leg, "PE")
                 })
             }
         },
