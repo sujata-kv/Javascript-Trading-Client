@@ -2078,40 +2078,41 @@ client_api = function () {
         }
 
         get_value_object(val_str) {
+            /* //Examples
+            console.log(get_value_object("N-20000 D20"));
+            console.log(get_value_object("B 20000 D5"));
+            console.log(get_value_object("F 20000 D 5"));
+            console.log(get_value_object("10000 D 8"));*/
+
             let spot_based = false;
             let instrument = 'price';
             let value = val_str;
-            let delay = null;
+            let delay = null
 
-            if (value != undefined && value != '') {
+            if(value != undefined && value != ''){
                 value = value.trim();
-
-                // Check if delay is specified
-                const delayMatch = value.match(/(\d+)\s*d/i);
-                if (delayMatch) {
-                    delay = parseInt(delayMatch[1], 10);
-                    value = value.replace(`${delayMatch[0]}`, '').trim();
+                value = value.toUpperCase()
+                console.log(value)
+                if(value.startsWith('N')  || value.startsWith('B') || value.startsWith('F')) {
+                    spot_based = true
+                    value = value.replace(/-/, '')
+                    value = value.trim()
+                    let ii = (value).charAt(0).toUpperCase()
+                    if(ii === 'N')
+                        instrument = 'nifty';
+                    else if(ii === 'B')
+                        instrument = 'bank_nifty'
+                    else if(ii === 'F')
+                        instrument = 'fin_nifty'
+                    value = value.replace(/[ NBF-]/g, '');
                 }
 
-                if (
-                    value.startsWith('N') || value.startsWith('n') ||
-                    value.startsWith('B') || value.startsWith('b') ||
-                    value.startsWith('F') || value.startsWith('f')
-                ) {
-                    spot_based = true;
-                    value = value.replace(/-|\s/g, ''); // Remove hyphens and spaces
-                    let ii = value.charAt(0).toUpperCase();
-                    if (ii === 'N') instrument = 'nifty';
-                    else if (ii === 'B') instrument = 'bank_nifty';
-                    else if (ii === 'F') instrument = 'fin_nifty';
-                    value = value.replace(/N|B|F/i, '');
-                } else {
-                    // If not spot-based, remove hyphens and spaces from the value
-                    value = value.replace(/-|\s/g, '');
+                if(value.includes("D")) { //Extract delay
+                    [value, delay] = value.split('D')
                 }
             }
 
-            return { spot_based: spot_based, value: value, instrument: instrument, delay: delay };
+            return {spot_based : spot_based, value : value, instrument : instrument, delay: delay }
         }
 
         get_value_string(value_obj) {
@@ -2628,9 +2629,10 @@ client_api = function () {
 
                 if(sl_obj.delay != null) {
                     sl_action_threshold = parseInt(sl_obj.delay) * 1000 / (conf.target_sl_check_interval + 20); //20 milli seconds, extra execution time
-                }
+                    console.log(`Checking SL : ${ttype}  current : ${cur_spot_value}  trig : ${trig_value}  delay : ${sl_obj.delay}s`)
+                } else
+                    console.log(`Checking SL : ${ttype}  current : ${cur_spot_value}  trig : ${trig_value}`)
 
-                console.log(`Checking SL : ${ttype}  current : ${cur_spot_value}  trig : ${trig_value}`)
                 if(sl_obj.spot_based) {
                     if (ttype === 'bull') {
                         if (cur_spot_value <= trig_value) {
@@ -2682,7 +2684,7 @@ client_api = function () {
                         milestone_manager.remove_milestone(row_id)
                     } else {
                         milestone_manager.increment_sl_hit_count(row_id)
-                        console.log("SL hit count = " + ms.get_sl_hit_count() + ", Trigger threshold count = " + sl_action_threshold + " delay SL by: " + sl_obj.delay + " seconds")
+                        console.log("SL hit count = " + ms.get_sl_hit_count() + ", Trigger threshold count = " + sl_action_threshold + " delay: " + sl_obj.delay + " seconds")
                     }
                 }
             }

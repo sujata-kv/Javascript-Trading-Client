@@ -8,7 +8,7 @@ client_api = function () {
         target_sl_check_interval : 500, // In Milliseconds. Check for target and SL after every 500 ms
 
         algo: {
-            profit : 1000,
+            profit : 500,
             loss : -1000,
             monitor_interval: 1000,
             retry_count : 2,
@@ -3748,7 +3748,7 @@ client_api = function () {
             populate_time() {
                 this.populate_selected('hours', 24, '09');
                 this.populate_selected('minutes', 60, '15');
-                this.populate_selected('seconds', 60, '30');
+                this.populate_selected('seconds', 60, '15');
             },
 
             activate_run_button() {
