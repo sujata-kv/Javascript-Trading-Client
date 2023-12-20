@@ -1455,6 +1455,9 @@ client_api = function () {
                 case "COMPLETE" :
                     show_success_msg("Order completed. Order number: " + order.norenordno + "  Symbol: " + order.tsym + " Qty: " + order.qty);
                     break;
+                case "PENDING" :
+                    show_error_msg("Order pending. Order number: " + order.norenordno + "  Symbol: " + order.tsym + " Qty: " + order.qty);
+                    break;
                 case "REJECTED" :
                     show_error_msg("Order " + order.norenordno + " rejected. Reason : " + order.rejreason  + "   Symbol: " + order.tsym + " Qty: " + order.qty, false );
                     break;
@@ -1476,7 +1479,7 @@ client_api = function () {
         },
 
         add_open_order : function(order) {
-            if (order.status == "OPEN") {
+            if (order.status == "OPEN" || order.status == "PENDING") {
                 broker.subscribe_token(order.subscribe_token)
 
                 let type = order.amo == "Yes"? "AMO ": "";
@@ -1868,6 +1871,11 @@ client_api = function () {
                         console.log(orderno + " : Found matching order ")
                         switch (matching_order.status) {
                             case "OPEN":
+                                setTimeout(function () {
+                                    orderbook.get_order_status(orderno, action, oncomplete_cb);
+                                }, 2000)
+                                break;
+                            case "PENDING":
                                 setTimeout(function () {
                                     orderbook.get_order_status(orderno, action, oncomplete_cb);
                                 }, 2000)
