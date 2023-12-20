@@ -2082,7 +2082,7 @@ client_api = function () {
             console.log(get_value_object("N-20000 D20"));
             console.log(get_value_object("B 20000 D5"));
             console.log(get_value_object("F 20000 D 5"));
-            console.log(get_value_object("10000 D 8"));*/
+            console.log(get_value_object("-10000 D 8"));*/
 
             let spot_based = false;
             let instrument = 'price';
@@ -2628,7 +2628,7 @@ client_api = function () {
                 }
 
                 if(sl_obj.delay != null) {
-                    sl_action_threshold = parseInt(sl_obj.delay) * 1000 / (conf.target_sl_check_interval + 20); //20 milli seconds, extra execution time
+                    sl_action_threshold = Math.round(parseInt(sl_obj.delay) * 1000 / (conf.target_sl_check_interval + 20)); //20 milli seconds, extra execution time
                     console.log(`Checking SL : ${ttype}  current : ${cur_spot_value}  trig : ${trig_value}  delay : ${sl_obj.delay}s`)
                 } else
                     console.log(`Checking SL : ${ttype}  current : ${cur_spot_value}  trig : ${trig_value}`)
