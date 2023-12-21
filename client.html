@@ -24,7 +24,7 @@
                             <input type="text"  class="form-control form-control-sm user-id"  placeholder="User" value="FA90807"> <!-- FA85460 -->
                         </div>
                         <div class="col-auto">
-                            <input type="text" class="form-control form-control-sm session-token" placeholder="Session Token" value="60c9731d931f0156710a4c5828b362a120a54dfa972acfa4c796bc5e23e0a8e7">
+                            <input type="text" class="form-control form-control-sm session-token" placeholder="Session Token" value="8b86b26d5cf639749e4ac69bbb6e02275c9a186b08b6bdfae9c1c36e2679c3e2">
                         </div>
                     </div>
 
@@ -33,7 +33,7 @@
                             <input type="text"  class="form-control form-control-sm user-id"  placeholder="User" value="VC1177">    <!--  FZ0468 -->
                         </div>
                         <div class="col-auto"> <!--  bFKGykcV3yxiBujdLSK5Y1Y/qtDW2AsdaamtKTgvb0nC1sneP6FY0cUsSWFMmi5OBykZuDYhlG7/KzPVHFtpiIlSza2p8xi+ONZjZ8V1Ao6fmylp98YMEw==  -->
-                            <input type="text" class="form-control form-control-sm session-token" placeholder="Session Token" value="t38DgHCVAxIh5Qq0EQJWdMBvquF9ccMMHQLRSYK29eogymDl7RAtdL70RWZ9seHfBVN06U8uxWjMpvYZWS641N6ypaRvrmnUiohxHeVlfJGmninbqxcOjA==">
+                            <input type="text" class="form-control form-control-sm session-token" placeholder="Session Token" value="Fyb1ijwfD5z8AJ3zXyUPBEr+qI7GyC7+bEzazLtk7RLlHrkEDDy0CrhMUGHe4V7GtNa4eykB+nv8HLanwH7avHryAQZGLz2vIAebvpMSH5/wOvb+uICTiw==">
                         </div>
                     </div>
                 </div>
@@ -154,15 +154,17 @@
         </div>
 
         <div class="row">
-            <div class="custom-tab col-sm-2">
-                <button class="btn btn-success" type="button" onclick="client_api.trade.load_open_positions()">Active Trades</button>
+            <div class="col-sm-2">
+                <div class="su-custom-tab">
+                    <button class="btn btn-success " type="button" onclick="client_api.trade.load_open_positions()">Active Trades</button>
+                </div>
             </div>
 
             <div class="col-sm-2">
                 <input id="group_name" style="text-transform: uppercase"  type="text" class="form-control"  value="" placeholder="Group name" >
 <!--                <div class="ui-front" style=""></div>-->
             </div>
-            <div class="col-sm-6" style="padding-left:0px">
+            <div class="col-sm-6">
                 <button class="btn btn-primary mb-3" onclick="client_api.util.grouping.group_selected()">Group Selected</button>
                 <button class="btn btn-danger mb-3" onclick="client_api.util.grouping.exit_group('#at-pool')" title="Close selected trades">Exit</button>
                 <span class="del-icon" onclick="client_api.util.grouping.delete('#at-pool')" title="Delete the closed trades" style="position: relative; top:-7px;">
@@ -234,20 +236,26 @@
         <hr class="hr hr-blurry" />
 
         <div class="row" id="tabs">
-            <div class="custom-tab col-sm-3" style="margin-left:12px">
-                <button class="btn btn-warning " type="button" onclick="client_api.orderbook.update_open_orders()">
-                    Open Orders
-                </button>
+            <div class="col-sm-3" style="">
+                <div class="su-custom-tab">
+                    <button class="btn btn-warning " type="button" onclick="client_api.orderbook.update_open_orders()">
+                        Open Orders
+                    </button>
+                </div>
             </div>
-            <div class="custom-tab  col-sm-3">
-                <button class="btn btn-secondary" type="button" onclick="client_api.orderbook.show_orderbook()">
-                    Order book
-                </button>
+            <div class="col-sm-3">
+                <div class="su-custom-tab">
+                    <button class="btn btn-secondary" type="button" onclick="client_api.orderbook.show_orderbook()">
+                        Order book
+                    </button>
+                </div>
             </div>
-            <div class="custom-tab  col-sm-3">
-                <button class="btn btn-primary" type="button" onclick="client_api.positions.show_positions()">
-                    Positions
-                </button>
+            <div class="col-sm-3">
+                <div class="su-custom-tab">
+                    <button class="btn btn-primary" type="button" onclick="client_api.positions.show_positions()">
+                        Positions
+                    </button>
+                </div>
             </div>
         </div>
 
@@ -392,6 +400,14 @@
         padding-left:20px;
     }
 
+    .su-custom-tab {
+        border : 5px solid white !important;
+        border-radius:2px;
+    }
+
+    .su-custom-tab .btn {
+        width:100%;
+    }
 
     table {
         table-layout: fixed;
@@ -434,30 +450,14 @@
         padding: 1px 2px 1px 2px;
     }
 
-
-    .custom-tab {
-        padding: 0.25rem 0.25rem !important;
-        margin-bottom: 0;
-        background-color: rgba(0,0,0,.03);
-        border-bottom: 1px solid rgba(0,0,0,.125);
-        display: -ms-flexbox;
-        display: flex;
-        -ms-flex-direction: column;
-        flex-direction: column;
-        min-width: 0;
-        word-wrap: break-word;
-        background-color: #fff;
-        background-clip: border-box;
-        border: 1px solid rgba(0,0,0,.125);
-        border-radius: 0.25rem;
-    }
-
     #tabs {
         padding-bottom: 15px;
     }
 
     div.gross-pnl {
         float: right;
+        position: relative;
+        top :-30px;
     }
 
     .gross-pnl .pnl {
