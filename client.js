@@ -337,7 +337,7 @@ client_api = function () {
                 values["ret"] = 'DAY';
                 values["remarks"] = remarks;
 
-                // values["amo"] = "Yes";          // TODO - AMO ORDER
+                values["amo"] = "Yes";          // TODO - AMO ORDER
 
                 return values;
             },
@@ -346,18 +346,19 @@ client_api = function () {
                 shoonya.post_request(shoonya.url.place_order, params, success_cb);
             },
 
-            cancel_order: function (tr_elm, orderno, success_cb) {
+            cancel_order: function (orderno, tr_elm, success_cb) {
                 let values = {'ordersource': 'WEB'};
                 values["uid"] = user_id;
                 values["norenordno"] = orderno;
 
                 shoonya.post_request(broker.url.cancel_order, values, function (data) {
                     if (data.stat.toUpperCase() === "OK")
-                        tr_elm.remove();
+                        if(tr_elm!=null) tr_elm.remove();
 
                     if (data.result != undefined) {
                         let orderno = data.result;  //For cancel order, order-id is contained in result variable
-                        broker.get_orderbook(success_cb)
+                        if(success_cb!=undefined)
+                            broker.order.get_orderbook(success_cb)
                     }
                 });
             },
@@ -1011,7 +1012,7 @@ client_api = function () {
                 });
             },
 
-            cancel_order: function (tr_elm, orderno, success_cb) {
+            cancel_order: function (orderno, tr_elm, success_cb) {
                 let variety = tr_elm.attr('variety')
                 // let url = kite.url.cancel_order + "regular/" + orderno + "?order_id=" + orderno + "&parent_order_id=&variety=regular"
                 let url = kite.url.cancel_order + variety + "/" + orderno + "?order_id=" + orderno + "&parent_order_id=&variety=" + variety
@@ -1023,7 +1024,7 @@ client_api = function () {
                     },
                     success: function (data) {
                         if (data.status === "success")
-                            tr_elm.remove()
+                            if(tr_elm!=null) tr_elm.remove()
 
                         if (data.data.order_id != undefined) {
                             let orderno = data.data.order_id
@@ -1664,7 +1665,12 @@ client_api = function () {
 
             let entry_obj = milestone_manager.get_value_object(entry_value)
             if(entry_obj.spot_based && entry_obj.value != '') {  // Spot based entry
+
                 milestone_manager.add_entry(row_id, ticker, ttype, trtype, entry_obj)
+                //Existing order should be cancelled, if there is an open order
+                if(!order_id.includes('Spot')) {  // If the previous order is not Spot based entry, i.e there is an open order and now it is changed to Spot order
+                    broker.order.cancel_order(order_id, null)
+                }
             } else {
                 milestone_manager.remove_entry(row_id); // Entry should be present in milestone_mgr only if it is spot based. Else LIMIT & MKT order should be placed immediately
 
