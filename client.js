@@ -337,7 +337,7 @@ client_api = function () {
                 values["ret"] = 'DAY';
                 values["remarks"] = remarks;
 
-                values["amo"] = "Yes";          // TODO - AMO ORDER
+                // values["amo"] = "Yes";          // TODO - AMO ORDER
 
                 return values;
             },
