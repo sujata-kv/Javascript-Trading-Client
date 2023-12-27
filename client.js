@@ -1621,7 +1621,7 @@ client_api = function () {
                 milestone_manager.remove_milestone(row_id);
                 tr_elm.remove();
             } else {
-                broker.order.cancel_order(tr_elm, orderno, function(orders) {
+                broker.order.cancel_order(orderno, tr_elm, function(orders) {
                     let matching_order = orders.find(order => order.norenordno === orderno)
                     if (matching_order != undefined) {
                         orderbook.display_order_exec_msg(matching_order);
