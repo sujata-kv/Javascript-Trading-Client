@@ -2705,6 +2705,10 @@ client_api = function () {
         },
 
         close_all_trades: function () {
+            $('#active_trades_div tfoot tr').each(function(index, tr_elm) {
+                milestone_manager.remove_milestone($(tr_elm).attr('id'));
+            })
+
             if($('#active_trades_div tbody tr[trtype="S"]').length > 0) {
                 //Exit all sell positions first
                 $('#active_trades_div tbody tr[trtype="S"]').each(function (index, tr_elm) {
@@ -2721,10 +2725,6 @@ client_api = function () {
                     $(tr_elm).find('.exit').click()
                 })
             }
-
-            $('#active_trades_div tfoot tr').each(function(index, tr_elm) {
-                milestone_manager.remove_milestone($(tr_elm).attr('id'));
-            })
         },
 
         ack_notify(elm){
@@ -3001,6 +3001,7 @@ client_api = function () {
         },
 
         exit_all_positions : function(kill_switch_btn) {
+            console.log("KILL SWITCH pressed")
             if(!is_paper_trade()) {
                 $('#open_orders tr').each(function (index, tr_elm) {
                     $(tr_elm).find('.cancel').click()
