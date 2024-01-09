@@ -2142,8 +2142,8 @@ client_api = function () {
                 value_str = value_obj.value.trim()
             }
 
-            if(value_obj.delay != null) {
-                value_str = `${value_str} - ${delay}D`;
+            if(value_obj.delay != undefined && value_obj.delay!=null) {
+                value_str = `${value_str} D${delay}`;
             }
             return value_str;
         }
