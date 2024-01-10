@@ -2143,7 +2143,7 @@ client_api = function () {
             }
 
             if(value_obj.delay != undefined && value_obj.delay!=null) {
-                value_str = `${value_str} D${delay}`;
+                value_str = `${value_str} D${value_obj.delay}`;
             }
             return value_str;
         }
@@ -2698,7 +2698,7 @@ client_api = function () {
                         milestone_manager.remove_milestone(row_id)
                     } else {
                         milestone_manager.increment_sl_hit_count(row_id)
-                        console.log("SL hit count = " + ms.get_sl_hit_count() + ", Trigger threshold count = " + sl_action_threshold + " delay: " + sl_obj.delay + " seconds")
+                        console.log("SL hit count = " + ms.get_sl_hit_count() + "/" + sl_action_threshold+ ", Trigger threshold count = " + sl_action_threshold + " delay: " + sl_obj.delay + " seconds")
                     }
                 }
             }
