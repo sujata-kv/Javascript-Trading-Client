@@ -1696,8 +1696,8 @@ client_api = function () {
                                     let sl = '';
                                     if (ms_obj != undefined) {
                                         const old_row_id = ms_obj.row_id;
-                                        target = milestone_manager.get_value_string(ms_obj.milestone.target)
-                                        sl = milestone_manager.get_value_string(ms_obj.milestone.sl)
+                                        target = (ms_obj.milestone.target != undefined)? milestone_manager.get_value_string(ms_obj.milestone.target) : ''
+                                        sl = (ms_obj.milestone.sl != undefined)? milestone_manager.get_value_string(ms_obj.milestone.sl) : ''
                                         milestone_manager.remove_milestone(old_row_id); //Target and SL have been taken into Active Trade Row
                                     }
                                     trade.display_active_trade(matching_order, target, sl);
@@ -2193,6 +2193,7 @@ client_api = function () {
                 old_ms.set_ttype(ttype)
                 old_ms.set_target(value_obj)
             }
+            console.log(`${row_id} ${ttype.toUpperCase()} Target: ${JSON.stringify(value_obj)}  Token:${token}`)
         }
 
         add_sl(row_id, token, ttype, buy_sell, value_obj) {
@@ -2206,6 +2207,7 @@ client_api = function () {
                 old_ms.set_ttype(ttype)
                 old_ms.set_sl(value_obj)
             }
+            console.log(`${row_id} ${ttype.toUpperCase()} SL: ${JSON.stringify(value_obj)}  Token:${token}`)
         }
 
         remove_entry(row_id) {
@@ -2561,7 +2563,7 @@ client_api = function () {
                     }
                 }
 
-                console.log(`Checking Target : ${ttype}  current : ${cur_spot_value}  trig : ${trig_value}`)
+                // console.log(`Checking Target : ${ttype}  current : ${cur_spot_value}  trig : ${trig_value}`)
 
                 if (target_obj.spot_based) {
                     if (ttype === 'bull') {
@@ -2643,9 +2645,9 @@ client_api = function () {
 
                 if(sl_obj.delay != null) {
                     sl_action_threshold = Math.round(parseInt(sl_obj.delay) * 1000 / (conf.target_sl_check_interval + 20)); //20 milli seconds, extra execution time
-                    console.log(`Checking SL : ${ttype}  current : ${cur_spot_value}  trig : ${trig_value}  delay : ${sl_obj.delay}s`)
-                } else
-                    console.log(`Checking SL : ${ttype}  current : ${cur_spot_value}  trig : ${trig_value}`)
+                    // console.log(`Checking SL : ${ttype}  current : ${cur_spot_value}  trig : ${trig_value}  delay : ${sl_obj.delay}s`)
+                } /*else
+                    console.log(`Checking SL : ${ttype}  current : ${cur_spot_value}  trig : ${trig_value}`)*/
 
                 if(sl_obj.spot_based) {
                     if (ttype === 'bull') {
