@@ -333,6 +333,27 @@ client_api = function () {
                                     btnContainer.css('display', 'inline');
                                     cell.css('width', '140px')
                                     break;
+
+                                case 0:
+                                case 1:
+                                case 5:
+                                case 6:
+                                    btnContainer = $('<div class="btn-container"></div>');
+                                    let btnD = $('<button class="btn buy">Deploy</button>').click(function () {
+                                        onButtonClick('B');
+                                    });
+
+                                    // Append buttons to the container
+                                    btnContainer.append(btnD);
+
+                                    // Append the button container to the cell
+                                    cell.append(btnContainer);
+
+                                    // Show buttons on hover
+                                    btnContainer.css('display', 'inline');
+                                    cell.css('width', '150px')
+                                    break;
+                                    break;
                                 default:
                                     break;
                             }
