@@ -51,6 +51,7 @@ client_api = function () {
         url: {
             websocket: "wss://trade.shoonya.com/NorenWSWeb/",
             search_instrument: "https://trade.shoonya.com/NorenWClientWeb/SearchScrip",
+            place_order: "https://trade.shoonya.com/NorenWClientWeb/PlaceOrder",
         },
 
         init: function () {
@@ -177,6 +178,32 @@ client_api = function () {
             return payload
         },
 
+        post_request: function (url, params, success_cb, failure_cb) {
+            let payload = shoonya.get_payload(params)
+            $.ajax({
+                url: url,
+                type: "POST",
+                dataType: "json",
+                data: payload,
+                success: function (data, textStatus, jqXHR) {
+                    console.log(url + " : params = ", JSON.stringify(params))
+                    console.log("Post request success: Resp = ", JSON.stringify(data))
+                    if (success_cb != undefined) {
+                        success_cb(data)
+                    }
+                },
+                error: function (jqXHR, textStatus, errorThrown) {
+                    console.error("Ajax failed")
+                    console.error(errorThrown)
+                    console.error(jqXHR)
+                    console.error(textStatus)
+                    if (failure_cb != undefined) {
+                        failure_cb(jqXHR, textStatus, errorThrown)
+                    }
+                }
+            });
+        },
+
         search : {
             search_subscribe_strike: function (strike, ce_pe) {
                 let params = {
@@ -192,7 +219,7 @@ client_api = function () {
                         // console.log("Ajax success")
                         let info = data.values[0];
                         option_chain_tracker.monitored_strikes.push({"token": parseInt(info.token), "strike": strike, "optt": ce_pe});
-                        option_chain_tracker.token_details[info.token] = {strike : strike, optt: ce_pe};
+                        option_chain_tracker.token_details[info.token] = {strike : strike, optt: ce_pe, "tsym": info.tsym, "dname": info.dname, "ls": info.ls};
                         shoonya.subscribe_token('NFO|' + info.token);
                     },
                     error: function (jqXHR, textStatus, errorThrown) {
@@ -201,6 +228,83 @@ client_api = function () {
                     },
                 })
             },
+        },
+
+        order : {
+            get_order_params: function (elm, buy_or_sell, qty, prd = '') {
+
+                let prctyp = 'LMT', price = "0.0";
+                let remarks = "";
+                let token = elm.attr('token');
+                prctyp = 'MKT'
+                let exch = "NFO";
+                /* "C" For CNC, "M" FOR NRML, "I" FOR MIS, "B" FOR BRACKET ORDER, "H" FOR COVER ORDER*/
+                if (exch == "NSE" || exch == "BSE") {
+                    prd = prd == "" ? "I" : prd;
+                } else {
+                    prd = prd == "" ? "M" : prd;
+                }
+
+                let token_details = option_chain_tracker.get_token_details(token)
+
+                let values = {'ordersource': 'WEB'};
+                values["uid"] = conf.user_id;
+                values["actid"] = conf.user_id;
+                values["trantype"] = buy_or_sell;
+                values["prd"] = prd;
+                values["exch"] = exch;
+                values["tsym"] = encodeURIComponent(token_details.tsym);
+                values["dname"] = encodeURIComponent(token_details.dname);
+                values["token"] = token;
+                values["qty"] = token_details.ls;
+                values["dscqty"] = token_details.ls;
+                values["prctyp"] = prctyp       /*  LMT / MKT / SL-LMT / SL-MKT / DS / 2L / 3L */
+                values["prc"] = price;
+                values["ret"] = 'DAY';
+                values["remarks"] = remarks;
+
+                // values["amo"] = "Yes";          // TODO - AMO ORDER
+
+                return values;
+            },
+
+            place_order: function (params, success_cb) {
+                shoonya.post_request(shoonya.url.place_order, params, success_cb);
+            },
+        }
+    }
+
+    const orderbook = {
+        buy : function(buy_btn) {
+            let cell_elm = $(buy_btn).parent().parent();
+            console.log("buy called.. for " + cell_elm)
+            cell_elm.find('.buy').attr('disabled', 'disabled');
+            orderbook.place_buy_sell_order(cell_elm, 'B')
+        },
+
+        sell : function(sell_btn) {
+            let cell_elm = $(sell_btn).parent().parent();
+            console.log("sell called.. for " + cell_elm)
+            cell_elm.find('.sell').attr('disabled', 'disabled');
+            orderbook.place_buy_sell_order(cell_elm, 'S')
+        },
+
+        deploy: function(btn){
+            let cell_elm = $(btn).parent().parent();
+            console.log("deploy called.. for " + cell_elm)
+        },
+
+        place_buy_sell_order: function(cell_elm, buy_sell) {
+            let params = broker.order.get_order_params(cell_elm, buy_sell, 15)
+            broker.order.place_order(params, function (data) {
+                if (success_cb != undefined) {  // Call custom function provided.. In case of exit, it needs to remove tr
+                    console.log("Success call back is provided. Will be called")
+                    success_cb(data)
+                } else { // No custom function provided. Default actions
+                    console.log("Default place order call back called")
+                    orderbook.place_order_cb_carry_target_sl_to_active_trade(data)
+                }
+            })
         }
     }
 
@@ -211,7 +315,7 @@ client_api = function () {
 
         cur_atm_strike : "",
 
-        cell_mapping : {
+        cell_mapping : {        /*If any of these mappings change, then make sure to update the switch case where we create buttons */
             left_spr2 : 0,
             left_spr1 : 1,
             ce : 2,
@@ -316,12 +420,8 @@ client_api = function () {
                                 case 2:
                                 case 4:
                                     btnContainer = $('<div class="btn-container"></div>');
-                                    let btnB = $('<button class="btn buy">B</button>').click(function () {
-                                        onButtonClick('B');
-                                    });
-                                    let btnS = $('<button class="btn sell">S</button>').click(function () {
-                                        onButtonClick('S');
-                                    });
+                                    let btnB = $('<button class="btn buy">B</button>').click(function() {orderbook.buy(this)});
+                                    let btnS = $('<button class="btn sell">S</button>').click(function() {orderbook.sell(this)});
 
                                     // Append buttons to the container
                                     btnContainer.append(btnB, btnS);
@@ -339,9 +439,7 @@ client_api = function () {
                                 case 5:
                                 case 6:
                                     btnContainer = $('<div class="btn-container"></div>');
-                                    let btnD = $('<button class="btn buy">Deploy</button>').click(function () {
-                                        onButtonClick('B');
-                                    });
+                                    let btnD = $('<button class="btn buy">Deploy</button>').click(function () {orderbook.deploy(this)});
 
                                     // Append buttons to the container
                                     btnContainer.append(btnD);
@@ -353,7 +451,7 @@ client_api = function () {
                                     btnContainer.css('display', 'inline');
                                     cell.css('width', '150px')
                                     break;
-                                    break;
+
                                 default:
                                     break;
                             }
@@ -410,7 +508,7 @@ client_api = function () {
                 // Create cells for each column
                 const cellCnt = Object.keys(this.cell_mapping).length;
                 for (let i = 0; i < cellCnt; i++) {
-                    row.insertCell(i);
+                    let cell = row.insertCell(i);
                 }
             }
         },
@@ -459,6 +557,10 @@ client_api = function () {
             row_spread.left_spr2.buy = buy_leg_token;
             row_spread.left_spr2.sell = this.get_token_for_strike(strike + 2 * conf[conf.instrument].round_to, "CE");
 
+            //Attach tsym attributes to CE and PE cells
+            let row = $(`#row_${strike}`)[0]
+            row.cells[this.cell_mapping.ce].setAttribute('token', buy_leg_token)
+
             //PE
             buy_leg_token = this.get_token_for_strike(strike, "PE");
             // sell_leg_token = this.get_token_for_strike(strike - conf[conf.instrument].round_to, "PE" );
@@ -471,6 +573,9 @@ client_api = function () {
 
             this.spreads[strike] = row_spread;
             // console.log(row_spread)
+
+            row.cells[this.cell_mapping.pe].setAttribute('token', buy_leg_token)
+
             this.update_spreads(strike, "CE")       //Update spreads for the first time
             this.update_spreads(strike, "PE")       //Update spreads for the first time
             $('#spot').html(live_data[conf.instrument_token])
