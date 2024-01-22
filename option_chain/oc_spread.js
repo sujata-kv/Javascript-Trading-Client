@@ -294,14 +294,14 @@ client_api = function () {
                         option_chain_tracker.create_row(strike)
                     });
 
-                    setTimeout(function make_spreads() {
+                    setTimeout(function waiting() {
                         if (all_strikes.length * 2 == option_chain_tracker.monitored_strikes.length){  //Token details contains two entries per strike, one for CE, one for PE
-                            console.log("All the subscriptions are done. Calling make_spreads_for_strike")
-                            all_strikes.forEach(strike => option_chain_tracker.make_spreads_for_strike(strike));
+                            console.log("All the subscriptions are done. Calling make_spreads")
+                            all_strikes.forEach(strike => option_chain_tracker.make_spreads(strike));
                         } else {
                             console.log("all_strikes len = " + (all_strikes.length*2) + " ... monitored_strikes len= " + option_chain_tracker.monitored_strikes.length)
                             console.log("All the subscriptions not done yet. Waiting..")
-                            setTimeout(make_spreads, 100)
+                            setTimeout(waiting, 100)
                         }
                     }, 100); //Wait until all the subscriptions are done
                 }
@@ -356,7 +356,7 @@ client_api = function () {
         },
 
         update_table : function(token, lp) {
-            // console.log("Update table called for " + token + " LP = " + lp)
+            console.log("Update table called for " + token + " LP = " + lp)
             const priceTableBody = document.querySelector('#option_chain_body');
             let data = this.get_token_details(token)
 
@@ -374,7 +374,7 @@ client_api = function () {
             }
         },
 
-        make_spreads_for_strike: function(strike) {
+        make_spreads: function(strike) {
 
             let spreads_template = {                //Contains spreads for a row, for a strike price
                 left_spr1 : {buy:"", sell:""},
@@ -411,9 +411,11 @@ client_api = function () {
 
             this.spreads[strike] = row_spread;
             // console.log(row_spread)
+            this.update_spreads(strike, "CE")       //Update spreads for the first time
+            this.update_spreads(strike, "PE")       //Update spreads for the first time
         },
 
-        update_spreads : function(strike, optt) {
+        update_spreads: function(strike, optt) {
             let row_spread = this.spreads[strike]
 
             if(row_spread != undefined) {
