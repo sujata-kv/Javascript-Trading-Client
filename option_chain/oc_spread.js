@@ -413,6 +413,7 @@ client_api = function () {
             // console.log(row_spread)
             this.update_spreads(strike, "CE")       //Update spreads for the first time
             this.update_spreads(strike, "PE")       //Update spreads for the first time
+            $('#spot').html(live_data[conf.instrument_token])
         },
 
         update_spreads: function(strike, optt) {
@@ -428,6 +429,13 @@ client_api = function () {
                 } else if (optt === "PE") {
                     row.cells[this.cell_mapping.right_spr1].textContent = get_max_loss(row_spread.right_spr1.buy, row_spread.right_spr1.sell);
                     row.cells[this.cell_mapping.right_spr2].textContent = get_max_loss(row_spread.right_spr2.buy, row_spread.right_spr2.sell);
+                }
+
+                if(strike == option_chain_tracker.cur_atm_strike) {
+                    let ce = parseFloat(row.cells[this.cell_mapping.ce].textContent)
+                    let pe = parseFloat(row.cells[this.cell_mapping.pe].textContent);
+                    let syn_fut = option_chain_tracker.cur_atm_strike + (ce-pe)
+                    $('#syn_fut').html(syn_fut)
                 }
             }
 
@@ -457,7 +465,7 @@ client_api = function () {
         conf.instrument_token = conf.instrument === "nifty"? nifty_tk
             : conf.instrument === "bank_nifty"? bank_nifty_tk
                 : conf.instrument === "fin_nifty" ? fin_nifty_tk : "unknown_instrument";
-        $('#instrument').html(conf.instrument.toUpperCase())
+        $('#instrument').html(conf.instrument.toUpperCase().replace("_", " "))
         setTimeout(function() {option_chain_tracker.find_atm_strikes()}, 1000)
     }
 

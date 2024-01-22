@@ -9,14 +9,14 @@
     <div class="container-fluid">
         <div class="wrapper">
             <div class="row header">
-                <div class="col-md-4"></div>
                 <div class="col-md-2" id="instrument"></div>
-                <div class="col-md-2" id="spot"></div>
-                <div class="col-md-4">
-                    <select id="select_instrument" onchange="client_api.select_instrument($(this).val())" style="width:20%">
-                        <option selected value="bank_nifty">Bank_Nifty</option>
+                <div class="col-md-4" > Spot = <span id="spot"></span></div>
+                <div class="col-md-4"> Syn fut = <span id="syn_fut"> </span></div>
+                <div class="col-md-2">
+                    <select id="select_instrument" onchange="client_api.select_instrument($(this).val())" style="width:100% !important">
+                        <option selected value="bank_nifty">Bank Nifty</option>
                         <option value="nifty">Nifty</option>
-                        <option value="fin_nifty">Fin_Nifty</option>
+                        <option value="fin_nifty">Fin Nifty</option>
                     </select>
                 </div>
             </div>
