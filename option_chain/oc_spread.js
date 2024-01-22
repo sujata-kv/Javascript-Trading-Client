@@ -304,6 +304,45 @@ client_api = function () {
                             setTimeout(waiting, 100)
                         }
                     }, 100); //Wait until all the subscriptions are done
+
+                    //Attach create button function on hover
+                    $('#option_chain_body td').hover(
+                        // Create buttons dynamically on hover
+                        function() {
+                            let cell = $(this)
+                            let cellIndex = cell.index()
+
+                            switch(cellIndex) {
+                                case 2:
+                                case 4:
+                                    btnContainer = $('<div class="btn-container"></div>');
+                                    let btnB = $('<button class="btn buy">B</button>').click(function () {
+                                        onButtonClick('B');
+                                    });
+                                    let btnS = $('<button class="btn sell">S</button>').click(function () {
+                                        onButtonClick('S');
+                                    });
+
+                                    // Append buttons to the container
+                                    btnContainer.append(btnB, btnS);
+
+                                    // Append the button container to the cell
+                                    cell.append(btnContainer);
+
+                                    // Show buttons on hover
+                                    btnContainer.css('display', 'inline');
+                                    cell.css('width', '140px')
+                                    break;
+                                default:
+                                    break;
+                            }
+                        },
+                        function() {
+                            // Hide and remove buttons on mouseout
+                            $(this).find('.btn-container').remove();
+                            $(this).css('width', 'auto')
+                        }
+                    );
                 }
             }
             setTimeout(function() {option_chain_tracker.find_atm_strikes()}, conf.atm_strike_check_interval); //Keep looping to find ATM strike price
