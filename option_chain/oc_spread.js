@@ -3,7 +3,7 @@ client_api = window.client_api || {};
 client_api = function () {
     const conf = {
         user_id : "FA90807",
-        session_token: "842cab4a987c3cec514628f78b2082885d2a4ccbde6a6d2d114d2f0de32728eb",
+        session_token: "d1c3733feb799b594e1b6b8b06f6d7b3a2b933c27a114de86cef065857dc67af",
 
         instrument : "bank_nifty",  // nifty, bank_nifty, fin_nifty
         atm_strike_check_interval : 30000,
@@ -168,7 +168,7 @@ client_api = function () {
         },
 
         unsubscribe_token: function(token) {
-
+            console.log("unsubscribe_token yet to be implemented")
         },
 
         get_payload: function (params) {
@@ -294,9 +294,16 @@ client_api = function () {
                         option_chain_tracker.create_row(strike)
                     });
 
-                    setTimeout(function() {
-                        all_strikes.forEach(strike => option_chain_tracker.make_spreads(strike));
-                    }, 1000)
+                    setTimeout(function make_spreads() {
+                        if (all_strikes.length * 2 == option_chain_tracker.monitored_strikes.length){  //Token details contains two entries per strike, one for CE, one for PE
+                            console.log("All the subscriptions are done. Calling make_spreads_for_strike")
+                            all_strikes.forEach(strike => option_chain_tracker.make_spreads_for_strike(strike));
+                        } else {
+                            console.log("all_strikes len = " + (all_strikes.length*2) + " ... monitored_strikes len= " + option_chain_tracker.monitored_strikes.length)
+                            console.log("All the subscriptions not done yet. Waiting..")
+                            setTimeout(make_spreads, 100)
+                        }
+                    }, 100); //Wait until all the subscriptions are done
                 }
             }
             setTimeout(function() {option_chain_tracker.find_atm_strikes()}, conf.atm_strike_check_interval); //Keep looping to find ATM strike price
@@ -367,7 +374,7 @@ client_api = function () {
             }
         },
 
-        make_spreads : function(strike) {
+        make_spreads_for_strike: function(strike) {
 
             let spreads_template = {                //Contains spreads for a row, for a strike price
                 left_spr1 : {buy:"", sell:""},
@@ -454,7 +461,7 @@ client_api = function () {
 
     /*Attach functions to connect, add to watch list button, etc*/
     $(document).ready(function() {
-        broker = shoonya
+        broker = shoonya        //TODO - As of now hardcoded to Shoonya. To be changed later
         connect_to_server();
     });
 
