@@ -3518,7 +3518,7 @@ $(document).ready(function() {
         }
     });
 
-    /*$("#at-pool").sortable({
+    $("#at-pool").sortable({
         items: 'tr:not(tfoot tr, thead tr, tr.summary)',
         dropOnEmpty: false,
         start: function (G, ui) {
@@ -3527,7 +3527,7 @@ $(document).ready(function() {
         stop: function (G, ui) {
             ui.item.removeClass("select");
         }
-    });*/
+    });
 });
 
 
