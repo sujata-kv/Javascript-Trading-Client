@@ -437,25 +437,30 @@ client_api = function () {
 
                                     // Show buttons on hover
                                     btnContainer.css('display', 'inline');
-                                    cell.css('width', '140px')
+                                    // cell.css('width', '140px')
                                     break;
 
                                 case 0:
                                 case 1:
                                 case 5:
                                 case 6:
-                                    btnContainer = $('<div class="btn-container"></div>');
-                                    let btnD = $('<button class="btn deploy">Deploy</button>').click(function () {orderbook.deploy(this)});
+                                    let cellContent = cell.find('span').text()
+                                    if(cellContent !== "") {
+                                        btnContainer = $('<div class="btn-container"></div>');
+                                        let btnD = $('<button class="btn deploy">Deploy</button>').click(function () {
+                                            orderbook.deploy(this)
+                                        });
 
-                                    // Append buttons to the container
-                                    btnContainer.append(btnD);
+                                        // Append buttons to the container
+                                        btnContainer.append(btnD);
 
-                                    // Append the button container to the cell
-                                    cell.append(btnContainer);
+                                        // Append the button container to the cell
+                                        cell.append(btnContainer);
 
-                                    // Show buttons on hover
-                                    btnContainer.css('display', 'inline');
-                                    // cell.css('width', '150px')
+                                        // Show buttons on hover
+                                        btnContainer.css('display', 'inline');
+                                        // cell.css('width', '150px')
+                                    }
                                     break;
 
                                 default:
@@ -515,12 +520,13 @@ client_api = function () {
                 const cellCnt = Object.keys(this.cell_mapping).length;
                 for (let i = 0; i < cellCnt; i++) {
                     let cell = row.insertCell(i);
+                    $(cell).append('<span></span>')
                 }
             }
         },
 
         update_table : function(token, lp) {
-            console.log("Update table called for " + token + " LP = " + lp)
+            // console.log("Update table called for " + token + " LP = " + lp)
             const priceTableBody = document.querySelector('#option_chain_body');
             let data = this.get_token_details(token)
 
@@ -530,9 +536,9 @@ client_api = function () {
 
                 row.cells[this.cell_mapping.strike].textContent = data.strike;
                 if (data.optt === 'CE') {
-                    row.cells[this.cell_mapping.ce].textContent = lp;
+                    $(row.cells[this.cell_mapping.ce]).find('span').text(lp);
                 } else if (data.optt === 'PE') {
-                    row.cells[this.cell_mapping.pe].textContent = lp;
+                    $(row.cells[this.cell_mapping.pe]).find('span').text(lp);
                 }
                 this.update_spreads(data.strike, data.optt);
             }
@@ -604,13 +610,14 @@ client_api = function () {
                 let row = document.getElementById(row_id)
 
                 if (optt === "CE") {
-                    row.cells[this.cell_mapping.left_spr1].textContent = get_max_loss(row_spread.left_spr1.buy, row_spread.left_spr1.sell);
-                    row.cells[this.cell_mapping.left_spr2].textContent = get_max_loss(row_spread.left_spr2.buy, row_spread.left_spr2.sell);
+                    $(row.cells[this.cell_mapping.left_spr1]).find('span').text( get_max_loss(row_spread.left_spr1.buy, row_spread.left_spr1.sell) );
+                    $(row.cells[this.cell_mapping.left_spr2]).find('span').text( get_max_loss(row_spread.left_spr2.buy, row_spread.left_spr2.sell) );
                 } else if (optt === "PE") {
-                    row.cells[this.cell_mapping.right_spr1].textContent = get_max_loss(row_spread.right_spr1.buy, row_spread.right_spr1.sell);
-                    row.cells[this.cell_mapping.right_spr2].textContent = get_max_loss(row_spread.right_spr2.buy, row_spread.right_spr2.sell);
+                    $(row.cells[this.cell_mapping.right_spr1]).find('span').text( get_max_loss(row_spread.right_spr1.buy, row_spread.right_spr1.sell) );
+                    $(row.cells[this.cell_mapping.right_spr2]).find('span').text( get_max_loss(row_spread.right_spr2.buy, row_spread.right_spr2.sell) );
                 }
 
+                //Update synthetic future value
                 if(strike == option_chain_tracker.cur_atm_strike) {
                     let ce = parseFloat(row.cells[this.cell_mapping.ce].textContent)
                     let pe = parseFloat(row.cells[this.cell_mapping.pe].textContent);
