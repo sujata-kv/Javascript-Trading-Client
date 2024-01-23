@@ -3,7 +3,7 @@ client_api = window.client_api || {};
 client_api = function () {
     const conf = {
         user_id : "FA90807",
-        session_token: "d1c3733feb799b594e1b6b8b06f6d7b3a2b933c27a114de86cef065857dc67af",
+        session_token: "78a744305957b4284ebae154b8ccc4b0d7af1bdbaea39438fcbc20d6369700de",
 
         instrument : "bank_nifty",  // nifty, bank_nifty, fin_nifty
         atm_strike_check_interval : 30000,
@@ -449,7 +449,7 @@ client_api = function () {
 
                                     // Show buttons on hover
                                     btnContainer.css('display', 'inline');
-                                    cell.css('width', '150px')
+                                    // cell.css('width', '150px')
                                     break;
 
                                 default:
@@ -459,7 +459,7 @@ client_api = function () {
                         function() {
                             // Hide and remove buttons on mouseout
                             $(this).find('.btn-container').remove();
-                            $(this).css('width', 'auto')
+                            // $(this).css('width', 'auto')
                         }
                     );
                 }
