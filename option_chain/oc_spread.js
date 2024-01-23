@@ -231,11 +231,10 @@ client_api = function () {
         },
 
         order : {
-            get_order_params: function (elm, buy_or_sell, qty, prd = '') {
+            get_order_params: function (token, buy_or_sell, qty, prd = '') {
 
                 let prctyp = 'LMT', price = "0.0";
                 let remarks = "";
-                let token = elm.attr('token');
                 prctyp = 'MKT'
                 let exch = "NFO";
                 /* "C" For CNC, "M" FOR NRML, "I" FOR MIS, "B" FOR BRACKET ORDER, "H" FOR COVER ORDER*/
@@ -279,19 +278,26 @@ client_api = function () {
             let cell_elm = $(buy_btn).parent().parent();
             console.log("buy called.. for " + cell_elm)
             cell_elm.find('.buy').attr('disabled', 'disabled');
-            orderbook.place_buy_sell_order(cell_elm, 'B')
+            let token = cell_elm.attr('token')
+            orderbook.place_buy_sell_order(token, 'B')
         },
 
         sell : function(sell_btn) {
             let cell_elm = $(sell_btn).parent().parent();
             console.log("sell called.. for " + cell_elm)
             cell_elm.find('.sell').attr('disabled', 'disabled');
-            orderbook.place_buy_sell_order(cell_elm, 'S')
+            let token = cell_elm.attr('token')
+            orderbook.place_buy_sell_order(token, 'S')
         },
 
         deploy: function(btn){
             let cell_elm = $(btn).parent().parent();
             console.log("deploy called.. for " + cell_elm)
+            cell_elm.find('.deploy').attr('disabled', 'disabled');
+            let token = cell_elm.attr('buy_token')
+            orderbook.place_buy_sell_order(token, 'B')
+            token = cell_elm.attr('sell_token')
+            orderbook.place_buy_sell_order(token, 'S')
         },
 
         place_buy_sell_order: function(cell_elm, buy_sell) {
@@ -439,7 +445,7 @@ client_api = function () {
                                 case 5:
                                 case 6:
                                     btnContainer = $('<div class="btn-container"></div>');
-                                    let btnD = $('<button class="btn buy">Deploy</button>').click(function () {orderbook.deploy(this)});
+                                    let btnD = $('<button class="btn deploy">Deploy</button>').click(function () {orderbook.deploy(this)});
 
                                     // Append buttons to the container
                                     btnContainer.append(btnD);
@@ -557,9 +563,13 @@ client_api = function () {
             row_spread.left_spr2.buy = buy_leg_token;
             row_spread.left_spr2.sell = this.get_token_for_strike(strike + 2 * conf[conf.instrument].round_to, "CE");
 
-            //Attach tsym attributes to CE and PE cells
+            //Attach token attributes to CE and PE cells
             let row = $(`#row_${strike}`)[0]
             row.cells[this.cell_mapping.ce].setAttribute('token', buy_leg_token)
+            row.cells[this.cell_mapping.left_spr1].setAttribute('buy_token', row_spread.left_spr1.buy)
+            row.cells[this.cell_mapping.left_spr1].setAttribute('sell_token', row_spread.left_spr1.sell)
+            row.cells[this.cell_mapping.left_spr2].setAttribute('buy_token', row_spread.left_spr2.buy)
+            row.cells[this.cell_mapping.left_spr2].setAttribute('sell_token', row_spread.left_spr2.sell)
 
             //PE
             buy_leg_token = this.get_token_for_strike(strike, "PE");
@@ -574,7 +584,12 @@ client_api = function () {
             this.spreads[strike] = row_spread;
             // console.log(row_spread)
 
+            //Attach token attributes to CE and PE cells
             row.cells[this.cell_mapping.pe].setAttribute('token', buy_leg_token)
+            row.cells[this.cell_mapping.right_spr1].setAttribute('buy_token', row_spread.right_spr1.buy)
+            row.cells[this.cell_mapping.right_spr1].setAttribute('sell_token', row_spread.right_spr1.sell)
+            row.cells[this.cell_mapping.right_spr2].setAttribute('buy_token', row_spread.right_spr2.buy)
+            row.cells[this.cell_mapping.right_spr2].setAttribute('sell_token', row_spread.right_spr2.sell)
 
             this.update_spreads(strike, "CE")       //Update spreads for the first time
             this.update_spreads(strike, "PE")       //Update spreads for the first time
