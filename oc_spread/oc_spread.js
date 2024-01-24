@@ -3,7 +3,7 @@ client_api = window.client_api || {};
 client_api = function () {
     const conf = {
         user_id : "FA90807",
-        session_token: "78a744305957b4284ebae154b8ccc4b0d7af1bdbaea39438fcbc20d6369700de",
+        session_token: "3c9a083c91fa53cd8fc45e7895c1b34c0d3c4aa4abcdf1bb1e3847dc6c91f437",
 
         instrument : "bank_nifty",  // nifty, bank_nifty, fin_nifty
         atm_strike_check_interval : 30000,
@@ -600,6 +600,7 @@ client_api = function () {
             this.update_spreads(strike, "CE")       //Update spreads for the first time
             this.update_spreads(strike, "PE")       //Update spreads for the first time
             $('#spot').html(live_data[conf.instrument_token])
+            this.update_totals();   //Update CE and PE totals
         },
 
         update_spreads: function(strike, optt) {
@@ -636,6 +637,25 @@ client_api = function () {
                 }
             }
         },
+
+        update_totals : function() {
+            let ce_total = 0, pe_total = 0;
+            for(let i=0; i<this.monitored_strikes.length; ++i) {
+                let ms = this.monitored_strikes[i];
+                if(ms.optt == "CE") {
+                    ce_total += parseFloat(live_data[ms.token])
+                } else if(ms.optt == "PE") {
+                    pe_total += parseFloat(live_data[ms.token])
+                }
+            }
+            $('#ce_total').html(ce_total.toFixed(1))
+            $('#pe_total').html(pe_total.toFixed(1))
+
+            setTimeout(function() {
+                console.log("Updatetotals called");
+                option_chain_tracker.update_totals();
+            }, 1000)
+        }
     }
 
     function connect_to_server(){
