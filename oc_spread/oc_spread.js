@@ -3,7 +3,7 @@ client_api = window.client_api || {};
 client_api = function () {
     const conf = {
         user_id : "FA90807",
-        session_token: "3c9a083c91fa53cd8fc45e7895c1b34c0d3c4aa4abcdf1bb1e3847dc6c91f437",
+        session_token: "8171c2d57257725ebd336761d8b70c762eddc0c6beb1e09ddc42a208f9f81c32",
 
         instrument : "bank_nifty",  // nifty, bank_nifty, fin_nifty
         atm_strike_check_interval : 30000,
@@ -220,6 +220,12 @@ client_api = function () {
                         let info = data.values[0];
                         option_chain_tracker.monitored_strikes.push({"token": parseInt(info.token), "strike": strike, "optt": ce_pe});
                         option_chain_tracker.token_details[info.token] = {strike : strike, optt: ce_pe, "tsym": info.tsym, "dname": info.dname, "ls": info.ls};
+                        if(strike == option_chain_tracker.cur_atm_strike) {
+                            if(ce_pe == "CE")
+                                option_chain_tracker.atm_ce_token = info.token
+                            else
+                                option_chain_tracker.atm_pe_token = info.token
+                        }
                         shoonya.subscribe_token('NFO|' + info.token);
                     },
                     error: function (jqXHR, textStatus, errorThrown) {
@@ -320,6 +326,8 @@ client_api = function () {
         spreads : {}, //Contains strike and the related row_spreads
 
         cur_atm_strike : "",
+        atm_ce_token :"",
+        atm_pe_token :"",
 
         cell_mapping : {        /*If any of these mappings change, then make sure to update the switch case where we create buttons */
             left_spr2 : 0,
@@ -534,12 +542,21 @@ client_api = function () {
                 const rowId = this.get_row_id(data.strike);
                 let row = priceTableBody.querySelector(`#${rowId}`);
 
-                row.cells[this.cell_mapping.strike].textContent = data.strike;
+                /*If the strike is the ATM, then update ATM CE PE combined premium*/
+                if(data.strike == option_chain_tracker.cur_atm_strike) {
+                    let combined_prem = parseFloat(live_data[option_chain_tracker.atm_ce_token]) + parseFloat(live_data[option_chain_tracker.atm_pe_token]);
+                    row.cells[this.cell_mapping.strike].textContent = data.strike + " [" + combined_prem.toFixed(1) +"] ";
+                } else
+                    $(row.cells[this.cell_mapping.strike]).text(data.strike);
+
+                /*Update PE and CE*/
                 if (data.optt === 'CE') {
                     $(row.cells[this.cell_mapping.ce]).find('span').text(lp);
                 } else if (data.optt === 'PE') {
                     $(row.cells[this.cell_mapping.pe]).find('span').text(lp);
                 }
+
+
                 this.update_spreads(data.strike, data.optt);
             }
         },
@@ -639,6 +656,9 @@ client_api = function () {
         },
 
         update_totals : function() {
+            /* Update ATM PE and CE combined premium*/
+
+            /* Update CE and PE column totals */
             let ce_total = 0, pe_total = 0;
             for(let i=0; i<this.monitored_strikes.length; ++i) {
                 let ms = this.monitored_strikes[i];
@@ -655,7 +675,7 @@ client_api = function () {
                 console.log("Updatetotals called");
                 option_chain_tracker.update_totals();
             }, 1000)
-        }
+        },
     }
 
     function connect_to_server(){
