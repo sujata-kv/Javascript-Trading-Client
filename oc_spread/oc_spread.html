@@ -19,7 +19,7 @@
                         <option value="fin_nifty">Fin Nifty</option>
                     </select>
                 </div>
-                <div class="col-md-1">
+                <div class="col-md-2">
                     <button id="trade_type"  onclick="client_api.toggle_paper_trade()">Paper Trade</button>
                 </div>
             </div>
@@ -128,13 +128,6 @@
             background-color: #d9eed2 ;
         }
 
-        #trade_type {
-            background-color: #ffc107;
-            color: #252424;
-            width: 90%;
-            /*float: right;*/
-        }
-
         #trade_type.active {
             background-color: #198754;
             color: #fff
@@ -146,6 +139,9 @@
             cursor: pointer;
             border: none;
             border-radius: 5px;
+            background-color: #ffc107;
+            color: #252424;
+            width: 60%;
         }
     </style>
 </body>
