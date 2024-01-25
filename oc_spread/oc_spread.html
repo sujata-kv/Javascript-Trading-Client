@@ -10,8 +10,8 @@
         <div class="wrapper">
             <div class="row header">
                 <div class="col-md-2" id="instrument"></div>
-                <div class="col-md-4" > Spot = <span id="spot"></span></div>
-                <div class="col-md-4"> Syn fut = <span id="syn_fut"> </span></div>
+                <div class="col-md-3" > Spot = <span id="spot"></span></div>
+                <div class="col-md-3"> Syn fut = <span id="syn_fut"> </span></div>
                 <div class="col-md-2">
                     <select id="select_instrument" onchange="client_api.select_instrument($(this).val())" style="width:100% !important">
                         <option selected value="bank_nifty">Bank Nifty</option>
@@ -19,18 +19,25 @@
                         <option value="fin_nifty">Fin Nifty</option>
                     </select>
                 </div>
+                <div class="col-md-1">
+                    <button id="trade_type"  onclick="client_api.toggle_paper_trade()">Paper Trade</button>
+                </div>
             </div>
             <div id="option_chain">
                 <table class="table table-condensed table-bordered">
                     <thead class="thead-light">
                     <tr>
-                        <th scope="col">Spread-2</th>
-                        <th scope="col">Spread-1</th>
-                        <th scope="col">Call</th>
-                        <th scope="col">Strike</th>
-                        <th scope="col">Put</th>
-                        <th scope="col">Spread-1</th>
-                        <th scope="col">Spread-2</th>
+                        <th scope="col" class="table-success">Bull Put Spread-2</th>
+                        <th scope="col" class="table-success">Bull Put Spread-1</th>
+                        <th scope="col" class="table-success">Bull Call Spread-2</th>
+                        <th scope="col" class="table-success">Bull Call Spread-1</th>
+                        <th scope="col" class="table-warning">Call</th>
+                        <th scope="col" class="table-warning">Strike</th>
+                        <th scope="col" class="table-warning">Put</th>
+                        <th scope="col" class="table-danger">Bear Put Spread-1</th>
+                        <th scope="col" class="table-danger">Bear Put Spread-2</th>
+                        <th scope="col" class="table-danger">Bear Call Spread-1</th>
+                        <th scope="col" class="table-danger">Bear Call Spread-2</th>
                         <!--   <th scope="col">Btfly-1</th>
                            <th scope="col">Btfly-2</th>
                            <th scope="col">Btfly-3</th>-->
@@ -40,10 +47,14 @@
                     </tbody>
                     <tfoot class="table-secondary">
                         <th scope="col"></th>
+                        <th scope="col"></th>
+                        <th scope="col"></th>
                         <th scope="col">Total</th>
                         <th scope="col" id="ce_total"></th>
                         <th scope="col"></th>
                         <th scope="col" id="pe_total"></th>
+                        <th scope="col"></th>
+                        <th scope="col"></th>
                         <th scope="col"></th>
                         <th scope="col"></th>
                     </tfoot>
@@ -80,16 +91,16 @@
         /* Style for the buttons */
         .btn-container {
             display: none;
-            position: relative;
+            position: absolute;
             z-index: 1;
-            padding-left: 10px;
+            padding-left: 0px;
         }
 
         .btn {
             cursor: pointer;
             padding: 3px 10px;
             border: none;
-            font-size: 15px;
+            font-size: 12px;
         }
 
         .btn.buy, .btn.deploy {
@@ -107,6 +118,34 @@
         #option_chain  td {
             width: 120px;
             height: 55px
+        }
+
+        .paper_trade {
+            background-color : #fff;
+        }
+
+        .real_trade {
+            background-color: #d9eed2 ;
+        }
+
+        #trade_type {
+            background-color: #ffc107;
+            color: #252424;
+            width: 90%;
+            /*float: right;*/
+        }
+
+        #trade_type.active {
+            background-color: #198754;
+            color: #fff
+        }
+
+        #trade_type {
+            padding: 5px 10px;
+            font-size: 15px;
+            cursor: pointer;
+            border: none;
+            border-radius: 5px;
         }
     </style>
 </body>
