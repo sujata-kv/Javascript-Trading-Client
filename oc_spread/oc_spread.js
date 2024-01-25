@@ -111,7 +111,7 @@ client_api = function () {
                     // console.log('On message : ' + result.t)
                     if (result.lp != undefined) {
                         let instr_token = result.tk
-                        let ltpf = parseFloat(result.lp).toFixed(2)
+                        let ltpf = parseFloat(result.lp)
                         live_data[instr_token] = ltpf
                         if(instr_token === conf.instrument_token) {
                             $('#spot').html(ltpf)
@@ -569,7 +569,7 @@ client_api = function () {
 
                 /*If the strike is the ATM, then update ATM CE PE combined premium*/
                 if(data.strike == option_chain_tracker.cur_atm_strike) {
-                    let combined_prem = parseFloat(live_data[option_chain_tracker.atm_ce_token]) + parseFloat(live_data[option_chain_tracker.atm_pe_token]);
+                    let combined_prem = live_data[option_chain_tracker.atm_ce_token] + live_data[option_chain_tracker.atm_pe_token];
                     row.cells[this.cell_mapping.strike].textContent = data.strike + " [" + combined_prem.toFixed(1) +"] ";
                 } else
                     $(row.cells[this.cell_mapping.strike]).text(data.strike);
@@ -708,9 +708,9 @@ client_api = function () {
             for(let i=0; i<this.monitored_strikes.length; ++i) {
                 let ms = this.monitored_strikes[i];
                 if(ms.optt == "CE") {
-                    ce_total += parseFloat(live_data[ms.token])
+                    ce_total += live_data[ms.token]
                 } else if(ms.optt == "PE") {
-                    pe_total += parseFloat(live_data[ms.token])
+                    pe_total += live_data[ms.token]
                 }
             }
             $('#ce_total').html(ce_total.toFixed(1))
