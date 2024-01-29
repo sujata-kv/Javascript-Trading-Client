@@ -1554,7 +1554,7 @@ client_api = function () {
                 this.add_to_spot_order_list(params, entry_val)
             } else {
                 console.log("Going to place order " + JSON.stringify(params))
-                if(!is_paper_trade()) {
+                if(!is_paper_trade()) { //Real trade
                     broker.order.place_order(params, function (data) {
                         if (success_cb != undefined) {  // Call custom function provided.. In case of exit, it needs to remove tr
                             console.log("Success call back is provided. Will be called")
@@ -1564,8 +1564,12 @@ client_api = function () {
                             orderbook.place_order_cb_carry_target_sl_to_active_trade(data)
                         }
                     })
-                } else {
-                    orderbook.place_paper_trade(params, live_data[broker.get_ticker(params)])
+                } else {    //Paper trade
+                    if(entry_val == 0.0) { //Market order. Place paper trade order immediately
+                        orderbook.place_paper_trade(params, live_data[broker.get_ticker(params)])
+                    } else {    //Limit order. Wait for price to reach the limit to enter paper trade
+                        this.add_to_spot_order_list(params, entry_val, paper_entry=true)
+                    }
                 }
             }
 
@@ -1575,7 +1579,7 @@ client_api = function () {
             }, 500)
         },
 
-        add_to_spot_order_list : function(item, entry_val) {
+        add_to_spot_order_list : function(item, entry_val, paper_entry=false) {
             let buy_sell = '';
             if (item.trantype === "B") {
                 buy_sell = '<span class="badge bg-success">Buy</span>'
@@ -1585,9 +1589,9 @@ client_api = function () {
 
             let ttype = this.know_bull_or_bear(item)
 
-            let dname = (item.dname != undefined)? item.dname : item.tsym;
+            let dname = (item.dname != undefined)? decodeURIComponent(item.dname) : item.tsym;
             let row_id = `row_id_${++unique_row_id}`
-            $('#spot_order_list').append(`<tr id="${row_id}" ordid="${item.norenordno}" exch="${item.exch}" tsym="${item.tsym}" dname="${item.dname}"  qty="${item.qty}" token="${item.token}" instrument_token="${item.instrument_token}" ttype="${ttype}" trtype="${item.trantype}">
+            $('#spot_order_list').append(`<tr id="${row_id}" ordid="${item.norenordno}" exch="${item.exch}" tsym="${item.tsym}" dname="${dname}"  qty="${item.qty}" token="${item.token}" instrument_token="${item.instrument_token}" ttype="${ttype}" trtype="${item.trantype}">
                     <td>${buy_sell}</td>
                     <td class="order-num">Spot Based Entry</td>
                     <td>${dname}</td>
@@ -1603,7 +1607,11 @@ client_api = function () {
 
             let ticker = broker.get_ticker({'token' : item.token, 'instrument_token': item.instrument_token})
             let entry_obj = milestone_manager.get_value_object(entry_val)
-            if(entry_obj.spot_based)
+            if(paper_entry) {   //Handle limit entry for paper trades..
+                entry_obj.spot_based = true;        //Manipulate entry obj to ensure it checks trigger
+                milestone_manager.add_entry(row_id, ticker, ttype, item.trantype, entry_obj);
+            }
+            else if(entry_obj.spot_based)
                 milestone_manager.add_entry(row_id, ticker, ttype, item.trantype, entry_obj);
         },
 
@@ -2502,7 +2510,11 @@ client_api = function () {
                         case "nifty" : cur_value = live_data[nifty_tk]; break;
                         case "bank_nifty" : cur_value = live_data[bank_nifty_tk]; break;
                         case "fin_nifty" : cur_value = live_data[fin_nifty_tk]; break;
-                        default : console.error(row_id + " Spot based entry.. neither nifty, nor bank-nifty, not even fin-nifty " + mile_stone); break;
+                        default :
+                            // console.error(row_id + " Spot based entry.. neither nifty, nor bank-nifty, not even fin-nifty " + mile_stone);
+                            console.log(row_id + " Paper trade with limit order.");
+                            cur_value = live_data[mile_stone.token];
+                            break;
                     }
                 }
                 console.log(`Checking Entry : ${ttype}  current : ${cur_value}  trig : ${trig_value}`)
