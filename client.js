@@ -1803,7 +1803,7 @@ client_api = function () {
             let exit_limit = milestone_manager.get_value_object(limit_value);
             let values = broker.order.get_order_params(tr_elm, buy_sell, exit_limit, qty, prd)
 
-            if(!is_paper_trade()) {
+            if(!is_paper_trade() && !to_be_closed_order_id.startsWith("paper")) {
                 broker.order.exit_order(values, function (data) {
                     if (data.stat.toUpperCase() === "OK") {
                         let orderno = data.norenordno;
