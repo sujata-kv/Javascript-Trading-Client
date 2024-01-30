@@ -1566,8 +1566,14 @@ client_api = function () {
                     })
                 } else {    //Paper trade
                     if(entry_val == 0.0) { //Market order. Place paper trade order immediately
-                        orderbook.place_paper_trade(params, live_data[broker.get_ticker(params)])
+                        params.norenordno = tr_elm.attr('ordid')
+                        let old_ms = milestone_manager.get_milestone_by_order_id(params.norenordno)
+                        milestone_manager.remove_milestone(old_ms.row_id)
+                        let target = tr_elm.find('.target').val().trim();
+                        let sl = tr_elm.find('.sl').val().trim();
+                        orderbook.place_paper_trade(params, live_data[broker.get_ticker(params)], target, sl)
                     } else {    //Limit order. Wait for price to reach the limit to enter paper trade
+                        params.norenordno = "paper_open_"
                         this.add_to_spot_order_list(params, entry_val, paper_entry=true)
                     }
                 }
@@ -1590,7 +1596,9 @@ client_api = function () {
             let ttype = this.know_bull_or_bear(item)
 
             let dname = (item.dname != undefined)? decodeURIComponent(item.dname) : item.tsym;
+            dname = dname.trim()
             let row_id = `row_id_${++unique_row_id}`
+            item.norenordno = paper_entry? item.norenordno + row_id : tem.norenordno;
             $('#spot_order_list').append(`<tr id="${row_id}" ordid="${item.norenordno}" exch="${item.exch}" tsym="${item.tsym}" dname="${dname}"  qty="${item.qty}" token="${item.token}" instrument_token="${item.instrument_token}" ttype="${ttype}" trtype="${item.trantype}">
                     <td>${buy_sell}</td>
                     <td class="order-num">Spot Based Entry</td>
@@ -1608,8 +1616,9 @@ client_api = function () {
             let ticker = broker.get_ticker({'token' : item.token, 'instrument_token': item.instrument_token})
             let entry_obj = milestone_manager.get_value_object(entry_val)
             if(paper_entry) {   //Handle limit entry for paper trades..
-                entry_obj.spot_based = true;        //Manipulate entry obj to ensure it checks trigger
+                entry_obj.spot_based = true;        //Manipulate entry obj to ensure that it checks for the entry trigger
                 milestone_manager.add_entry(row_id, ticker, ttype, item.trantype, entry_obj);
+                milestone_manager.add_order_id(row_id, item.norenordno)
             }
             else if(entry_obj.spot_based)
                 milestone_manager.add_entry(row_id, ticker, ttype, item.trantype, entry_obj);
@@ -1634,6 +1643,7 @@ client_api = function () {
                     if (matching_order != undefined) {
                         orderbook.display_order_exec_msg(matching_order);
                     }
+                    milestone_manager.remove_milestone(row_id); //Remove milestone
                     orderbook.update_open_order_list(orders);
                 })
             }
@@ -1672,8 +1682,10 @@ client_api = function () {
             }
 
             let entry_obj = milestone_manager.get_value_object(entry_value)
-            if(entry_obj.spot_based && entry_obj.value != '') {  // Spot based entry
-
+            if((entry_obj.spot_based && entry_obj.value != '') || is_paper_trade()) {  // Spot based entry
+                if(is_paper_trade()) {
+                    entry_obj.spot_based = true;        //Manipulate entry obj to ensure that it checks for the entry trigger
+                }
                 milestone_manager.add_entry(row_id, ticker, ttype, trtype, entry_obj)
                 //Existing order should be cancelled, if there is an open order
                 if(!order_id.includes('Spot')) {  // If the previous order is not Spot based entry, i.e there is an open order and now it is changed to Spot order
@@ -1715,10 +1727,12 @@ client_api = function () {
                         }
                     });
                 } else { // Place fresh order as spot entry value has been removed as orderno contains "Spot based entry"
-                    orderbook.place_buy_sell_order(tr_elm, tr_elm.attr('trtype'), function(data) {
-                        orderbook.place_order_cb_carry_target_sl_to_active_trade(data, row_id)
-                    });
-                    tr_elm.remove()
+                    if(!is_paper_trade()) { //Do this only if real trade
+                        orderbook.place_buy_sell_order(tr_elm, tr_elm.attr('trtype'), function (data) {
+                            orderbook.place_order_cb_carry_target_sl_to_active_trade(data, row_id)
+                        });
+                        tr_elm.remove()
+                    }
                 }
             }
 
@@ -1774,10 +1788,15 @@ client_api = function () {
             orderbook.update_open_order_list(orders);
         },
 
-        place_paper_trade : function(order, ltp) {
+        place_paper_trade : function(order, ltp, target, sl) {
 
-            let order_id = "paper" + Date.now()
-            order.norenordno = order_id
+            let order_id = "";
+            if(order.norenordno === undefined || order.norenordno === "") {
+                order_id = "paper" + Date.now()
+                order.norenordno = order_id
+            } else {
+                order_id = order.norenordno
+            }
             order.prc = ltp
             order.norentm = new Date().toLocaleTimeString()
             order.exch = (order.exch === undefined)? order.exchange : order.exch
@@ -1789,13 +1808,11 @@ client_api = function () {
             order.tsym = decodeURIComponent(order.tsym)
             order.dname = decodeURIComponent(order.dname)
 
-            ++unique_row_id;
+/*            ++unique_row_id;
             let row_id = "row_id_" + unique_row_id;
-            milestone_manager.add_order_id(row_id, order_id);
+            milestone_manager.add_order_id(row_id, order_id);*/
 
-            let target = '';
-            let sl = '';
-            trade.display_active_trade(order, target, sl, true, row_id);
+            trade.display_active_trade(order, target, sl, true);
         },
 
         //TODO - Partial quantity exit should be done
@@ -2266,6 +2283,8 @@ client_api = function () {
         }
 
         remove_milestone(row_id) {
+            // var err = new Error();
+            // console.log(JSON.stringify( err.stack));
             delete this.milestones[row_id]
         }
     }
@@ -2512,7 +2531,7 @@ client_api = function () {
                         case "fin_nifty" : cur_value = live_data[fin_nifty_tk]; break;
                         default :
                             // console.error(row_id + " Spot based entry.. neither nifty, nor bank-nifty, not even fin-nifty " + mile_stone);
-                            console.log(row_id + " Paper trade with limit order.");
+                            // console.log(row_id + " Paper trade with limit order.");
                             cur_value = live_data[mile_stone.token];
                             break;
                     }
@@ -2567,8 +2586,7 @@ client_api = function () {
                         cur_spot_value = $(`#${row_id}`).find('.pnl').text()
                         if(cur_spot_value!=undefined)
                             cur_spot_value = parseFloat(cur_spot_value)
-                    }
-                    else {
+                    } else {
                         cur_spot_value = live_data[mile_stone.token]; //Check for LTP of the instrument
                         /*let pnl = $(`#${row_id}`).find('.pnl').text()  //Check for PNL based target
                         cur_spot_value = parseFloat(pnl)*/
