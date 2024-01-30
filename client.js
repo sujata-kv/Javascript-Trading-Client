@@ -1567,10 +1567,15 @@ client_api = function () {
                 } else {    //Paper trade
                     if(entry_val == 0.0) { //Market order. Place paper trade order immediately
                         params.norenordno = tr_elm.attr('ordid')
-                        let old_ms = milestone_manager.get_milestone_by_order_id(params.norenordno)
-                        milestone_manager.remove_milestone(old_ms.row_id)
-                        let target = tr_elm.find('.target').val().trim();
-                        let sl = tr_elm.find('.sl').val().trim();
+                        let target = "", sl ="";
+                        if(params.norenordno != undefined && params.norenordno != "") {
+                            let old_ms = milestone_manager.get_milestone_by_order_id(params.norenordno)
+                            if(old_ms!=undefined && old_ms.row_id!=undefined) {
+                                milestone_manager.remove_milestone(old_ms.row_id)
+                                target = tr_elm.find('.target').val().trim();
+                                sl = tr_elm.find('.sl').val().trim();
+                            }
+                        }
                         orderbook.place_paper_trade(params, live_data[broker.get_ticker(params)], target, sl)
                     } else {    //Limit order. Wait for price to reach the limit to enter paper trade
                         params.norenordno = "paper_open_"
