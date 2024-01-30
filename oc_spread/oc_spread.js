@@ -3,7 +3,7 @@ client_api = window.client_api || {};
 client_api = function () {
     const conf = {
         user_id : "FA90807",
-        session_token: "1c985c7b3d2e3bf361fbde83e94a5e360ac3e2a32c886aa1e458fd2f50791bfa",
+        session_token: "3b884ce8dadf77abc3859c195dde9be0289c2a1b17f232d0437a1ef37763edea",
 
         instrument : "bank_nifty",  // nifty, bank_nifty, fin_nifty
         atm_strike_check_interval : 30000,
@@ -41,10 +41,10 @@ client_api = function () {
     const toggle_paper_trade = function() {
         $('#trade_type').toggleClass('active');
         if(is_paper_trade()) {
-            $('#trade_type').text("Paper Trade")
+            $('#trade_type').text("Watch Mode")
             document.body.className = 'paper_trade';
         } else {
-            $('#trade_type').text("Real Trade")
+            $('#trade_type').text("Trade Mode")
             document.body.className = 'real_trade';
         }
     };
