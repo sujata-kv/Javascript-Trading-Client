@@ -3,7 +3,7 @@ client_api = window.client_api || {};
 client_api = function () {
     const conf = {
         user_id : "FA90807",
-        session_token: "3b884ce8dadf77abc3859c195dde9be0289c2a1b17f232d0437a1ef37763edea",
+        session_token: "cdc16bc2f90e3a04bf7c839785075f7c3da7aed260cc701aa41e48e7f1777304",
 
         instrument : "bank_nifty",  // nifty, bank_nifty, fin_nifty
         atm_strike_check_interval : 30000,
@@ -727,7 +727,6 @@ client_api = function () {
             $('#pe_total').html(pe_total.toFixed(1))
 
             setTimeout(function() {
-                console.log("Updatetotals called");
                 option_chain_tracker.update_totals();
             }, 1000)
         },

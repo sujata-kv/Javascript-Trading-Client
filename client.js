@@ -1554,7 +1554,10 @@ client_api = function () {
                 this.add_to_spot_order_list(params, entry_val)
             } else {
                 console.log("Going to place order " + JSON.stringify(params))
-                if(!is_paper_trade()) { //Real trade
+                let orderId = tr_elm.attr('ordid')
+                let paper_entry = false;
+                paper_entry = orderId!=undefined && orderId.startsWith("paper");
+                if(!is_paper_trade() && !paper_entry) { //Real trade
                     broker.order.place_order(params, function (data) {
                         if (success_cb != undefined) {  // Call custom function provided.. In case of exit, it needs to remove tr
                             console.log("Success call back is provided. Will be called")
@@ -1833,7 +1836,8 @@ client_api = function () {
             let exit_limit = milestone_manager.get_value_object(limit_value);
             let values = broker.order.get_order_params(tr_elm, buy_sell, exit_limit, qty, prd)
 
-            if(!is_paper_trade() && !to_be_closed_order_id.startsWith("paper")) {
+            let paper_active_trade = to_be_closed_order_id!=undefined && to_be_closed_order_id.startsWith("paper")
+            if(!is_paper_trade() && !paper_active_trade) {
                 broker.order.exit_order(values, function (data) {
                     if (data.stat.toUpperCase() === "OK") {
                         let orderno = data.norenordno;
