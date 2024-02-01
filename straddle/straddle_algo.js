@@ -43,7 +43,7 @@ client_api = function () {
     let instruments = ['nifty', 'bank_nifty', 'fin_nifty']
 
     function select_broker() {
-        let broker_name = $('#broker_option')[0].value
+        let broker_name = $('#broker_option').val();
 
         if (broker_name === "kite") {
             broker = kite
@@ -2798,6 +2798,7 @@ client_api = function () {
     };
 
     function connect_to_server(){
+        select_broker();
         broker.init();
         broker.connect();
         broker.search.attach_search_autocomplete();

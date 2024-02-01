@@ -19,10 +19,10 @@
 
                     <div class="form-row align-items-center shoonya-creds" style="padding-top:10px;">
                         <div class="col-auto">
-                            <input type="text"  class="form-control form-control-sm user-id"  placeholder="User" value="FA90807">
+                            <input type="text"  class="form-control form-control-sm user-id"  placeholder="User" value="FA90807"> <!-- FA85460 -->
                         </div>
                         <div class="col-auto">
-                            <input type="text" class="form-control form-control-sm session-token" placeholder="Session Token" value="a652efb3dd3970dbca460c0965f52a6380a89895f4fe32e7bb900c33bd6dc077">
+                            <input type="text" class="form-control form-control-sm session-token" placeholder="Session Token" value="">
                         </div>
                     </div>
                 </div>
@@ -149,6 +149,7 @@
                 <!--                <div class="ui-front" style=""></div>-->
             </div>
             <div class="col-sm-6" style="padding-left:0px">
+                <button class="btn btn-primary mb-3" onclick="client_api.util.grouping.group_selected()">Group Selected</button>
                 <button class="btn btn-primary mb-3" onclick="client_api.util.grouping.group_selected()">Group Selected</button>
                 <button class="btn btn-danger mb-3" onclick="client_api.util.grouping.exit_group('#at-pool')" title="Close selected trades">Exit</button>
                 <span class="del-icon" onclick="client_api.util.grouping.delete('#at-pool')" title="Delete the closed trades" style="position: relative; top:-7px;">

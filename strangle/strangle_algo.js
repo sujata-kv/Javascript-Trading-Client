@@ -3830,6 +3830,7 @@ client_api = function () {
 
 
     function connect_to_server(){
+        select_broker()
         broker.init();
         broker.connect();
         broker.search.attach_search_autocomplete();
