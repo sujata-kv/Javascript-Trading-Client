@@ -10,8 +10,8 @@
         <div class="wrapper">
             <div class="row header">
                 <div class="col-md-2" id="instrument"></div>
-                <div class="col-md-3" > Spot = <span id="spot"></span></div>
-                <div class="col-md-3"> Syn fut = <span id="syn_fut"> </span></div>
+                <div class="col-md-3" > Spot <span id="spot"></span></div>
+                <div class="col-md-3"> Syn fut <span id="syn_fut"> </span></div>
                 <div class="col-md-2">
                     <select id="select_instrument" onchange="client_api.select_instrument($(this).val())" style="width:100% !important">
                         <option selected value="bank_nifty">Bank Nifty</option>
@@ -19,8 +19,14 @@
                         <option value="fin_nifty">Fin Nifty</option>
                     </select>
                 </div>
-                <div class="col-md-2">
-                    <button id="trade_type"  onclick="client_api.toggle_paper_trade()">Watch Mode</button>
+                <div class="col-md-2 btn-group">
+                    <button class="btn-sm" id="trade_type"  onclick="client_api.toggle_paper_trade()">Watch Mode</button>
+                </div>
+            </div>
+            <div class="row">
+                <div class="offset-7 col-md-5 btn-group">
+                    <button class="btn btn-outline-primary" id="unselect_all"  onclick="client_api.unselect_all()">Unselect All</button>
+                    <button class="btn btn-outline-primary" id="deploy_selected"  onclick="client_api.deploy_selected()">Deploy Selected</button>
                 </div>
             </div>
             <div id="option_chain">
@@ -82,7 +88,9 @@
             font-size: 30px;
             padding-bottom: 20px;
         }
-
+        #instrument {
+            font-size:26px;
+        }
         #select_instrument {
             font-size: 20px;
             width: 40% !important;
@@ -91,10 +99,11 @@
         /* Style for the buttons */
         .btn-container {
             display: none;
-            position: absolute;
+            position: relative;
             z-index: 1;
             padding-left: 0px;
             margin-left: -12px;
+            float: right !important;
         }
 
         .btn {
@@ -121,6 +130,14 @@
             height: 55px
         }
 
+        .select_buy {
+            background-color: rgba(200, 230, 189, 0.73) !important;
+        }
+
+        .select_sell {
+            background-color: rgba(252, 186, 186, 0.76) !important;
+        }
+
         .paper_trade {
             background-color : #fff;
         }
@@ -129,21 +146,39 @@
             background-color: #d9eed2 ;
         }
 
-        #trade_type.active {
-            background-color: #198754;
-            color: #fff
-        }
 
-        #trade_type {
+        #trade_type, #unselect_all, #deploy_selected {
             padding: 5px 10px;
             font-size: 15px;
             cursor: pointer;
             border: none;
             border-radius: 5px;
+            width: 60%;
+            margin: 0 10px 10px 10px;
+        }
+
+        #trade_type.active, #deploy_selected {
+            background-color: #198754;
+            color: #fff;
+
+        }
+
+        #trade_type {
             background-color: #ffc107;
             color: #252424;
-            width: 60%;
         }
+
+        #unselect_all {
+            background-color: rgba(148, 148, 148, 0.96);
+            color: #ffffff;
+        }
+
+        #btnSearch,
+        #btnClear{
+            display: inline-block;
+            vertical-align: top;
+        }
+
     </style>
 </body>
 

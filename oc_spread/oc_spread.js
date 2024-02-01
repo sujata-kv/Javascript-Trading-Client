@@ -3,7 +3,7 @@ client_api = window.client_api || {};
 client_api = function () {
     const conf = {
         user_id : "FA90807",
-        session_token: "cdc16bc2f90e3a04bf7c839785075f7c3da7aed260cc701aa41e48e7f1777304",
+        session_token: "a9e28cb46ab61a07d731ba0f320d7a0d2e147715409d1b9bdbe4c8f28b16cb10",
 
         instrument : "bank_nifty",  // nifty, bank_nifty, fin_nifty
         atm_strike_check_interval : 30000,
@@ -295,9 +295,9 @@ client_api = function () {
     }
 
     const orderbook = {
-        buy : function(buy_btn) {
+        buy : function(cell_elm) {
             if(!is_paper_trade()) {
-                let cell_elm = $(buy_btn).parent().parent();
+                // let cell_elm = $(buy_btn).parent().parent();
                 console.log("buy called.. for " + cell_elm)
                 cell_elm.find('.buy').attr('disabled', 'disabled');
                 let token = cell_elm.attr('token')
@@ -307,9 +307,9 @@ client_api = function () {
             }
         },
 
-        sell : function(sell_btn) {
+        sell : function(cell_elm) {
             if(!is_paper_trade()) {
-                let cell_elm = $(sell_btn).parent().parent();
+                // let cell_elm = $(sell_btn).parent().parent();
                 console.log("sell called.. for " + cell_elm)
                 cell_elm.find('.sell').attr('disabled', 'disabled');
                 let token = cell_elm.attr('token')
@@ -319,9 +319,9 @@ client_api = function () {
             }
         },
 
-        deploy: function(btn){
+        deploy: function(cell_elm){
             if(!is_paper_trade()) {
-                let cell_elm = $(btn).parent().parent();
+                // let cell_elm = $(btn).parent().parent();
                 console.log("deploy called.. for " + cell_elm)
                 cell_elm.find('.deploy').attr('disabled', 'disabled');
                 let token = cell_elm.attr('buy_token')
@@ -336,13 +336,8 @@ client_api = function () {
         place_buy_sell_order: function(cell_elm, buy_sell) {
             let params = broker.order.get_order_params(cell_elm, buy_sell, 15)
             broker.order.place_order(params, function (data) {
-                if (success_cb != undefined) {  // Call custom function provided.. In case of exit, it needs to remove tr
-                    console.log("Success call back is provided. Will be called")
-                    success_cb(data)
-                } else { // No custom function provided. Default actions
-                    console.log("Default place order call back called")
-                    orderbook.place_order_cb_carry_target_sl_to_active_trade(data)
-                }
+                console.log("Order placed successfully")
+                console.log(JSON.stringify(params))
             })
         }
     }
@@ -369,6 +364,8 @@ client_api = function () {
             right_call_spr1 : 9,
             right_call_spr2 : 10,
         },
+
+        selected_cells :{},
 
         reset: function() {
             this.monitored_strikes.forEach(entry => {
@@ -464,45 +461,35 @@ client_api = function () {
                             switch(cellIndex) {
                                 case 4:
                                 case 6:
-                                    btnContainer = $('<div class="btn-container"></div>');
-                                    let btnB = $('<button class="btn buy">B</button>').click(function() {orderbook.buy(this)});
-                                    let btnS = $('<button class="btn sell">S</button>').click(function() {orderbook.sell(this)});
+                                    let btnContainer = cell.find(".btn-container");
+                                    let btnB = $('<button class="btn buy">B</button>').click(function() {orderbook.buy($(this.parentNode.parentNode))});
+                                    let btnS = $('<button class="btn sell">S</button>').click(function() {orderbook.sell($(this.parentNode.parentNode))});
 
                                     // Append buttons to the container
                                     btnContainer.append(btnB, btnS);
 
-                                    // Append the button container to the cell
-                                    cell.append(btnContainer);
-
                                     // Show buttons on hover
                                     btnContainer.css('display', 'inline');
-                                    // cell.css('width', '140px')
                                     break;
 
                                 default:
                                     let cellContent = cell.find('span').text()
                                     if(cellContent !== "") {
-                                        btnContainer = $('<div class="btn-container"></div>');
-                                        let btnD = $('<button class="btn deploy">Deploy</button>').click(function () {
-                                            orderbook.deploy(this)
-                                        });
+                                        let btnContainer = cell.find(".btn-container");
+                                        let btnD = $('<button class="btn deploy">Deploy</button>').click(function () {orderbook.deploy($(this.parentNode.parentNode))});
 
                                         // Append buttons to the container
                                         btnContainer.append(btnD);
 
-                                        // Append the button container to the cell
-                                        cell.append(btnContainer);
-
                                         // Show buttons on hover
                                         btnContainer.css('display', 'inline');
-                                        // cell.css('width', '150px')
                                     }
                                     break;
                             }
                         },
                         function() {
                             // Hide and remove buttons on mouseout
-                            $(this).find('.btn-container').remove();
+                            $(this).find('.btn-container').empty();
                             // $(this).css('width', 'auto')
                         }
                     );
@@ -540,6 +527,14 @@ client_api = function () {
             const priceTableBody = document.querySelector('#option_chain_body');
             let row = document.getElementById(`#${rowId}`);
 
+            let selected_cells = {};
+            for(const [key, value] of Object.entries(option_chain_tracker.selected_cells)) {
+                if(key.startsWith(rowId)) {
+                    let cellIndex = key.split(":")[1]
+                    selected_cells[cellIndex] = value;
+                }
+            }
+
             if (!row) {
                 // If the row doesn't exist, create a new one
                 row = priceTableBody.insertRow();
@@ -554,6 +549,45 @@ client_api = function () {
                 for (let i = 0; i < cellCnt; i++) {
                     let cell = row.insertCell(i);
                     $(cell).append('<span></span>')
+                    $(cell).append('<div class="btn-container"></div>');
+
+
+                    if (i == option_chain_tracker.cell_mapping.ce || i == option_chain_tracker.cell_mapping.pe) {
+                        //Restore buy, sell leg selections
+                        if(selected_cells[i]!=undefined) {
+                            cell.className = selected_cells[i]=='B'? 'select_buy':'select_sell'
+                        }else {
+                            cell.className = ''
+                        }
+
+                        //Attach onclick handler, to be able to select the CE and PE legs for the BUY and SELL operations
+                        $(cell).on('click', cell_click_handler)
+                            .on('click', 'button', function (e) { //Stop propagation for Buttons only
+                                e.stopPropagation()
+                            })
+                    }
+
+                    function cell_click_handler(e) {
+                        let cell_identifier = $(cell).closest('tr')[0].id + ":" + cell.cellIndex
+                        // console.log("cell_identifier = " + cell_identifier)
+
+                        let clsName = cell.className
+                        switch(clsName) {
+                            case "" :
+                                $(cell).addClass("select_buy")
+                                option_chain_tracker.selected_cells[cell_identifier]= 'B'
+                                break;
+                            case "select_buy":
+                                $(cell).removeClass("select_buy")
+                                $(cell).addClass("select_sell")
+                                option_chain_tracker.selected_cells[cell_identifier]= 'S'
+                                break;
+                            case "select_sell":
+                                $(cell).removeClass("select_sell")
+                                delete option_chain_tracker.selected_cells[cell_identifier]
+                                break;
+                        }
+                    }
                 }
             }
         },
@@ -732,6 +766,31 @@ client_api = function () {
         },
     }
 
+    function deploy_selected(){
+        $("#option_chain_body").find('td.select_buy').each(function(i, cell_item) {
+            $(cell_item).removeClass("select_buy")
+            orderbook.buy($(cell_item))
+        })
+        setTimeout(function() {
+            $("#option_chain_body").find('td.select_sell').each(function(i, cell_item) {
+                $(cell_item).removeClass("select_sell")
+                orderbook.sell($(cell_item))
+            })
+        }, 500)
+    }
+
+    function unselect_all(){
+        for (const key in option_chain_tracker.selected_cells) {
+            // console.log(`${key}`);
+            delete option_chain_tracker.selected_cells[key]
+        }
+        $("#option_chain_body").find('td.select_buy, td.select_sell').each(function(i, item) {
+            $(item).removeClass("select_buy")
+            $(item).removeClass("select_sell")
+        })
+    }
+
+
     function connect_to_server(){
         broker.init();
         broker.connect();
@@ -762,6 +821,8 @@ client_api = function () {
         "oc_tracker" : option_chain_tracker,
         "select_instrument" : select_instrument,
         "toggle_paper_trade" : toggle_paper_trade,
+        "unselect_all" : unselect_all,
+        "deploy_selected": deploy_selected,
     }
 }();
 
