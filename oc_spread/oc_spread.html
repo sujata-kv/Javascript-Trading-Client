@@ -29,6 +29,22 @@
                     <button class="btn btn-outline-primary" id="deploy_selected"  onclick="client_api.deploy_selected()">Deploy Selected</button>
                 </div>
             </div>
+
+            <div id="alert_div">
+                <div class="alert alert-success" id="order_success_alert" style="display:none">
+                    <span id="order_success_msg"></span>
+                    <button type="button" class="close-btn" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="alert alert-danger" id="order_error_alert" style="display:none">
+                    <span id="order_error_msg"></span>
+                    <button type="button" class="close-btn">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+            </div>
+
             <div id="option_chain">
                 <table class="table table-condensed table-bordered">
                     <thead class="thead-light">
@@ -173,11 +189,33 @@
             color: #ffffff;
         }
 
-        #btnSearch,
-        #btnClear{
-            display: inline-block;
-            vertical-align: top;
+        #alert_div {
+            position: absolute;
+            bottom: 30px;
+            right: 30px;
         }
+
+        .alert{
+            z-index: 1000;
+            position: relative;
+        }
+
+        .close-btn {
+            cursor: pointer;
+            padding: 0 10px;
+            background-color: transparent;
+            border: 0;
+            font-size: 1.5rem;
+            font-weight: 700;
+            line-height: 1;
+            color: #000;
+            text-shadow: 0 1px 0 #fff;
+            opacity: .5;
+            /* position: absolute; */
+            /* right: 5px; */
+            /* margin-left:5px; */
+        }
+
 
     </style>
 </body>

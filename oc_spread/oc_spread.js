@@ -23,7 +23,6 @@ client_api = function () {
         },
 
         heartbeat_timeout : 7000,
-        alert_msg_disappear_after : 3000, // Unit milliseconds
     }
 
     let nifty_tk, bank_nifty_tk, fin_nifty_tk = '';
@@ -57,6 +56,61 @@ client_api = function () {
         } else {
             logged_in = false
             $('#connection_status').css('color', 'red')
+        }
+    }
+
+    function close_event_handler(event) {
+        event.preventDefault();
+        $(this).parent().remove();
+    }
+
+    function show_success_msg(message, disappear= true) {
+        // Generate success alert div
+        var successAlert = $('<div>').addClass('alert alert-success')
+            .attr('id', 'order_success_alert')
+            .html('<span id="order_success_msg">' + message + '</span>' +
+                '<button type="button" class="close-btn" aria-label="Close" onclick="client_api.close_event_handler">' +
+                '<span aria-hidden="true">&times;</span>' +
+                '</button>');
+
+        // Attach close button event handler
+        successAlert.find('.close-btn').on('click', function(e) {
+            e.preventDefault(); // Prevent default button behavior
+            successAlert.remove(); // Remove the success alert div
+        });
+
+        // Append to alert_div
+        $('#alert_div').append(successAlert);
+
+        if(disappear) {
+            setTimeout(function() {
+                successAlert.remove();
+            }, 5)
+        }
+    }
+
+    function show_error_msg(message, disappear_=true) {
+        // Generate error alert div
+        var errorAlert = $('<div>').addClass('alert alert-danger')
+            .attr('id', 'order_error_alert')
+            .html('<span id="order_error_msg">' + message + '</span>' +
+                '<button type="button" class="close-btn">' +
+                '<span aria-hidden="true">&times;</span>' +
+                '</button>');
+
+        // Attach close button event handler
+        errorAlert.find('.close-btn').on('click', function(e) {
+            e.preventDefault(); // Prevent default button behavior
+            errorAlert.remove(); // Remove the error alert div
+        });
+
+        // Append to alert_div
+        $('#alert_div').append(errorAlert);
+
+        if(disappear) {
+            setTimeout(function() {
+                errorAlert.remove();
+            }, 60)
         }
     }
 
@@ -128,6 +182,19 @@ client_api = function () {
                     console.log('On message : ' + result.t)
                     // console.log("..................  OM ...................")
                     console.log(result)
+                    let trantype = result.trantype =='B'? "BUY": "SELL";
+                    switch(result.status) {
+                        case "OPEN":
+                        case "PENDING":
+                            // show_success_msg(`${result.status} ${result.qty} ${result.tsym} ${result.trantype})`)
+                            break;
+                        case "COMPLETE":
+                            show_success_msg(`${result.status} ${trantype} Qty-${result.qty} ${result.tsym})`)
+                            break;
+                        case "REJECTED":
+                            show_error_msg(`${result.status} ${trantype} Qty-${result.qty} ${result.tsym}.\nReason: ${result.rejreason})`)
+                            break;
+                    }
                 }
             }
 
@@ -303,7 +370,7 @@ client_api = function () {
                 let token = cell_elm.attr('token')
                 orderbook.place_buy_sell_order(token, 'B')
             } else {
-                alert("You are in paper trade mode")
+                show_error_msg("You are in watch mode. Switch to 'Trade Mode' to place the order")
             }
         },
 
@@ -315,7 +382,7 @@ client_api = function () {
                 let token = cell_elm.attr('token')
                 orderbook.place_buy_sell_order(token, 'S')
             } else {
-                alert("You are in paper trade mode")
+                show_error_msg("You are in watch mode. Switch to 'Trade Mode' to place the order")
             }
         },
 
@@ -329,7 +396,7 @@ client_api = function () {
                 token = cell_elm.attr('sell_token')
                 orderbook.place_buy_sell_order(token, 'S')
             } else {
-                alert("You are in paper trade mode")
+                show_error_msg("You are in watch mode. Switch to 'Trade Mode' to place the order")
             }
         },
 
@@ -337,7 +404,11 @@ client_api = function () {
             let qty = conf[conf.instrument].lot_size
             let params = broker.order.get_order_params(cell_elm, buy_sell, qty)
             broker.order.place_order(params, function (data) {
-                console.log("Order placed successfully")
+                if(data.stat.toUpperCase() === "OK") {
+                    console.log("Order placed")
+                    // show_success_msg(`${params.tsym} Qty: ${params.qty} ${params.trantype} order placed successfully`)
+                } else
+                    show_error_msg(data.emsg);
             })
         }
     }
@@ -821,6 +892,7 @@ client_api = function () {
         "toggle_paper_trade" : toggle_paper_trade,
         "unselect_all" : unselect_all,
         "deploy_selected": deploy_selected,
+        "close_event_handler": close_event_handler,
     }
 }();
 
