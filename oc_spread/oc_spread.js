@@ -334,10 +334,10 @@ client_api = function () {
         },
 
         place_buy_sell_order: function(cell_elm, buy_sell) {
-            let params = broker.order.get_order_params(cell_elm, buy_sell, 15)
+            let qty = conf[conf.instrument].lot_size
+            let params = broker.order.get_order_params(cell_elm, buy_sell, qty)
             broker.order.place_order(params, function (data) {
                 console.log("Order placed successfully")
-                console.log(JSON.stringify(params))
             })
         }
     }
@@ -768,12 +768,10 @@ client_api = function () {
 
     function deploy_selected(){
         $("#option_chain_body").find('td.select_buy').each(function(i, cell_item) {
-            $(cell_item).removeClass("select_buy")
             orderbook.buy($(cell_item))
         })
         setTimeout(function() {
             $("#option_chain_body").find('td.select_sell').each(function(i, cell_item) {
-                $(cell_item).removeClass("select_sell")
                 orderbook.sell($(cell_item))
             })
         }, 500)
