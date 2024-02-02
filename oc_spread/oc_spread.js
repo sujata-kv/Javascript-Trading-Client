@@ -3,7 +3,7 @@ client_api = window.client_api || {};
 client_api = function () {
     const conf = {
         user_id : "FA90807",
-        session_token: "a9e28cb46ab61a07d731ba0f320d7a0d2e147715409d1b9bdbe4c8f28b16cb10",
+        session_token: "48fc3fcbf7c1cd68158f53ab4f5819a57223076544cd5a0f3cc7cd764b0257c2",
 
         instrument : "bank_nifty",  // nifty, bank_nifty, fin_nifty
         atm_strike_check_interval : 30000,
@@ -89,7 +89,7 @@ client_api = function () {
         }
     }
 
-    function show_error_msg(message, disappear_=true) {
+    function show_error_msg(message, disappear=true) {
         // Generate error alert div
         var errorAlert = $('<div>').addClass('alert alert-danger')
             .attr('id', 'order_error_alert')
@@ -110,7 +110,7 @@ client_api = function () {
         if(disappear) {
             setTimeout(function() {
                 errorAlert.remove();
-            }, 60)
+            }, 30)
         }
     }
 
@@ -189,10 +189,10 @@ client_api = function () {
                             // show_success_msg(`${result.status} ${result.qty} ${result.tsym} ${result.trantype})`)
                             break;
                         case "COMPLETE":
-                            show_success_msg(`${result.status} ${trantype} Qty-${result.qty} ${result.tsym})`)
+                            show_success_msg(`${result.status} ${trantype} Qty:${result.qty} ${result.tsym})`)
                             break;
                         case "REJECTED":
-                            show_error_msg(`${result.status} ${trantype} Qty-${result.qty} ${result.tsym}.\nReason: ${result.rejreason})`)
+                            show_error_msg(`${result.status} ${trantype} Qty:${result.qty} ${result.tsym}.\nReason: ${result.rejreason})`)
                             break;
                     }
                 }
@@ -410,7 +410,7 @@ client_api = function () {
                 } else
                     show_error_msg(data.emsg);
             })
-        }
+        },
     }
 
     const option_chain_tracker = {
