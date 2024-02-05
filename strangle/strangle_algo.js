@@ -3828,6 +3828,19 @@ client_api = function () {
         })
     };
 
+    function updateClock() {
+        var currentTime = new Date();
+        var hours = currentTime.getHours();
+        var minutes = currentTime.getMinutes();
+        var seconds = currentTime.getSeconds();
+
+        // Add leading zero if minutes or seconds are less than 10
+        minutes = minutes < 10 ? '0' + minutes : minutes;
+        seconds = seconds < 10 ? '0' + seconds : seconds;
+
+        var formattedTime = hours + ':' + minutes + ':' + seconds;
+        document.getElementById('time').innerHTML = formattedTime;
+    }
 
     function connect_to_server(){
         select_broker()
@@ -3849,6 +3862,8 @@ client_api = function () {
         select_broker()
         hide_other_tabs('#open_orders')
         util.time.populate_time()
+        updateClock();
+        setInterval(updateClock, 1000);
     });
 
     return {

@@ -7,7 +7,7 @@ client_api = function () {
         atm_premium_monitor_interval : 30000,
         target_sl_check_interval: 1000,
         algo: {
-            strategy : "short",  // "long" or "short"..  Long straddle or Short straddle
+            // strategy : "long",  // "long" or "short"..  Long straddle or Short straddle
             atm_pct_diff: 10,
             profit : 1000,
             loss : -1000,
@@ -614,7 +614,8 @@ client_api = function () {
         deployed : false,
         deploying : false,
         run : function(instrument) {
-            console.log("Algo run function called for " + instrument)
+            conf.strategy = $('input[name=option]:checked', '#long_short_option').val();
+            console.log(conf.strategy.toUpperCase() + " Straddle Algo run function called for " + instrument)
             if(!algo.deployed && !algo.deploying) {
                 algo.deploying = true;
                 let atm_ce_pe = atm_tracker.atm_strike_details[instrument]
@@ -2797,6 +2798,20 @@ client_api = function () {
         })
     };
 
+    function updateClock() {
+        var currentTime = new Date();
+        var hours = currentTime.getHours();
+        var minutes = currentTime.getMinutes();
+        var seconds = currentTime.getSeconds();
+
+        // Add leading zero if minutes or seconds are less than 10
+        minutes = minutes < 10 ? '0' + minutes : minutes;
+        seconds = seconds < 10 ? '0' + seconds : seconds;
+
+        var formattedTime = hours + ':' + minutes + ':' + seconds;
+        document.getElementById('time').innerHTML = formattedTime;
+    }
+
     function connect_to_server(){
         select_broker();
         broker.init();
@@ -2816,6 +2831,8 @@ client_api = function () {
     $(document).ready(function() {
         select_broker();
         hide_other_tabs('#open_orders')
+        updateClock();
+        setInterval(updateClock, 1000);
     });
 
     return {
