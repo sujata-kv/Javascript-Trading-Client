@@ -11,6 +11,7 @@ client_api = function () {
             atm_pct_diff: 50,
             profit : 1000,
             loss : -1000,
+            lots : 1,
             monitor_interval: 1000,
             retry_count : 2,
             bank_nifty: {
@@ -614,7 +615,8 @@ client_api = function () {
         deployed : false,
         deploying : false,
         run : function(instrument) {
-            console.log(conf.algo.strategy.toUpperCase() + " Straddle Algo run function called for " + instrument + " Lots = " + $('#num_lots').val())
+            conf.algo.lots = parseInt($('#num_lots').val())
+            console.log(conf.algo.strategy.toUpperCase() + " Straddle Algo run function called for " + instrument + " Lots = " + conf.algo.lots)
             if(!algo.deployed && !algo.deploying) {
                 algo.deploying = true;
                 let atm_ce_pe = atm_tracker.atm_strike_details[instrument]
@@ -696,7 +698,7 @@ client_api = function () {
             let entry_price2 = parseFloat($(`#${algo.deploy_stats[instrument].pe_leg}`).find('.entry .price').text());
             let total_prem = entry_price1 + entry_price2;
             // let target = (Math.round((total_prem * conf.algo.profit_pct * conf.algo[instrument].qty)/ 100)).toString();
-            let target = conf.algo.profit.toString();
+            let target = (conf.algo.profit * conf.algo.lots).toString();
             let row_id = `summary-${algo.deploy_stats[instrument].group.id}`;
             $(`#${row_id}`).find('.target').val(target)
 
@@ -712,7 +714,7 @@ client_api = function () {
             let entry_price2 = parseFloat($(`#${algo.deploy_stats[instrument].pe_leg}`).find('.entry .price').text());
             let total_prem = entry_price1 + entry_price2;
             // let sl = (-Math.round((total_prem * conf.algo.loss_pct * conf.algo[instrument].qty)/ 100)).toString();
-            let sl = conf.algo.loss.toString();
+            let sl = (conf.algo.loss * conf.algo.lots).toString();
             let row_id = `summary-${algo.deploy_stats[instrument].group.id}`;
             $(`#${row_id}`).find('.sl').val(sl)
 
