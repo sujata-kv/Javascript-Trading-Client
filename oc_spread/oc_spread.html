@@ -19,16 +19,17 @@
                         <option value="fin_nifty">Fin Nifty</option>
                     </select>
                 </div>
-                <div class="col-md-2 btn-group">
-                    <button class="btn-sm" id="trade_type"  onclick="client_api.toggle_paper_trade()">Watch Mode</button>
+                <div class="col-md-2" style="text-align: right;">
+                    <span class="" id="time"> </span>
                 </div>
             </div>
             <div class="row">
-                <div class="offset-6 col-md-5 btn-group">
+                <div class="offset-md-7 col-md-5 btn-group">
                     <button class="btn btn-outline-primary" id="unselect_all"  onclick="client_api.unselect_all()">Unselect All</button>
-                    <span>Number_of_Lots</span>
+                    <span>Number of Lots</span>
                     <input type="text" class="form-control col-sm-2" id="num_lots"  value="1">
                     <button class="btn btn-outline-primary" id="deploy_selected"  onclick="client_api.deploy_selected()">Deploy Selected</button>
+                    <button class="btn-sm" id="trade_type"  onclick="client_api.toggle_paper_trade()">Watch Mode</button>
                 </div>
             </div>
 
