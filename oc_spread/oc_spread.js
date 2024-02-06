@@ -3,7 +3,7 @@ client_api = window.client_api || {};
 client_api = function () {
     const conf = {
         user_id : "FA90807",
-        session_token: "48fc3fcbf7c1cd68158f53ab4f5819a57223076544cd5a0f3cc7cd764b0257c2",
+        session_token: "23a0526a07eeff3a08d965ac33c2a34a982f979a2be9bce04ab08daa98d336c6",
 
         instrument : "bank_nifty",  // nifty, bank_nifty, fin_nifty
         atm_strike_check_interval : 30000,
@@ -85,7 +85,7 @@ client_api = function () {
         if(disappear) {
             setTimeout(function() {
                 successAlert.remove();
-            }, 5)
+            }, 5000)
         }
     }
 
@@ -110,7 +110,7 @@ client_api = function () {
         if(disappear) {
             setTimeout(function() {
                 errorAlert.remove();
-            }, 30)
+            }, 30000)
         }
     }
 
