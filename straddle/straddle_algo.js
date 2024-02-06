@@ -8,7 +8,7 @@ client_api = function () {
         target_sl_check_interval: 1000,
         algo: {
             // strategy : "long",  // "long" or "short"..  Long straddle or Short straddle
-            atm_pct_diff: 10,
+            atm_pct_diff: 50,
             profit : 1000,
             loss : -1000,
             monitor_interval: 1000,
@@ -264,10 +264,10 @@ client_api = function () {
                         // console.log("Ajax success")
                         let info1 = data.values[0]; // One is CE other is PE
                         let info2 = data.values[1];
-                        atm_tracker.atm_strike_details[instrument] = [ get_strike_details(info1, strike), get_strike_details(info2, strike)]
                         let num_lots = parseInt($('#num_lots').val())
+                        atm_tracker.atm_strike_details[instrument] = [ get_strike_details(info1, strike), get_strike_details(info2, strike)]
 
-                        function get_strike_details(info, strike, num_lots) {
+                        function get_strike_details(info, strike) {
                             return {
                                 strike: strike,
                                 optt: info.optt,
@@ -277,7 +277,7 @@ client_api = function () {
                                 dname: info.dname,
                                 value: info.dname,
                                 lot_size: info.ls,
-                                qty: conf.algo[instrument].qty * num_lots,
+                                qty: conf.algo[instrument].qty,
                                 algo : true,
                             }
                         }
@@ -408,13 +408,12 @@ client_api = function () {
                 return values;
             },
 
-            get_algo_order_params : function(params, buy_or_sell) {
+            get_algo_order_params : function(params, buy_or_sell, qty) {
                 let prctyp = 'MKT', price = "0.0";
                 let remarks = "";
                 let tsym = encodeURIComponent(params.tsym);
                 let dname = encodeURIComponent(params.dname);
                 let token = params.token;
-                let qty = params.qty.toString();
                 let instrument_token = params.instrument_token;
                 let exch = params.exch;
 
@@ -444,8 +443,8 @@ client_api = function () {
                 values["dname"] = dname;
                 values["token"] = token;
                 values["instrument_token"] = instrument_token;
-                values["qty"] = qty;
-                values["dscqty"] = qty;
+                values["qty"] = qty.toString();
+                values["dscqty"] = qty.toString();
                 values["prctyp"] = prctyp       /*  LMT / MKT / SL-LMT / SL-MKT / DS / 2L / 3L */
                 values["prc"] = price;
                 values["ret"] = 'DAY';
@@ -615,8 +614,7 @@ client_api = function () {
         deployed : false,
         deploying : false,
         run : function(instrument) {
-            conf.strategy = $('input[name=option]:checked', '#long_short_option').val();
-            console.log(conf.strategy.toUpperCase() + " Straddle Algo run function called for " + instrument + " Lots = " + $('#num_lots').val())
+            console.log(conf.algo.strategy.toUpperCase() + " Straddle Algo run function called for " + instrument + " Lots = " + $('#num_lots').val())
             if(!algo.deployed && !algo.deploying) {
                 algo.deploying = true;
                 let atm_ce_pe = atm_tracker.atm_strike_details[instrument]
@@ -645,16 +643,18 @@ client_api = function () {
             algo.deploy_stats[instrument].spot_value = atm_tracker.get_ltp(instrument); // Record the spot value
             let buy_or_sell = "S";
             let strategy = conf.algo.strategy.trim().toLowerCase()
+            let num_lots = parseInt($('#num_lots').val())
+            let qty = conf.algo[instrument].qty * num_lots;
             if( strategy == "long") {
                 buy_or_sell = "B";      //Default is sell
             }
 
             //Deploy straddle
             atm_ce_pe.forEach(function (ce_pe_params) {
-                orderbook.place_order(broker.order.get_algo_order_params(ce_pe_params, buy_or_sell))
+                orderbook.place_order(broker.order.get_algo_order_params(ce_pe_params, buy_or_sell, qty))
                 algo.deployed = true;
                 algo.deploying = false;
-                let selector = (`#at-pool tr[token=${ce_pe_params.token}][exch=${ce_pe_params.exch}][qty=${ce_pe_params.qty}][trtype='S']`)
+                let selector = (`#at-pool tr[token=${ce_pe_params.token}][exch=${ce_pe_params.exch}][qty=${qty}][trtype=${buy_or_sell}]`)
                 algo[ce_pe_params.optt + "-interval"] = setInterval(group_legs, conf.algo.monitor_interval, selector, ce_pe_params.optt)
             })
 
@@ -2815,6 +2815,8 @@ client_api = function () {
 
     function connect_to_server(){
         select_broker();
+        conf.algo.strategy = $('input[name=option]:checked', '#long_short_option').val();
+
         broker.init();
         broker.connect();
         broker.search.attach_search_autocomplete();

@@ -13,6 +13,7 @@ client_api = function () {
             monitor_interval: 1000,
             retry_count : 2,
             deploy_hedge : true,
+            lots : 1,
 
             bank_nifty: {
                 strangle_distance_points : 500,
@@ -148,7 +149,9 @@ client_api = function () {
         schedulerHandler : undefined,
 
         run : function(instrument) {
-            console.log("Algo run function called for " + instrument)
+
+            conf.algo.lots = parseInt($('#num_lots').val())
+            console.log("Algo run function called for " + instrument + " Lots : " + conf.algo.lots)
             if(!algo.deployed && !algo.deploying) {
                 algo.deploying = true;
                 let ce_pe_legs = strangle_tracker.strangle_strike_details[instrument]
@@ -227,7 +230,7 @@ client_api = function () {
             let entry_price2 = parseFloat($(`#${algo.deploy_stats[instrument].pe_leg}`).find('.entry .price').text());
             let total_prem = entry_price1 + entry_price2;
             // let target = (Math.round((total_prem * conf.algo.profit_pct * conf.algo[instrument].qty)/ 100)).toString();
-            let target = conf.algo.profit.toString();
+            let target = (conf.algo.profit * conf.algo.lots).toString();
             let row_id = `summary-${algo.deploy_stats[instrument].group.id}`;
             $(`#${row_id}`).find('.target').val(target)
 
@@ -243,7 +246,7 @@ client_api = function () {
             let entry_price2 = parseFloat($(`#${algo.deploy_stats[instrument].pe_leg}`).find('.entry .price').text());
             let total_prem = entry_price1 + entry_price2;
             // let sl = (-Math.round((total_prem * conf.algo.loss_pct * conf.algo[instrument].qty)/ 100)).toString();
-            let sl = conf.algo.loss.toString();
+            let sl = (conf.algo.loss * conf.algo.lots).toString();
             let row_id = `summary-${algo.deploy_stats[instrument].group.id}`;
             $(`#${row_id}`).find('.sl').val(sl)
 
@@ -490,12 +493,12 @@ client_api = function () {
                     success: function (data, textStatus, jqXHR) {
                         // console.log("Ajax success")
                         let info1 = data.values[0];
+                        let qty = conf.algo[instrument].qty * conf.algo.lots;
+
                         strangle_tracker.strangle_strike_details[instrument] = strangle_tracker.strangle_strike_details[instrument]  || [ ]
-                        strangle_tracker.strangle_strike_details[instrument].push(get_strike_details(info1, strike, hedge))
+                        strangle_tracker.strangle_strike_details[instrument].push(get_strike_details(info1, strike, hedge, qty))
 
-                        let num_lots = parseInt($('#num_lots').val())
-
-                        function get_strike_details(info, strike, hedge) {
+                        function get_strike_details(info, strike, hedge, qty) {
                             return {
                                 strike: strike,
                                 buy_or_sell: hedge?"B":"S",
@@ -506,7 +509,7 @@ client_api = function () {
                                 dname: info.dname,
                                 value: info.dname,
                                 lot_size: info.ls,
-                                qty: conf.algo[instrument].qty * num_lots,
+                                qty: qty,
                                 algo : true,
                             }
                         }
