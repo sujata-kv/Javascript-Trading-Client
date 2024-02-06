@@ -2,7 +2,7 @@ client_api = window.client_api || {};
 
 client_api = function () {
     const conf = {
-        user_id : "FA90807",
+        user_id : "FA90807",    // FA85460
         session_token: "23a0526a07eeff3a08d965ac33c2a34a982f979a2be9bce04ab08daa98d336c6",
 
         instrument : "bank_nifty",  // nifty, bank_nifty, fin_nifty
