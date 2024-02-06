@@ -25,7 +25,7 @@
                             <input type="text"  class="form-control form-control-sm user-id"  placeholder="User" value="FA90807"> <!-- FA85460 -->
                         </div>
                         <div class="col-auto">
-                            <input type="text" class="form-control form-control-sm session-token" placeholder="Session Token" value="a9e28cb46ab61a07d731ba0f320d7a0d2e147715409d1b9bdbe4c8f28b16cb10">
+                            <input type="text" class="form-control form-control-sm session-token" placeholder="Session Token" value="23a0526a07eeff3a08d965ac33c2a34a982f979a2be9bce04ab08daa98d336c6">
                         </div>
                     </div>
 
@@ -94,7 +94,7 @@
                 <input type="text" class="form-control search-instrument watch_item"  value="" placeholder="Instrument" >
                 <div id="instr-drop-down" class="ui-front" style=""></div>
             </div>
-            <div class=" col-sm-3" style="padding-left:0px">
+            <div class=" col-sm-2" style="padding-left:0px">
                 <button class="btn btn-primary mb-3" id="add_to_watchlist" onclick="client_api.watch_list.add_to_watchlist()">Watch</button>
                 <button class="btn btn-secondary mb-3" onclick="$('input.search-instrument').val('')">Clear</button>
                 <span class="del-icon" onclick="client_api.watch_list.delete()" title="Delete selected rows" style="position: relative;top: -5px; padding: 0 !important;">
@@ -105,15 +105,18 @@
                 </span>
             </div>
             <div class="col-sm-3" id="time_selector">
+                <span>Time</span>
                 <select id="hours" onchange="client_api.util.time.activate_run_button()"></select>
                 <span>:</span>
                 <select id="minutes" onchange="client_api.util.time.activate_run_button()"></select>
                 <span>:</span>
                 <select id="seconds" onchange="client_api.util.time.activate_run_button()"></select>
-                <button id="run_algo" class="active" onclick="client_api.util.time.submit_time()">Run</button>
             </div>
 
-            <div class="col-sm-3" style="text-align: right;">
+            <div class="col-sm-4" style="text-align: right;">
+                <span>Num Lots</span>
+                <input type="text" class="form-control col-sm-2" id="num_lots"  value="1" placeholder="Num Lots" >
+                <button id="run_algo" class="active" onclick="client_api.util.time.submit_time()">Run</button>
                 <button id="auto_exit" title="Auto exit @ 3:20 PM is OFF" onclick="client_api.toggle_exit_at_eom()">Auto Exit</button>
                 <button id="trade_type"  onclick="client_api.toggle_paper_trade()">Paper Trade</button>
              </div>
@@ -566,7 +569,7 @@
         height: 20px;
     }
 
-    .trade-panel button, .trade-panel .form-control {
+    .trade-panel button, .trade-panel .form-control, span{
         font-size: 12px;
     }
 
@@ -611,6 +614,12 @@
     #time {
         margin-left:20px;
     }
+
+    #num_lots {
+        display:inline;
+        width: 60px;
+    }
+
 
     /*    @media screen and (max-width: 900px) {
             .stats-bar {

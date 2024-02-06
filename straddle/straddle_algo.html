@@ -23,7 +23,7 @@
                             <input type="text"  class="form-control form-control-sm user-id"  placeholder="User" value="FA90807"> <!-- FA85460 -->
                         </div>
                         <div class="col-auto">
-                            <input type="text" class="form-control form-control-sm session-token" placeholder="Session Token" value="ef75cfd0124c5e838b35088a5e97400293cb215b21b0238dd1881c8dd19e206b">
+                            <input type="text" class="form-control form-control-sm session-token" placeholder="Session Token" value="23a0526a07eeff3a08d965ac33c2a34a982f979a2be9bce04ab08daa98d336c6">
                         </div>
                     </div>
                 </div>
@@ -79,7 +79,7 @@
                 <input type="text" class="form-control search-instrument watch_item"  value="" placeholder="Instrument" >
                 <div id="instr-drop-down" class="ui-front" style=""></div>
             </div>
-            <div class="col-sm-3" style="padding-left:0px">
+            <div class="col-sm-2" style="padding-left:0px">
                 <button class="btn btn-primary mb-3" id="add_to_watchlist" onclick="client_api.watch_list.add_to_watchlist()">Watch</button>
                 <button class="btn btn-secondary mb-3" onclick="$('input.search-instrument').val('')">Clear</button>
                 <span class="del-icon" onclick="client_api.watch_list.delete()" title="Delete selected rows" style="position: relative; top:-7px;">
@@ -90,7 +90,9 @@
                 </span>
             </div>
 
-            <div class="col-sm-6"  style="text-align: right;">
+            <div class="col-sm-7"  style="text-align: right;">
+                <span>Num Lots</span>
+                <input type="text" class="form-control col-sm-2" id="num_lots"  value="1" placeholder="Num lots" >
                 <form class="col-sm-2" id="long_short_option">
                     <label><input type="radio" name="option" value="long" checked>Long</label>
                     <label><input type="radio" name="option" value="short">Short</label>
@@ -561,6 +563,15 @@
 
     #time {
         margin-left:20px;
+    }
+
+    #num_lots {
+        display:inline;
+        width: 60px;
+    }
+
+    .trade-panel button, .trade-panel .form-control {
+        font-size: 12px;
     }
 
     /*    @media screen and (max-width: 900px) {

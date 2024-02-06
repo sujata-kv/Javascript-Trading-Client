@@ -493,6 +493,8 @@ client_api = function () {
                         strangle_tracker.strangle_strike_details[instrument] = strangle_tracker.strangle_strike_details[instrument]  || [ ]
                         strangle_tracker.strangle_strike_details[instrument].push(get_strike_details(info1, strike, hedge))
 
+                        let num_lots = parseInt($('#num_lots').val())
+
                         function get_strike_details(info, strike, hedge) {
                             return {
                                 strike: strike,
@@ -504,7 +506,7 @@ client_api = function () {
                                 dname: info.dname,
                                 value: info.dname,
                                 lot_size: info.ls,
-                                qty: conf.algo[instrument].qty,
+                                qty: conf.algo[instrument].qty * num_lots,
                                 algo : true,
                             }
                         }

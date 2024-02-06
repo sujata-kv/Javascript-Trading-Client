@@ -265,8 +265,9 @@ client_api = function () {
                         let info1 = data.values[0]; // One is CE other is PE
                         let info2 = data.values[1];
                         atm_tracker.atm_strike_details[instrument] = [ get_strike_details(info1, strike), get_strike_details(info2, strike)]
+                        let num_lots = parseInt($('#num_lots').val())
 
-                        function get_strike_details(info, strike) {
+                        function get_strike_details(info, strike, num_lots) {
                             return {
                                 strike: strike,
                                 optt: info.optt,
@@ -276,7 +277,7 @@ client_api = function () {
                                 dname: info.dname,
                                 value: info.dname,
                                 lot_size: info.ls,
-                                qty: conf.algo[instrument].qty,
+                                qty: conf.algo[instrument].qty * num_lots,
                                 algo : true,
                             }
                         }
@@ -615,7 +616,7 @@ client_api = function () {
         deploying : false,
         run : function(instrument) {
             conf.strategy = $('input[name=option]:checked', '#long_short_option').val();
-            console.log(conf.strategy.toUpperCase() + " Straddle Algo run function called for " + instrument)
+            console.log(conf.strategy.toUpperCase() + " Straddle Algo run function called for " + instrument + " Lots = " + $('#num_lots').val())
             if(!algo.deployed && !algo.deploying) {
                 algo.deploying = true;
                 let atm_ce_pe = atm_tracker.atm_strike_details[instrument]
