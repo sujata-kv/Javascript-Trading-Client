@@ -838,20 +838,25 @@ client_api = function () {
     }
 
     function deploy_selected(){
-        if($("#option_chain_body").find('td.select_buy').length == 0 &&
-            $("#option_chain_body").find('td.select_sell').length ==0) {
-            show_error_msg("Nothing is selected")
+        if(is_paper_trade()) {
+            show_error_msg("You are in Watch mode")
             return;
         } else {
-            let num_lots = parseInt($('#num_lots').val())
-            $("#option_chain_body").find('td.select_buy').each(function (i, cell_item) {
-                orderbook.buy($(cell_item), num_lots)
-            })
-            setTimeout(function () {
-                $("#option_chain_body").find('td.select_sell').each(function (i, cell_item) {
-                    orderbook.sell($(cell_item), num_lots)
+            if ($("#option_chain_body").find('td.select_buy').length == 0 &&
+                $("#option_chain_body").find('td.select_sell').length == 0) {
+                show_error_msg("Nothing is selected")
+                return;
+            } else {
+                let num_lots = parseInt($('#num_lots').val())
+                $("#option_chain_body").find('td.select_buy').each(function (i, cell_item) {
+                    orderbook.buy($(cell_item), num_lots)
                 })
-            }, 500)
+                setTimeout(function () {
+                    $("#option_chain_body").find('td.select_sell').each(function (i, cell_item) {
+                        orderbook.sell($(cell_item), num_lots)
+                    })
+                }, 500)
+            }
         }
     }
 
