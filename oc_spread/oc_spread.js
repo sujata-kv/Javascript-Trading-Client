@@ -343,8 +343,8 @@ client_api = function () {
                 values["tsym"] = encodeURIComponent(token_details.tsym);
                 values["dname"] = encodeURIComponent(token_details.dname);
                 values["token"] = token;
-                values["qty"] = token_details.ls;
-                values["dscqty"] = token_details.ls;
+                values["qty"] = qty.toString();
+                values["dscqty"] = qty.toString();
                 values["prctyp"] = prctyp       /*  LMT / MKT / SL-LMT / SL-MKT / DS / 2L / 3L */
                 values["prc"] = price;
                 values["ret"] = 'DAY';
@@ -362,46 +362,46 @@ client_api = function () {
     }
 
     const orderbook = {
-        buy : function(cell_elm) {
+        buy : function(cell_elm, num_lots) {
             if(!is_paper_trade()) {
                 // let cell_elm = $(buy_btn).parent().parent();
                 console.log("buy called.. for " + cell_elm)
                 cell_elm.find('.buy').attr('disabled', 'disabled');
                 let token = cell_elm.attr('token')
-                orderbook.place_buy_sell_order(token, 'B')
+                orderbook.place_buy_sell_order(token, 'B', num_lots)
             } else {
                 show_error_msg("You are in watch mode. Switch to 'Trade Mode' to place the order")
             }
         },
 
-        sell : function(cell_elm) {
+        sell : function(cell_elm, num_lots) {
             if(!is_paper_trade()) {
                 // let cell_elm = $(sell_btn).parent().parent();
                 console.log("sell called.. for " + cell_elm)
                 cell_elm.find('.sell').attr('disabled', 'disabled');
                 let token = cell_elm.attr('token')
-                orderbook.place_buy_sell_order(token, 'S')
+                orderbook.place_buy_sell_order(token, 'S', num_lots)
             } else {
                 show_error_msg("You are in watch mode. Switch to 'Trade Mode' to place the order")
             }
         },
 
-        deploy: function(cell_elm){
+        deploy: function(cell_elm, num_lots){
             if(!is_paper_trade()) {
                 // let cell_elm = $(btn).parent().parent();
                 console.log("deploy called.. for " + cell_elm)
                 cell_elm.find('.deploy').attr('disabled', 'disabled');
                 let token = cell_elm.attr('buy_token')
-                orderbook.place_buy_sell_order(token, 'B')
+                orderbook.place_buy_sell_order(token, 'B', num_lots)
                 token = cell_elm.attr('sell_token')
-                orderbook.place_buy_sell_order(token, 'S')
+                orderbook.place_buy_sell_order(token, 'S', num_lots)
             } else {
                 show_error_msg("You are in watch mode. Switch to 'Trade Mode' to place the order")
             }
         },
 
-        place_buy_sell_order: function(cell_elm, buy_sell) {
-            let qty = conf[conf.instrument].lot_size
+        place_buy_sell_order: function(cell_elm, buy_sell, num_lots) {
+            let qty = conf[conf.instrument].lot_size * num_lots
             let params = broker.order.get_order_params(cell_elm, buy_sell, qty)
             broker.order.place_order(params, function (data) {
                 if(data.stat.toUpperCase() === "OK") {
@@ -681,9 +681,9 @@ client_api = function () {
 
                 /*Update PE and CE*/
                 if (data.optt === 'CE') {
-                    $(row.cells[this.cell_mapping.ce]).find('span').text(lp);
+                    $(row.cells[this.cell_mapping.ce]).find('span').text(lp.toFixed(2));
                 } else if (data.optt === 'PE') {
-                    $(row.cells[this.cell_mapping.pe]).find('span').text(lp);
+                    $(row.cells[this.cell_mapping.pe]).find('span').text(lp.toFixed(2));
                 }
 
 
@@ -838,14 +838,21 @@ client_api = function () {
     }
 
     function deploy_selected(){
-        $("#option_chain_body").find('td.select_buy').each(function(i, cell_item) {
-            orderbook.buy($(cell_item))
-        })
-        setTimeout(function() {
-            $("#option_chain_body").find('td.select_sell').each(function(i, cell_item) {
-                orderbook.sell($(cell_item))
+        if($("#option_chain_body").find('td.select_buy').length == 0 &&
+            $("#option_chain_body").find('td.select_sell').length ==0) {
+            show_error_msg("Nothing is selected")
+            return;
+        } else {
+            let num_lots = parseInt($('#num_lots').val())
+            $("#option_chain_body").find('td.select_buy').each(function (i, cell_item) {
+                orderbook.buy($(cell_item), num_lots)
             })
-        }, 500)
+            setTimeout(function () {
+                $("#option_chain_body").find('td.select_sell').each(function (i, cell_item) {
+                    orderbook.sell($(cell_item), num_lots)
+                })
+            }, 500)
+        }
     }
 
     function unselect_all(){

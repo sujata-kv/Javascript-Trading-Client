@@ -24,8 +24,10 @@
                 </div>
             </div>
             <div class="row">
-                <div class="offset-7 col-md-5 btn-group">
+                <div class="offset-6 col-md-5 btn-group">
                     <button class="btn btn-outline-primary" id="unselect_all"  onclick="client_api.unselect_all()">Unselect All</button>
+                    <span>Number_of_Lots</span>
+                    <input type="text" class="form-control col-sm-2" id="num_lots"  value="1">
                     <button class="btn btn-outline-primary" id="deploy_selected"  onclick="client_api.deploy_selected()">Deploy Selected</button>
                 </div>
             </div>
@@ -115,10 +117,10 @@
         /* Style for the buttons */
         .btn-container {
             display: none;
-            position: relative;
+            position: absolute;
             z-index: 1;
             padding-left: 0px;
-            margin-left: -12px;
+            margin-left: 0px;
             float: right !important;
         }
 
@@ -214,6 +216,12 @@
             /* position: absolute; */
             /* right: 5px; */
             /* margin-left:5px; */
+        }
+
+        #num_lots {
+            display:inline;
+            width: 100px;
+            margin:0 10px;
         }
 
 
