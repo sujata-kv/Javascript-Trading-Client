@@ -25,7 +25,7 @@
                             <input type="text"  class="form-control form-control-sm user-id"  placeholder="User" value="FA90807"> <!-- FA85460 -->
                         </div>
                         <div class="col-auto">
-                            <input type="text" class="form-control form-control-sm session-token" placeholder="Session Token" value="23a0526a07eeff3a08d965ac33c2a34a982f979a2be9bce04ab08daa98d336c6">
+                            <input type="text" class="form-control form-control-sm session-token" placeholder="Session Token" value="9e27985f82a6b4eca4add995c94c2ee438d83b06a7cd78b16e95863cd6f37e06">
                         </div>
                     </div>
 
@@ -178,8 +178,7 @@
                     </svg>
                 </span>
                 <div class='gross-pnl'>
-<!--                    <span class="pnl">Total P&L: </span>-->
-                    <span id="gross_pnl" class="pnl" style=""></span>
+                    <span id="gross_pnl" class="pnl" style="">0</span>
                     <span class="min-max">
                         <span id="gross_max_profit" class="pos-mtm" style="" title="Max profit seen"></span>
                         <span id="gross_max_loss" class="neg-mtm" style="" title="Max loss seen"></span>
@@ -194,7 +193,7 @@
             </div>
         </div>
 
-        <div id="active_trades_div">
+        <div id="active_trades_div" style="margin-top:-40px">
             <table  class="table table-success table-condensed table-striped table-bordered">
                 <thead>
                     <tr>
@@ -240,17 +239,17 @@
         <hr class="hr hr-blurry" />
 
         <div class="row" id="tabs">
-            <div class="custom-tab col-sm-3" style="margin-left:12px">
+            <div class="su-custom-tab col-sm-3" style="margin-left:12px">
                 <button class="btn btn-warning " type="button" onclick="client_api.orderbook.update_open_orders()">
                     Open Orders
                 </button>
             </div>
-            <div class="custom-tab  col-sm-3">
+            <div class="su-custom-tab  col-sm-3">
                 <button class="btn btn-secondary" type="button" onclick="client_api.orderbook.show_orderbook()">
                     Order book
                 </button>
             </div>
-            <div class="custom-tab  col-sm-3">
+            <div class="su-custom-tab  col-sm-3">
                 <button class="btn btn-primary" type="button" onclick="client_api.positions.show_positions()">
                     Positions
                 </button>
@@ -440,22 +439,13 @@
         padding: 1px 2px 1px 2px;
     }
 
+    .su-custom-tab {
+        border : 5px solid white !important;
+        border-radius:2px;
+    }
 
-    .custom-tab {
-        padding: 0.25rem 0.25rem !important;
-        margin-bottom: 0;
-        background-color: rgba(0,0,0,.03);
-        border-bottom: 1px solid rgba(0,0,0,.125);
-        display: -ms-flexbox;
-        display: flex;
-        -ms-flex-direction: column;
-        flex-direction: column;
-        min-width: 0;
-        word-wrap: break-word;
-        background-color: #fff;
-        background-clip: border-box;
-        border: 1px solid rgba(0,0,0,.125);
-        border-radius: 0.25rem;
+    .su-custom-tab .btn {
+        width:100%;
     }
 
     #tabs {
@@ -464,10 +454,13 @@
 
     div.gross-pnl {
         float: right;
+        position: relative;
+        top :-30px;
     }
 
     .gross-pnl .pnl {
         font-size: 72px;
+        font-weight: normal;
         display: inline-block;
     }
 
@@ -476,7 +469,7 @@
         position: relative;
         top : -35px;
         /*padding-left: 12px;*/
-        font-size: 22px;
+        font-size: 22px !important;
     }
 
     .pos-mtm, .pnl, .margin_req, .neg-mtm, .ltp {
