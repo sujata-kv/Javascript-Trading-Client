@@ -8,7 +8,7 @@ client_api = function () {
         target_sl_check_interval: 1000,
         algo: {
             // strategy : "long",  // "long" or "short"..  Long straddle or Short straddle
-            atm_pct_diff: 50,
+            atm_pct_diff: 10,
             profit : 1000,
             loss : -1000,
             lots : 1,
