@@ -1677,7 +1677,7 @@ client_api = function () {
                 milestone_manager.remove_target(row_id);
             } else { // Target has some value
                 let target_obj = milestone_manager.get_value_object(target_value)
-                milestone_manager.add_target(row_id, ticker, ttype, trtype, target_obj);
+                milestone_manager.add_target(row_id, ticker, ttype, trtype, target_obj, true);
             }
 
             let sl_value = tr_elm.find('.sl').val()
@@ -1686,7 +1686,7 @@ client_api = function () {
                 milestone_manager.remove_sl(row_id);
             } else {  // SL has some value
                 let sl_obj = milestone_manager.get_value_object(sl_value)
-                milestone_manager.add_sl(row_id, ticker, ttype, trtype, sl_obj);
+                milestone_manager.add_sl(row_id, ticker, ttype, trtype, sl_obj, true);
             }
 
             let entry_obj = milestone_manager.get_value_object(entry_value)
@@ -2047,6 +2047,7 @@ client_api = function () {
             this.buy_sell = buy_sell;
             this.token = token;
             this.sl_hit_count = 0;
+            this.open_order = false;
         }
 
         add_order_id(order_id) {
@@ -2216,28 +2217,32 @@ client_api = function () {
             }
         }
 
-        add_target(row_id, token, ttype, buy_sell, value_obj) {
+        add_target(row_id, token, ttype, buy_sell, value_obj, open_order=false) {
             let old_ms = this.milestones[row_id]
 
             if(old_ms == undefined) {
                 let ms = new MileStone(ttype, buy_sell, token);
                 ms.set_target(value_obj);
+                ms.open_order = open_order
                 this.milestones[row_id] = ms
             } else {
+                old_ms.open_order = open_order
                 old_ms.set_ttype(ttype)
                 old_ms.set_target(value_obj)
             }
             console.log(`${row_id} ${ttype.toUpperCase()} Target: ${JSON.stringify(value_obj)}  Token:${token}`)
         }
 
-        add_sl(row_id, token, ttype, buy_sell, value_obj) {
+        add_sl(row_id, token, ttype, buy_sell, value_obj, open_order=false) {
             let old_ms = this.milestones[row_id]
 
             if(old_ms == undefined) {
                 let ms = new MileStone(ttype, buy_sell, token);
                 ms.set_sl(value_obj);
+                ms.open_order = open_order
                 this.milestones[row_id] = ms
             } else {
+                old_ms.open_order = open_order
                 old_ms.set_ttype(ttype)
                 old_ms.set_sl(value_obj)
             }
@@ -2512,12 +2517,12 @@ client_api = function () {
                     check_entry_trigger(row_id, mile_stone)
                 }
 
-                if(mile_stone.get_target() != undefined) {// If it has target object
+                if(mile_stone.get_target() != undefined && !mile_stone.open_order) {// If it has target object
                     // console.log('checking target trigger')
                     check_target_trigger(row_id, mile_stone)
                 }
 
-                if(mile_stone.get_sl() != undefined) {// If it has sl object
+                if(mile_stone.get_sl() != undefined && !mile_stone.open_order) {// If it has sl object
                     // console.log('checking SL trigger')
                     check_sl_trigger(row_id, mile_stone)
                 }
@@ -2602,7 +2607,7 @@ client_api = function () {
                     }
                 }
 
-                // console.log(`Checking Target : ${ttype}  current : ${cur_spot_value}  trig : ${trig_value}`)
+                console.log(`Checking Target : ${ttype}  current : ${cur_spot_value}  trig : ${trig_value}`)
 
                 if (target_obj.spot_based) {
                     if (ttype === 'bull') {
@@ -2684,9 +2689,9 @@ client_api = function () {
 
                 if(sl_obj.delay != null) {
                     sl_action_threshold = Math.round(parseInt(sl_obj.delay) * 1000 / (conf.target_sl_check_interval + 20)); //20 milli seconds, extra execution time
-                    // console.log(`Checking SL : ${ttype}  current : ${cur_spot_value}  trig : ${trig_value}  delay : ${sl_obj.delay}s`)
-                } /*else
-                    console.log(`Checking SL : ${ttype}  current : ${cur_spot_value}  trig : ${trig_value}`)*/
+                    console.log(`Checking SL : ${ttype}  current : ${cur_spot_value}  trig : ${trig_value}  delay : ${sl_obj.delay}s`)
+                } else
+                    console.log(`Checking SL : ${ttype}  current : ${cur_spot_value}  trig : ${trig_value}`)
 
                 if(sl_obj.spot_based) {
                     if (ttype === 'bull') {
