@@ -13,7 +13,7 @@ client_api = function () {
             loss : -1000,
             lots : 1,
             monitor_interval: 1000,
-            retry_count : 2,
+            retry_count : 1,
             bank_nifty: {
                 tolerate_deviation: 180,
                 qty: 15,

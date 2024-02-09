@@ -11,7 +11,7 @@ client_api = function () {
             profit : 500,
             loss : -1000,
             monitor_interval: 1000,
-            retry_count : 2,
+            retry_count : 1,
             deploy_hedge : true,
             lots : 1,
 
