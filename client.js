@@ -1606,7 +1606,7 @@ client_api = function () {
             let dname = (item.dname != undefined)? decodeURIComponent(item.dname) : item.tsym;
             dname = dname.trim()
             let row_id = `row_id_${++unique_row_id}`
-            item.norenordno = paper_entry? item.norenordno + row_id : tem.norenordno;
+            item.norenordno = paper_entry? item.norenordno + row_id : item.norenordno;
             $('#spot_order_list').append(`<tr id="${row_id}" ordid="${item.norenordno}" exch="${item.exch}" tsym="${item.tsym}" dname="${dname}"  qty="${item.qty}" token="${item.token}" instrument_token="${item.instrument_token}" ttype="${ttype}" trtype="${item.trantype}">
                     <td>${buy_sell}</td>
                     <td class="order-num">Spot Based Entry</td>
