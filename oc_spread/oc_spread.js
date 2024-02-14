@@ -1,7 +1,7 @@
 client_api = window.client_api || {};
 
 client_api = function () {
-    const conf = {
+/*    const conf = {
         user_id : "FA90807",    // FA85460
         session_token: "6d3b852cc350f1d449ba418bb3e957fb724701858a2302273db850c58416ee2e",
 
@@ -23,7 +23,8 @@ client_api = function () {
         },
 
         heartbeat_timeout : 7000,
-    }
+    }*/
+    let broker_name = "shoonya";
 
     let nifty_tk, bank_nifty_tk, fin_nifty_tk = '';
     let ws = '';
@@ -110,12 +111,12 @@ client_api = function () {
         if(disappear) {
             setTimeout(function() {
                 errorAlert.remove();
-            }, 30000)
+            }, 20000)
         }
     }
 
     let shoonya = {
-        name: "shoonya",
+        // name: "shoonya",
 
         url: {
             websocket: "wss://trade.shoonya.com/NorenWSWeb/",
@@ -133,9 +134,9 @@ client_api = function () {
             ws.onopen = function (event) {
                 let data = {
                     "t": "c",
-                    "uid": conf.user_id,
-                    "actid": conf.user_id,
-                    "susertoken": conf.session_token,
+                    "uid": conf.broker[broker_name].user_id,
+                    "actid": conf.broker[broker_name].user_id,
+                    "susertoken": conf.broker[broker_name].session_token,
                     "source": "WEB"
                 };
                 console.log("Socket opened")
@@ -167,7 +168,7 @@ client_api = function () {
                         let instr_token = result.tk
                         let ltpf = parseFloat(result.lp)
                         live_data[instr_token] = ltpf
-                        if(instr_token === conf.instrument_token) {
+                        if(instr_token === conf.spreads.instrument_token) {
                             $('#spot').html(ltpf.toFixed(2))
                         } else {
                             option_chain_tracker.update_table(instr_token, ltpf)
@@ -256,7 +257,7 @@ client_api = function () {
 
         get_payload: function (params) {
             let payload = 'jData=' + JSON.stringify(params);
-            payload = payload + "&jKey=" + conf.session_token;
+            payload = payload + "&jKey=" + conf.broker[broker_name].session_token;
             return payload
         },
 
@@ -289,8 +290,8 @@ client_api = function () {
         search : {
             search_subscribe_strike: function (strike, ce_pe) {
                 let params = {
-                    "uid": conf.user_id,
-                    "stext": conf.instrument.replace('_', '') + " " + strike + " " + ce_pe
+                    "uid": conf.broker[broker_name].user_id,
+                    "stext": conf.spreads.instrument.replace('_', '') + " " + strike + " " + ce_pe
                 }
                 $.ajax({
                     url: shoonya.url.search_instrument,
@@ -340,8 +341,8 @@ client_api = function () {
                 }
 
                 let values = {'ordersource': 'WEB'};
-                values["uid"] = conf.user_id;
-                values["actid"] = conf.user_id;
+                values["uid"] = conf.broker[broker_name].user_id;
+                values["actid"] = conf.broker[broker_name].user_id;
                 values["trantype"] = buy_or_sell;
                 values["prd"] = prd;
                 values["exch"] = exch;
@@ -404,7 +405,7 @@ client_api = function () {
         },
 
         place_buy_sell_order: function(cell_elm, buy_sell, num_lots) {
-            let qty = conf[conf.instrument].lot_size * num_lots
+            let qty = conf[conf.spreads.instrument].lot_size * num_lots
             let params = broker.order.get_order_params(cell_elm, buy_sell, qty)
             broker.order.place_order(params, function (data) {
                 if(data.stat.toUpperCase() === "OK") {
@@ -424,7 +425,7 @@ client_api = function () {
             num_strikes = 10;
         }
         $('#num_strikes').val(num_strikes);
-        conf.strikes_after_before_atm = num_strikes;
+        conf.spreads.strikes_after_before_atm = num_strikes;
         option_chain_tracker.reset();
         option_chain_tracker.find_atm_strikes();
     }
@@ -470,13 +471,13 @@ client_api = function () {
         },
 
         find_atm_strike_price: function () {
-            let round_to = conf[conf.instrument].round_to;
-            let mod = Math.round(this.get_ltp(conf.instrument) % round_to);
+            let round_to = conf[conf.spreads.instrument].round_to;
+            let mod = Math.round(this.get_ltp(conf.spreads.instrument) % round_to);
             let strike_price;
             if (mod < round_to / 2)
-                strike_price = Math.floor(this.get_ltp(conf.instrument) / round_to) * round_to;
+                strike_price = Math.floor(this.get_ltp(conf.spreads.instrument) / round_to) * round_to;
             else
-                strike_price = Math.ceil(this.get_ltp(conf.instrument) / round_to) * round_to;
+                strike_price = Math.ceil(this.get_ltp(conf.spreads.instrument) / round_to) * round_to;
             return strike_price
         },
 
@@ -484,10 +485,10 @@ client_api = function () {
             console.log("Sorting the strike prices..")
             let selected_strikes = [atm_strike]
             let cnt = 1; //ATM + 3 above + 3 below
-            while (cnt <= conf.strikes_after_before_atm) {
-                let strike = atm_strike + cnt * conf[conf.instrument].round_to
+            while (cnt <= conf.spreads.strikes_after_before_atm) {
+                let strike = atm_strike + cnt * conf[conf.spreads.instrument].round_to
                 selected_strikes.push(strike)
-                strike = atm_strike - cnt * conf[conf.instrument].round_to
+                strike = atm_strike - cnt * conf[conf.spreads.instrument].round_to
                 selected_strikes.push(strike)
                 cnt = cnt + 1;
             }
@@ -582,7 +583,7 @@ client_api = function () {
                     );
                 }
             }
-            setTimeout(function() {option_chain_tracker.find_atm_strikes()}, conf.atm_strike_check_interval); //Keep looping to find ATM strike price
+            setTimeout(function() {option_chain_tracker.find_atm_strikes()}, conf.spreads.atm_strike_check_interval); //Keep looping to find ATM strike price
         },
 
         subscribe_strike : function(strike) {
@@ -722,18 +723,18 @@ client_api = function () {
             //Bull call spreads
             let buy_leg_token = this.get_token_for_strike(strike, "CE");
             row_spread.left_spr1.buy = buy_leg_token;
-            row_spread.left_spr1.sell = this.get_token_for_strike(strike + conf[conf.instrument].round_to, "CE");
+            row_spread.left_spr1.sell = this.get_token_for_strike(strike + conf[conf.spreads.instrument].round_to, "CE");
             row_spread.left_spr2.buy = buy_leg_token;
-            row_spread.left_spr2.sell = this.get_token_for_strike(strike + 2 * conf[conf.instrument].round_to, "CE");
+            row_spread.left_spr2.sell = this.get_token_for_strike(strike + 2 * conf[conf.spreads.instrument].round_to, "CE");
 
             //Bull put spreads
             let sell_leg_token = this.get_token_for_strike(strike, "PE");
             row_spread.left_put_spr1.sell = sell_leg_token;
-            row_spread.left_put_spr1.buy = this.get_token_for_strike(strike - conf[conf.instrument].round_to, "PE");
-            row_spread.left_put_spr1.leg_diff = conf[conf.instrument].round_to
+            row_spread.left_put_spr1.buy = this.get_token_for_strike(strike - conf[conf.spreads.instrument].round_to, "PE");
+            row_spread.left_put_spr1.leg_diff = conf[conf.spreads.instrument].round_to
             row_spread.left_put_spr2.sell = sell_leg_token;
-            row_spread.left_put_spr2.buy = this.get_token_for_strike(strike - 2 * conf[conf.instrument].round_to, "PE");
-            row_spread.left_put_spr2.leg_diff = 2 * conf[conf.instrument].round_to
+            row_spread.left_put_spr2.buy = this.get_token_for_strike(strike - 2 * conf[conf.spreads.instrument].round_to, "PE");
+            row_spread.left_put_spr2.leg_diff = 2 * conf[conf.spreads.instrument].round_to
 
             //Attach token attributes to CE and PE cells
             let row = $(`#row_${strike}`)[0]
@@ -750,18 +751,18 @@ client_api = function () {
             //Bear put spreads
             buy_leg_token = this.get_token_for_strike(strike, "PE");
             row_spread.right_spr1.buy = buy_leg_token;
-            row_spread.right_spr1.sell = this.get_token_for_strike(strike - conf[conf.instrument].round_to, "PE" );
+            row_spread.right_spr1.sell = this.get_token_for_strike(strike - conf[conf.spreads.instrument].round_to, "PE" );
             row_spread.right_spr2.buy = buy_leg_token;
-            row_spread.right_spr2.sell = this.get_token_for_strike(strike - 2 * conf[conf.instrument].round_to, "PE" );
+            row_spread.right_spr2.sell = this.get_token_for_strike(strike - 2 * conf[conf.spreads.instrument].round_to, "PE" );
 
             //Bear call spreads
             sell_leg_token = this.get_token_for_strike(strike, "CE");
             row_spread.right_call_spr1.sell = sell_leg_token;
-            row_spread.right_call_spr1.buy = this.get_token_for_strike(strike + conf[conf.instrument].round_to, "CE" );
-            row_spread.right_call_spr1.leg_diff = conf[conf.instrument].round_to;
+            row_spread.right_call_spr1.buy = this.get_token_for_strike(strike + conf[conf.spreads.instrument].round_to, "CE" );
+            row_spread.right_call_spr1.leg_diff = conf[conf.spreads.instrument].round_to;
             row_spread.right_call_spr2.sell = sell_leg_token;
-            row_spread.right_call_spr2.buy = this.get_token_for_strike(strike + 2 * conf[conf.instrument].round_to, "CE" );
-            row_spread.right_call_spr2.leg_diff = 2 * conf[conf.instrument].round_to;
+            row_spread.right_call_spr2.buy = this.get_token_for_strike(strike + 2 * conf[conf.spreads.instrument].round_to, "CE" );
+            row_spread.right_call_spr2.leg_diff = 2 * conf[conf.spreads.instrument].round_to;
 
             //Attach token attributes to CE and PE cells
             row.cells[this.cell_mapping.pe].setAttribute('token', buy_leg_token)
@@ -778,7 +779,7 @@ client_api = function () {
 
             this.update_spreads(strike, "CE")       //Update spreads for the first time
             this.update_spreads(strike, "PE")       //Update spreads for the first time
-            $('#spot').html(live_data[conf.instrument_token])
+            $('#spot').html(live_data[conf.spreads.instrument_token])
             this.update_totals();   //Update CE and PE totals
         },
 
@@ -819,7 +820,7 @@ client_api = function () {
                         loss = live_data[sell_leg] - live_data[buy_leg]
                         loss = leg_diff - loss
                     }
-                    loss = (loss * conf[conf.instrument].lot_size).toFixed(2)
+                    loss = (loss * conf[conf.spreads.instrument].lot_size).toFixed(2)
                     return loss;
                 } else {
                     return '';
@@ -907,19 +908,21 @@ client_api = function () {
     function select_instrument() {
         option_chain_tracker.reset()
 
-        conf.instrument = $('#select_instrument').val().toLowerCase();
-        console.log("Select instrument " + conf.instrument)
-        conf.instrument_token = conf.instrument === "nifty"? nifty_tk
-            : conf.instrument === "bank_nifty"? bank_nifty_tk
-                : conf.instrument === "fin_nifty" ? fin_nifty_tk : "unknown_instrument";
-        $('#instrument').html(conf.instrument.toUpperCase().replace("_", " "))
-        conf.strikes_after_before_atm = Math.abs(parseInt($('#num_strikes').val()));
+        conf.spreads.instrument = $('#select_instrument').val().toLowerCase();
+        console.log("Select instrument " + conf.spreads.instrument)
+        conf.spreads.instrument_token = conf.spreads.instrument === "nifty"? nifty_tk
+            : conf.spreads.instrument === "bank_nifty"? bank_nifty_tk
+                : conf.spreads.instrument === "fin_nifty" ? fin_nifty_tk : "unknown_instrument";
+        $('#instrument').html(conf.spreads.instrument.toUpperCase().replace("_", " "))
+        conf.spreads.strikes_after_before_atm = Math.abs(parseInt($('#num_strikes').val()));
         option_chain_tracker.find_atm_strikes();
     }
 
     /*Attach functions to connect, add to watch list button, etc*/
     $(document).ready(function() {
         broker = shoonya        //TODO - As of now hardcoded to Shoonya. To be changed later
+        $('#select_instrument').val(conf.spreads.instrument);  //Use default value given in the conf
+        $('#num_strikes').val(conf.spreads.strikes_after_before_atm);   //Use default value given in the conf
         connect_to_server();
         updateClock();
         setInterval(updateClock, 1000);

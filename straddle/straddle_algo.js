@@ -1,7 +1,7 @@
 client_api = window.client_api || {};
 
 client_api = function () {
-
+/*
     let conf = {
         atm_strike_check_interval : 60000,
         atm_premium_monitor_interval : 30000,
@@ -30,7 +30,7 @@ client_api = function () {
                 round_to: 50,
             }
         },
-    }
+    }*/
     
     let alert_msg_disappear_after = 3000; // Unit milliseconds
     let heartbeat_timeout = 7000;
@@ -278,7 +278,7 @@ client_api = function () {
                                 dname: info.dname,
                                 value: info.dname,
                                 lot_size: info.ls,
-                                qty: conf.algo[instrument].qty,
+                                qty: conf.straddle[instrument].qty,
                                 algo : true,
                             }
                         }
@@ -543,7 +543,7 @@ client_api = function () {
         atm_strikes: {},
 
         find_atm_strike_price: function (instrument) {
-            let round_to = conf.algo[instrument].round_to;
+            let round_to = conf.straddle[instrument].round_to;
             let mod = Math.round(this.get_ltp(instrument) % round_to);
             let strike_price;
             if (mod < round_to/2)
@@ -606,7 +606,7 @@ client_api = function () {
                 })
                 $('#prem-display').prepend(str + "<br>")
             }
-            setTimeout(atm_tracker.display_atm_prices, conf.atm_premium_monitor_interval)
+            setTimeout(atm_tracker.display_atm_prices, conf.straddle.atm_premium_monitor_interval)
         },
     }
 
@@ -615,8 +615,8 @@ client_api = function () {
         deployed : false,
         deploying : false,
         run : function(instrument) {
-            conf.algo.lots = parseInt($('#num_lots').val())
-            console.log(conf.algo.strategy.toUpperCase() + " Straddle Algo run function called for " + instrument + " Lots = " + conf.algo.lots)
+            conf.straddle.lots = parseInt($('#num_lots').val())
+            console.log(conf.straddle.strategy.toUpperCase() + " Straddle Algo run function called for " + instrument + " Lots = " + conf.straddle.lots)
             if(!algo.deployed && !algo.deploying) {
                 algo.deploying = true;
                 let atm_ce_pe = atm_tracker.atm_strike_details[instrument]
@@ -625,17 +625,17 @@ client_api = function () {
                     let ltp2 = live_data[atm_ce_pe[1].token];
                     let pct_diff = Math.abs(ltp1 - ltp2) / Math.min(ltp1, ltp2);
                     console.log(atm_ce_pe[0].strike + "  Ltp1= " + ltp1 + " Ltp2= " + ltp2 + " % Diff = " + (pct_diff * 100).toFixed(0))
-                    if (pct_diff <= conf.algo.atm_pct_diff/100) {
+                    if (pct_diff <= conf.straddle.atm_pct_diff/100) {
                         console.log(`Deploying algo for ${instrument}..`)
                         algo.deploy_straddle(instrument, atm_ce_pe)
                     } else {
-                        console.log("Not deploying algo as the difference between ATM premiums is more than "+ conf.algo.atm_pct_diff + "%")
+                        console.log("Not deploying algo as the difference between ATM premiums is more than "+ conf.straddle.atm_pct_diff + "%")
                         algo.deploying = false;
-                        setTimeout(function() {algo.run(instrument);}, conf.algo.monitor_interval)
+                        setTimeout(function() {algo.run(instrument);}, conf.straddle.monitor_interval)
                     }
                 } else {
                     algo.deploying = false;
-                    setTimeout(function() {algo.run(instrument);}, conf.algo.monitor_interval)
+                    setTimeout(function() {algo.run(instrument);}, conf.straddle.monitor_interval)
                 }
             }
         },
@@ -644,9 +644,9 @@ client_api = function () {
             algo.deploy_stats[instrument] = algo.deploy_stats[instrument] || {}      //Initialize empty object
             algo.deploy_stats[instrument].spot_value = atm_tracker.get_ltp(instrument); // Record the spot value
             let buy_or_sell = "S";
-            let strategy = conf.algo.strategy.trim().toLowerCase()
+            let strategy = conf.straddle.strategy.trim().toLowerCase()
             let num_lots = parseInt($('#num_lots').val())
-            let qty = conf.algo[instrument].qty * num_lots;
+            let qty = conf.straddle[instrument].qty * num_lots;
             if( strategy == "long") {
                 buy_or_sell = "B";      //Default is sell
             }
@@ -657,7 +657,7 @@ client_api = function () {
                 algo.deployed = true;
                 algo.deploying = false;
                 let selector = (`#at-pool tr[token=${ce_pe_params.token}][exch=${ce_pe_params.exch}][qty=${qty}][trtype=${buy_or_sell}]`)
-                algo[ce_pe_params.optt + "-interval"] = setInterval(group_legs, conf.algo.monitor_interval, selector, ce_pe_params.optt)
+                algo[ce_pe_params.optt + "-interval"] = setInterval(group_legs, conf.straddle.monitor_interval, selector, ce_pe_params.optt)
             })
 
             function group_legs(row_sel, optt) {
@@ -697,8 +697,8 @@ client_api = function () {
             let entry_price1 = parseFloat($(`#${algo.deploy_stats[instrument].ce_leg}`).find('.entry .price').text());
             let entry_price2 = parseFloat($(`#${algo.deploy_stats[instrument].pe_leg}`).find('.entry .price').text());
             let total_prem = entry_price1 + entry_price2;
-            // let target = (Math.round((total_prem * conf.algo.profit_pct * conf.algo[instrument].qty)/ 100)).toString();
-            let target = (conf.algo.profit * conf.algo.lots).toString();
+            // let target = (Math.round((total_prem * conf.straddle.profit_pct * conf.straddle[instrument].qty)/ 100)).toString();
+            let target = (conf.straddle.profit * conf.straddle.lots).toString();
             let row_id = `summary-${algo.deploy_stats[instrument].group.id}`;
             $(`#${row_id}`).find('.target').val(target)
 
@@ -713,8 +713,8 @@ client_api = function () {
             let entry_price1 = parseFloat($(`#${algo.deploy_stats[instrument].ce_leg}`).find('.entry .price').text());
             let entry_price2 = parseFloat($(`#${algo.deploy_stats[instrument].pe_leg}`).find('.entry .price').text());
             let total_prem = entry_price1 + entry_price2;
-            // let sl = (-Math.round((total_prem * conf.algo.loss_pct * conf.algo[instrument].qty)/ 100)).toString();
-            let sl = (conf.algo.loss * conf.algo.lots).toString();
+            // let sl = (-Math.round((total_prem * conf.straddle.loss_pct * conf.straddle[instrument].qty)/ 100)).toString();
+            let sl = (conf.straddle.loss * conf.straddle.lots).toString();
             let row_id = `summary-${algo.deploy_stats[instrument].group.id}`;
             $(`#${row_id}`).find('.sl').val(sl)
 
@@ -733,15 +733,15 @@ client_api = function () {
             algo.deploy_stats[instrument] = {}      //Initialize empty object
             algo.deploy_stats[instrument].deploy_count = deploy_count
 
-            if(deploy_count < conf.algo.retry_count)
+            if(deploy_count < conf.straddle.retry_count)
                 algo.run(instrument);   //Re-deploy if the premiums of ATM strikes are close enough
         },
 
         monitor_straddle: function(instrument) {
             let cur_value = atm_tracker.get_ltp(instrument)
             let diff = Math.abs(cur_value - algo.deploy_stats[instrument].spot_value);
-            if(diff > conf.algo[instrument].tolerate_deviation) {
-                show_error_msg("Exiting "+ algo.deploy_stats[instrument].group.name +" as the spot moved beyond tolerable points of " + conf.algo[instrument].tolerate_deviation)
+            if(diff > conf.straddle[instrument].tolerate_deviation) {
+                show_error_msg("Exiting "+ algo.deploy_stats[instrument].group.name +" as the spot moved beyond tolerable points of " + conf.straddle[instrument].tolerate_deviation)
                 //Close straddle
                 let ce_leg_id = algo.deploy_stats[instrument].ce_leg;
                 let pe_leg_id = algo.deploy_stats[instrument].pe_leg;
@@ -750,7 +750,7 @@ client_api = function () {
 
                 // algo.exit_cb(instrument); //On click on exit button, exit order callback is called. That triggers algo.exit_cb(); So no need of calling it here
             } else {
-                setTimeout(function(){algo.monitor_straddle(instrument)}, conf.algo.monitor_interval)
+                setTimeout(function(){algo.monitor_straddle(instrument)}, conf.straddle.monitor_interval)
             }
         },
     }
@@ -2375,7 +2375,7 @@ client_api = function () {
         },
 
         exit_all_positions : function(kill_switch_btn) {
-            conf.algo.retry_count = 0;  //To make sure that algo doesn't place new trade
+            conf.straddle.retry_count = 0;  //To make sure that algo doesn't place new trade
             if(!is_paper_trade()) {
                 $('#open_orders tr').each(function (index, tr_elm) {
                     $(tr_elm).find('.cancel').click()
@@ -2817,7 +2817,7 @@ client_api = function () {
 
     function connect_to_server(){
         select_broker();
-        conf.algo.strategy = $('input[name=option]:checked', '#long_short_option').val();
+        conf.straddle.strategy = $('input[name=option]:checked', '#long_short_option').val();
 
         broker.init();
         broker.connect();
@@ -2832,8 +2832,16 @@ client_api = function () {
         // setTimeout(function(){algo.run('bank_nifty')}, 60000)
     }
 
+    function load_login_creds_from_conf() {
+        $('#login-creds').find('.shoonya-creds').find('.user-id').val(conf.broker['shoonya'].user_id);
+        $('#login-creds').find('.shoonya-creds').find('.session-token').val(conf.broker['shoonya'].session_token);
+        $('#login-creds').find('.kite-creds').find('.user-id').val(conf.broker['kite'].user_id);
+        $('#login-creds').find('.kite-creds').find('.session-token').val(conf.broker['kite'].session_token);
+    }
+
     /*Attach functions to connect, add to watch list button, etc*/
     $(document).ready(function() {
+        load_login_creds_from_conf();
         select_broker();
         hide_other_tabs('#open_orders')
         updateClock();

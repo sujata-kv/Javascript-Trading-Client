@@ -1,7 +1,7 @@
 client_api = window.client_api || {};
 
 client_api = function () {
-    let conf = {
+    /*let conf = {
         alert_profit_threshold : 50, //Alert once the profit % exceeds the specified value
         alert_loss_threshold : 50, //Alert once the loss % exceeds the specified value
         delay_SL : 60,          // In seconds.. Delay SL by these many seconds
@@ -38,7 +38,7 @@ client_api = function () {
         heartbeat_timeout : 7000,
         alert_msg_disappear_after : 3000, // Unit milliseconds
         atm_premium_monitor_interval : 30000,
-    }
+    }*/
 
     let vix_tk, nifty_tk, bank_nifty_tk, fin_nifty_tk = '';
     let user_id = '', session_token='', ws = '';
@@ -89,7 +89,7 @@ client_api = function () {
         pe_hedge: "",
 
         find_atm_strike_price: function (instrument) {
-            let round_to = conf.algo[instrument].round_to;
+            let round_to = conf.strangle[instrument].round_to;
             let mod = Math.round(this.get_ltp(instrument) % round_to);
             let strike_price;
             if (mod < round_to / 2)
@@ -120,8 +120,8 @@ client_api = function () {
             if(logged_in) {
                 instruments.forEach(function (instr) {
                     let atm_strike = strangle_tracker.find_atm_strike_price(instr);
-                    strangle_tracker.ce_leg = atm_strike + conf.algo[instr].strangle_distance_points
-                    strangle_tracker.pe_leg = atm_strike - conf.algo[instr].strangle_distance_points
+                    strangle_tracker.ce_leg = atm_strike + conf.strangle[instr].strangle_distance_points
+                    strangle_tracker.pe_leg = atm_strike - conf.strangle[instr].strangle_distance_points
 
                     console.log(instr + ": ATM strike : " + atm_strike + " => Strangle : " + strangle_tracker.ce_leg  + " CE - " + strangle_tracker.pe_leg + " PE")
 
@@ -129,9 +129,9 @@ client_api = function () {
                     broker.search.search_subscribe_strike(instr, strangle_tracker.pe_leg, "PE")
 
                     // Deploying buy legs, i.e. hedge later
-                    if(conf.algo.deploy_hedge) {
-                        strangle_tracker.ce_hedge = strangle_tracker.ce_leg + conf.algo[instr].hedge_distance_points
-                        strangle_tracker.pe_hedge = strangle_tracker.pe_leg - conf.algo[instr].hedge_distance_points
+                    if(conf.strangle.deploy_hedge) {
+                        strangle_tracker.ce_hedge = strangle_tracker.ce_leg + conf.strangle[instr].hedge_distance_points
+                        strangle_tracker.pe_hedge = strangle_tracker.pe_leg - conf.strangle[instr].hedge_distance_points
                         console.log("Hedge legs : " + strangle_tracker.ce_hedge  + " CE - " + strangle_tracker.pe_hedge + " PE")
                         broker.search.search_subscribe_strike(instr, strangle_tracker.ce_hedge, "CE", true)
                         broker.search.search_subscribe_strike(instr, strangle_tracker.pe_hedge, "PE", true)
@@ -150,8 +150,8 @@ client_api = function () {
 
         run : function(instrument) {
 
-            conf.algo.lots = parseInt($('#num_lots').val())
-            console.log("Algo run function called for " + instrument + " Lots : " + conf.algo.lots)
+            conf.strangle.lots = parseInt($('#num_lots').val())
+            console.log("Algo run function called for " + instrument + " Lots : " + conf.strangle.lots)
             if(!algo.deployed && !algo.deploying) {
                 algo.deploying = true;
                 let ce_pe_legs = strangle_tracker.strangle_strike_details[instrument]
@@ -160,7 +160,7 @@ client_api = function () {
                     algo.deploy_strangle(instrument, ce_pe_legs)
                 } else {
                     algo.deploying = false;
-                    setTimeout(function() {algo.run(instrument);}, conf.algo.monitor_interval)
+                    setTimeout(function() {algo.run(instrument);}, conf.strangle.monitor_interval)
                 }
             } else {
                 console.log("Algo is already running.")
@@ -178,7 +178,7 @@ client_api = function () {
                 algo.deployed = true;
                 algo.deploying = false;
                 let selector = (`#at-pool tr[token=${ce_pe_params.token}][exch=${ce_pe_params.exch}][qty=${ce_pe_params.qty}][trtype=${ce_pe_params.buy_or_sell}]`)
-                algo[ce_pe_params.optt + ce_pe_params.buy_or_sell + "-interval"] = setInterval(group_legs, conf.algo.monitor_interval, selector, ce_pe_params.optt, ce_pe_params.buy_or_sell)
+                algo[ce_pe_params.optt + ce_pe_params.buy_or_sell + "-interval"] = setInterval(group_legs, conf.strangle.monitor_interval, selector, ce_pe_params.optt, ce_pe_params.buy_or_sell)
             })
 
             function group_legs(row_sel, optt, buy_or_sell) {
@@ -192,7 +192,7 @@ client_api = function () {
                         algo.deploy_stats[instrument].pe_leg = row_id;
                     }
 
-                    if(conf.algo.deploy_hedge) {
+                    if(conf.strangle.deploy_hedge) {
                         if (optt == "CE" && buy_or_sell == "B") {
                             algo.deploy_stats[instrument].ce_hedge = row_id;
                         } else if (optt == "PE" && buy_or_sell == "B") {
@@ -229,8 +229,8 @@ client_api = function () {
             let entry_price1 = parseFloat($(`#${algo.deploy_stats[instrument].ce_leg}`).find('.entry .price').text());
             let entry_price2 = parseFloat($(`#${algo.deploy_stats[instrument].pe_leg}`).find('.entry .price').text());
             let total_prem = entry_price1 + entry_price2;
-            // let target = (Math.round((total_prem * conf.algo.profit_pct * conf.algo[instrument].qty)/ 100)).toString();
-            let target = (conf.algo.profit * conf.algo.lots).toString();
+            // let target = (Math.round((total_prem * conf.strangle.profit_pct * conf.strangle[instrument].qty)/ 100)).toString();
+            let target = (conf.strangle.profit * conf.strangle.lots).toString();
             let row_id = `summary-${algo.deploy_stats[instrument].group.id}`;
             $(`#${row_id}`).find('.target').val(target)
 
@@ -245,8 +245,8 @@ client_api = function () {
             let entry_price1 = parseFloat($(`#${algo.deploy_stats[instrument].ce_leg}`).find('.entry .price').text());
             let entry_price2 = parseFloat($(`#${algo.deploy_stats[instrument].pe_leg}`).find('.entry .price').text());
             let total_prem = entry_price1 + entry_price2;
-            // let sl = (-Math.round((total_prem * conf.algo.loss_pct * conf.algo[instrument].qty)/ 100)).toString();
-            let sl = (conf.algo.loss * conf.algo.lots).toString();
+            // let sl = (-Math.round((total_prem * conf.strangle.loss_pct * conf.strangle[instrument].qty)/ 100)).toString();
+            let sl = (conf.strangle.loss * conf.strangle.lots).toString();
             let row_id = `summary-${algo.deploy_stats[instrument].group.id}`;
             $(`#${row_id}`).find('.sl').val(sl)
 
@@ -265,7 +265,7 @@ client_api = function () {
             algo.deploy_stats[instrument] = {}      //Initialize empty object
             algo.deploy_stats[instrument].deploy_count = deploy_count
 
-            if(deploy_count < conf.algo.retry_count)
+            if(deploy_count < conf.strangle.retry_count)
                 algo.run(instrument);   //Re-deploy if the premiums of ATM strikes are close enough
         },
 
@@ -493,7 +493,7 @@ client_api = function () {
                     success: function (data, textStatus, jqXHR) {
                         // console.log("Ajax success")
                         let info1 = data.values[0];
-                        let qty = conf.algo[instrument].qty * conf.algo.lots;
+                        let qty = conf.strangle[instrument].qty * conf.strangle.lots;
 
                         strangle_tracker.strangle_strike_details[instrument] = strangle_tracker.strangle_strike_details[instrument]  || [ ]
                         strangle_tracker.strangle_strike_details[instrument].push(get_strike_details(info1, strike, hedge, qty))
@@ -3862,8 +3862,17 @@ client_api = function () {
         // setTimeout(function() {algo.run("bank_nifty")}, 1500);
     }
 
+
+    function load_login_creds_from_conf() {
+        $('#login-creds').find('.shoonya-creds').find('.user-id').val(conf.broker['shoonya'].user_id);
+        $('#login-creds').find('.shoonya-creds').find('.session-token').val(conf.broker['shoonya'].session_token);
+        $('#login-creds').find('.kite-creds').find('.user-id').val(conf.broker['kite'].user_id);
+        $('#login-creds').find('.kite-creds').find('.session-token').val(conf.broker['kite'].session_token);
+    }
+
     /*Attach functions to connect, add to watch list button, etc*/
     $(document).ready(function() {
+        load_login_creds_from_conf();
         select_broker()
         hide_other_tabs('#open_orders')
         util.time.populate_time()

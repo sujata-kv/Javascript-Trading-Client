@@ -1,13 +1,13 @@
 client_api = window.client_api || {};
 
 client_api = function () {
-    let conf = {
+/*    let conf = {
         alert_profit_threshold : 50, //Alert once the profit % exceeds the specified value
         alert_loss_threshold : 50, //Alert once the loss % exceeds the specified value
         target_sl_check_interval : 500, // In Milliseconds. Check for target and SL after every 500 ms
         heartbeat_timeout : 7000,
         alert_msg_disappear_after : 3000, // Unit milliseconds
-    }
+    }*/
 
     let vix_tk, nifty_tk, bank_nifty_tk, fin_nifty_tk = '';
     let user_id = '', session_token='', ws = '';
