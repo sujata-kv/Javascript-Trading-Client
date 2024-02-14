@@ -302,12 +302,6 @@ client_api = function () {
                         let info = data.values[0];
                         option_chain_tracker.monitored_strikes.push({"token": parseInt(info.token), "strike": strike, "optt": ce_pe});
                         option_chain_tracker.token_details[info.token] = {strike : strike, optt: ce_pe, "tsym": info.tsym, "dname": info.dname, "ls": info.ls};
-                        if(strike == option_chain_tracker.cur_atm_strike) {
-                            if(ce_pe == "CE")
-                                option_chain_tracker.atm_ce_token = info.token
-                            else
-                                option_chain_tracker.atm_pe_token = info.token
-                        }
                         shoonya.subscribe_token('NFO|' + info.token);
                     },
                     error: function (jqXHR, textStatus, errorThrown) {
@@ -430,8 +424,6 @@ client_api = function () {
         spreads : {}, //Contains strike and the related row_spreads
 
         cur_atm_strike : "",
-        atm_ce_token :"",
-        atm_pe_token :"",
 
         cell_mapping : {        /*If any of these mappings change, then make sure to update the switch case where we create buttons */
             left_put_spr2 : 0,
@@ -683,12 +675,8 @@ client_api = function () {
                 const rowId = this.get_row_id(data.strike);
                 let row = priceTableBody.querySelector(`#${rowId}`);
 
-                /*If the strike is the ATM, then update ATM CE PE combined premium*/
-                if(data.strike == option_chain_tracker.cur_atm_strike) {
-                    let combined_prem = live_data[option_chain_tracker.atm_ce_token] + live_data[option_chain_tracker.atm_pe_token];
-                    row.cells[this.cell_mapping.strike].textContent = data.strike + " [" + combined_prem.toFixed(1) +"] ";
-                } else
-                    $(row.cells[this.cell_mapping.strike]).text(data.strike);
+                let combined_prem = parseFloat(row.cells[this.cell_mapping.ce].textContent) + parseFloat(row.cells[this.cell_mapping.pe].textContent)
+                row.cells[this.cell_mapping.strike].textContent = data.strike + " [" + combined_prem.toFixed(1) +"] ";
 
                 /*Update PE and CE*/
                 if (data.optt === 'CE') {
