@@ -332,7 +332,18 @@ client_api = function () {
                     prd = prd == "" ? "M" : prd;
                 }
 
-                let token_details = option_chain_tracker.get_token_details(token)
+                let token_details = option_chain_tracker.get_token_details(token);
+
+                let tsym = token_details.tsym;
+                if (tsym != undefined) {
+                    if (tsym.startsWith("NIFTY"))
+                        remarks = "N-" + Math.round(live_data[nifty_tk])
+                    else if (tsym.startsWith("BANKNIFTY"))
+                        remarks = "B-" + Math.round(live_data[bank_nifty_tk])
+                    else if (tsym.startsWith("FINNIFTY"))
+                        remarks = "F-" + Math.round(live_data[fin_nifty_tk])
+                    // remarks += " Vix " + live_data[vix_tk]
+                }
 
                 let values = {'ordersource': 'WEB'};
                 values["uid"] = conf.user_id;
