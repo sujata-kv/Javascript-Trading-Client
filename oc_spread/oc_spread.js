@@ -901,7 +901,7 @@ client_api = function () {
     function connect_to_server(){
         broker.init();
         broker.connect();
-        select_instrument()
+        setTimeout(function() {select_instrument()}, 1000)
     }
 
     function select_instrument() {
@@ -914,7 +914,7 @@ client_api = function () {
                 : conf.instrument === "fin_nifty" ? fin_nifty_tk : "unknown_instrument";
         $('#instrument').html(conf.instrument.toUpperCase().replace("_", " "))
         conf.strikes_after_before_atm = Math.abs(parseInt($('#num_strikes').val()));
-        setTimeout(function() {option_chain_tracker.find_atm_strikes()}, 1000)
+        option_chain_tracker.find_atm_strikes();
     }
 
     /*Attach functions to connect, add to watch list button, etc*/
