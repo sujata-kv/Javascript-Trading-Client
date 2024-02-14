@@ -3,7 +3,7 @@ client_api = window.client_api || {};
 client_api = function () {
     const conf = {
         user_id : "FA90807",    // FA85460
-        session_token: "23a0526a07eeff3a08d965ac33c2a34a982f979a2be9bce04ab08daa98d336c6",
+        session_token: "6d3b852cc350f1d449ba418bb3e957fb724701858a2302273db850c58416ee2e",
 
         instrument : "bank_nifty",  // nifty, bank_nifty, fin_nifty
         atm_strike_check_interval : 30000,
@@ -168,7 +168,7 @@ client_api = function () {
                         let ltpf = parseFloat(result.lp)
                         live_data[instr_token] = ltpf
                         if(instr_token === conf.instrument_token) {
-                            $('#spot').html(ltpf)
+                            $('#spot').html(ltpf.toFixed(2))
                         } else {
                             option_chain_tracker.update_table(instr_token, ltpf)
                         }
@@ -794,7 +794,7 @@ client_api = function () {
                     let ce = parseFloat(row.cells[this.cell_mapping.ce].textContent)
                     let pe = parseFloat(row.cells[this.cell_mapping.pe].textContent);
                     let syn_fut = option_chain_tracker.cur_atm_strike + (ce-pe)
-                    $('#syn_fut').html(syn_fut)
+                    $('#syn_fut').html(syn_fut.toFixed(2))
                 }
             }
 
