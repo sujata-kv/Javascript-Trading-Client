@@ -23,8 +23,12 @@
                     </select>
                 </div>
             </div>
-            <div class="row">
-                <div class="offset-md-7 col-md-5 btn-group">
+            <div class="row control-panel">
+                <div class="col-md-3 btn-group" >
+                    <span>Number of strikes before <br> and after ATM (Max 10)</span>
+                    <input type="text" class="form-control" id="num_strikes" value="3" onchange="client_api.change_num_strikes()">
+                </div>
+                <div class="offset-md-4 col-md-5 btn-group">
                     <button class="btn btn-outline-primary" id="unselect_all"  onclick="client_api.unselect_all()">Unselect All</button>
                     <span>Number of Lots</span>
                     <input type="text" class="form-control col-sm-2" id="num_lots"  value="1">
@@ -168,7 +172,7 @@
 
         #trade_type, #unselect_all, #deploy_selected {
             padding: 5px 10px;
-            font-size: 15px;
+            /*font-size: 10px;*/
             cursor: pointer;
             border: none;
             border-radius: 5px;
@@ -225,7 +229,17 @@
             margin:0 10px;
         }
 
+        .control-panel {
+            font-size: 12px;
+        }
 
+        .control-panel .form-control {
+            width : 70px !important;
+        }
+
+        #num_strikes {
+            margin-left: 20px;
+        }
     </style>
 </body>
 

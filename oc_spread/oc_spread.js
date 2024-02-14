@@ -418,6 +418,20 @@ client_api = function () {
         },
     }
 
+    function change_num_strikes() {
+        let num_strikes = Math.abs(parseInt($('#num_strikes').val()));      //Convert to positive
+
+        console.log("Num strikes : " + num_strikes)
+        if(num_strikes > 10) { //Max supported = 10
+            num_strikes = 10;
+        }
+        $('#num_strikes').val(num_strikes);
+        conf.strikes_after_before_atm = num_strikes;
+        option_chain_tracker.reset();
+        option_chain_tracker.find_atm_strikes();
+    }
+
+
     const option_chain_tracker = {
         monitored_strikes: [],  //Contains details such as token, optt and strike for each monitored strike
         token_details : {},     //Contains the strike price and optt
@@ -536,8 +550,8 @@ client_api = function () {
                                 case 4:
                                 case 6:
                                     let btnContainer = cell.find(".btn-container");
-                                    let btnB = $('<button class="btn buy">B</button>').click(function() {orderbook.buy($(this.parentNode.parentNode))});
-                                    let btnS = $('<button class="btn sell">S</button>').click(function() {orderbook.sell($(this.parentNode.parentNode))});
+                                    let btnB = $('<button class="btn buy">B</button>').click(function() {orderbook.buy($(this.parentNode.parentNode), 1)});  //Num of lots = 1 for buy sell buttons
+                                    let btnS = $('<button class="btn sell">S</button>').click(function() {orderbook.sell($(this.parentNode.parentNode), 1)}); //Num of lots = 1 for buy sell buttons
 
                                     // Append buttons to the container
                                     btnContainer.append(btnB, btnS);
@@ -900,6 +914,7 @@ client_api = function () {
             : conf.instrument === "bank_nifty"? bank_nifty_tk
                 : conf.instrument === "fin_nifty" ? fin_nifty_tk : "unknown_instrument";
         $('#instrument').html(conf.instrument.toUpperCase().replace("_", " "))
+        conf.strikes_after_before_atm = Math.abs(parseInt($('#num_strikes').val()));
         setTimeout(function() {option_chain_tracker.find_atm_strikes()}, 1000)
     }
 
@@ -920,6 +935,7 @@ client_api = function () {
         "unselect_all" : unselect_all,
         "deploy_selected": deploy_selected,
         "close_event_handler": close_event_handler,
+        "change_num_strikes": change_num_strikes,
     }
 }();
 
