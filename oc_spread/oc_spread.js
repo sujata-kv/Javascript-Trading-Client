@@ -369,9 +369,8 @@ client_api = function () {
     const orderbook = {
         buy : function(cell_elm, num_lots) {
             if(!is_paper_trade()) {
-                // let cell_elm = $(buy_btn).parent().parent();
-                console.log("buy called.. for " + cell_elm)
-                cell_elm.find('.buy').attr('disabled', 'disabled');
+                console.log("Buy called.. for " + cell_elm)
+                // cell_elm.find('.buy').attr('disabled', 'disabled');
                 let token = cell_elm.attr('token')
                 orderbook.place_buy_sell_order(token, 'B', num_lots)
             } else {
@@ -381,9 +380,8 @@ client_api = function () {
 
         sell : function(cell_elm, num_lots) {
             if(!is_paper_trade()) {
-                // let cell_elm = $(sell_btn).parent().parent();
-                console.log("sell called.. for " + cell_elm)
-                cell_elm.find('.sell').attr('disabled', 'disabled');
+                console.log("Sell called.. for " + cell_elm)
+                // cell_elm.find('.sell').attr('disabled', 'disabled');
                 let token = cell_elm.attr('token')
                 orderbook.place_buy_sell_order(token, 'S', num_lots)
             } else {
@@ -564,7 +562,8 @@ client_api = function () {
                                     let cellContent = cell.find('span').text()
                                     if(cellContent !== "") {
                                         let btnContainer = cell.find(".btn-container");
-                                        let btnD = $('<button class="btn deploy">Deploy</button>').click(function () {orderbook.deploy($(this.parentNode.parentNode))});
+                                        let num_lots = parseInt($('#num_lots').val())
+                                        let btnD = $('<button class="btn deploy">Deploy</button>').click(function () {orderbook.deploy($(this.parentNode.parentNode), num_lots)});
 
                                         // Append buttons to the container
                                         btnContainer.append(btnD);
@@ -651,13 +650,14 @@ client_api = function () {
                         //Attach onclick handler, to be able to select the CE and PE legs for the BUY and SELL operations
                         $(cell).on('click', cell_click_handler)
                             .on('click', 'button', function (e) { //Stop propagation for Buttons only
+                                // console.log("Button click handler")
                                 e.stopPropagation()
                             })
                     }
 
                     function cell_click_handler(e) {
+                        // console.log("cell click handler")
                         let cell_identifier = $(cell).closest('tr')[0].id + ":" + cell.cellIndex
-                        // console.log("cell_identifier = " + cell_identifier)
 
                         let clsName = cell.className
                         switch(clsName) {
