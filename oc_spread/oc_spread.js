@@ -689,9 +689,6 @@ client_api = function () {
                 const rowId = this.get_row_id(data.strike);
                 let row = priceTableBody.querySelector(`#${rowId}`);
 
-                let combined_prem = parseFloat(row.cells[this.cell_mapping.ce].textContent) + parseFloat(row.cells[this.cell_mapping.pe].textContent)
-                row.cells[this.cell_mapping.strike].textContent = data.strike + " [" + combined_prem.toFixed(1) +"] ";
-
                 /*Update PE and CE*/
                 if (data.optt === 'CE') {
                     $(row.cells[this.cell_mapping.ce]).find('span').text(lp.toFixed(2));
@@ -699,6 +696,8 @@ client_api = function () {
                     $(row.cells[this.cell_mapping.pe]).find('span').text(lp.toFixed(2));
                 }
 
+                let combined_prem = parseFloat(row.cells[this.cell_mapping.ce].textContent) + parseFloat(row.cells[this.cell_mapping.pe].textContent)
+                row.cells[this.cell_mapping.strike].textContent = data.strike + " [" + combined_prem.toFixed(1) +"] ";
 
                 this.update_spreads(data.strike, data.optt);
             }
