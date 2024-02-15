@@ -218,6 +218,7 @@ client_api = function () {
                         algo.set_sl(instrument);
                     }
                 }
+                $('#run_algo').text("Running");
             }
         },
 
@@ -269,21 +270,13 @@ client_api = function () {
                 algo.run(instrument);   //Re-deploy if the premiums of ATM strikes are close enough
         },
 
-        schedule_algo: function(hours, minutes, seconds) {
+        schedule_algo: function(scheduledTime) {
             const currentTime = new Date();
-            const scheduledTime = new Date(
-                currentTime.getFullYear(),
-                currentTime.getMonth(),
-                currentTime.getDate(),
-                hours,
-                minutes,
-                seconds
-            );
 
             const timeDifference = scheduledTime - currentTime;
 
             if (timeDifference > 0) {
-                console.log("Scheduling algo to run @ " + hours + ":" + minutes + ":" + seconds)
+                console.log("Scheduling algo to run @ " + scheduledTime)
                 if(this.schedulerHandler != undefined) {
                     clearTimeout(this.schedulerHandler)
                 }
@@ -3758,12 +3751,6 @@ client_api = function () {
                 }
             },
 
-            populate_time() {
-                this.populate_selected('hours', 24, '09');
-                this.populate_selected('minutes', 60, '15');
-                this.populate_selected('seconds', 60, '15');
-            },
-
             activate_run_button() {
                 $('#run_algo').addClass('active');
                 $('#run_algo').text("Run");
@@ -3779,16 +3766,11 @@ client_api = function () {
             },
 
             submit_time() {
-                const hours = $('#hours').val();
-                const minutes = $('#minutes').val();
-                const seconds = $('#seconds').val();
-
-                const selectedTime = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-
+                const selectedTime = get_selected_time();
                 $('#selected-time').text(`Selected Time: ${selectedTime}`);
 
                 // Run the function to print "Hello Su" at the selected time
-                algo.schedule_algo(hours, minutes, seconds);
+                algo.schedule_algo(selectedTime);
             },
         },
     };
@@ -3833,6 +3815,19 @@ client_api = function () {
         })
     };
 
+    function get_selected_time() {
+        // Get the value of the time input
+        var timeValue = document.getElementById("time_sel").value;
+
+        // Construct a date string using the current date and the time from the input
+        var today = new Date();
+        var dateString = today.toISOString().split('T')[0] + "T" + timeValue;
+
+        // Create a Date object from the constructed date string
+        var selectedTimeAsDate = new Date(dateString);
+        return selectedTimeAsDate;
+    }
+
     function updateClock() {
         var currentTime = new Date();
         var hours = currentTime.getHours();
@@ -3857,7 +3852,7 @@ client_api = function () {
         setTimeout(client_api.watch_list.restore_watch_list, 100);
         setTimeout(client_api.trade.trigger, 1000);
 
-        util.time.submit_time()
+        // util.time.submit_time()
         // setTimeout(strangle_tracker.find_strangle_strikes, 1000);
         // setTimeout(function() {algo.run("bank_nifty")}, 1500);
     }
@@ -3876,7 +3871,6 @@ client_api = function () {
         $('#num_lots').val(conf.strangle.lots); //load default lots from conf
         select_broker()
         hide_other_tabs('#open_orders')
-        util.time.populate_time()
         setInterval(lib.updateClock, 1000);
     });
 
