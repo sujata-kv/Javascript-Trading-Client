@@ -31,28 +31,22 @@ conf = {
     },
 
     straddle: {
-        atm_pct_diff: 1000000,
+        atm_pct_diff: 10,
         profit : 1000,
         loss : -1000,
         lots : 1,       //Default
-        monitor_interval: 1000,
-        atm_premium_monitor_interval : 30000,
+        monitor_interval: 1000,                     //Monitor if the prices match the percentage diff to start straddle
+        atm_premium_monitor_interval : 30000,       //Check whether ATM premium is changed
 
         retry_count : 1,
         bank_nifty: {
             tolerate_deviation: 180,
-            qty: 15,
-            round_to: 100,
         },
         nifty : {
             tolerate_deviation: 100,
-            qty: 50,
-            round_to: 50,
         },
         fin_nifty : {
             tolerate_deviation: 100,
-            qty: 40,
-            round_to: 50,
         }
     },
 
@@ -67,20 +61,14 @@ conf = {
         bank_nifty: {
             strangle_distance_points : 500,
             hedge_distance_points: 300,
-            qty: 15,
-            round_to: 100,
         },
         nifty : {
             strangle_distance_points : 200,
             hedge_distance_points: 100,
-            qty: 50,
-            round_to: 50,
         },
         fin_nifty : {
             strangle_distance_points : 200,
             hedge_distance_points: 100,
-            qty: 40,
-            round_to: 50,
         },
 
         delay_SL : 60,          // In seconds.. Delay SL by these many seconds

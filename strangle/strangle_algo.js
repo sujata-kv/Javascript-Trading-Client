@@ -89,7 +89,7 @@ client_api = function () {
         pe_hedge: "",
 
         find_atm_strike_price: function (instrument) {
-            let round_to = conf.strangle[instrument].round_to;
+            let round_to = conf[instrument].round_to;
             let mod = Math.round(this.get_ltp(instrument) % round_to);
             let strike_price;
             if (mod < round_to / 2)
@@ -229,7 +229,7 @@ client_api = function () {
             let entry_price1 = parseFloat($(`#${algo.deploy_stats[instrument].ce_leg}`).find('.entry .price').text());
             let entry_price2 = parseFloat($(`#${algo.deploy_stats[instrument].pe_leg}`).find('.entry .price').text());
             let total_prem = entry_price1 + entry_price2;
-            // let target = (Math.round((total_prem * conf.strangle.profit_pct * conf.strangle[instrument].qty)/ 100)).toString();
+            // let target = (Math.round((total_prem * conf.strangle.profit_pct * conf[instrument].lot_size)/ 100)).toString();
             let target = (conf.strangle.profit * conf.strangle.lots).toString();
             let row_id = `summary-${algo.deploy_stats[instrument].group.id}`;
             $(`#${row_id}`).find('.target').val(target)
@@ -245,7 +245,7 @@ client_api = function () {
             let entry_price1 = parseFloat($(`#${algo.deploy_stats[instrument].ce_leg}`).find('.entry .price').text());
             let entry_price2 = parseFloat($(`#${algo.deploy_stats[instrument].pe_leg}`).find('.entry .price').text());
             let total_prem = entry_price1 + entry_price2;
-            // let sl = (-Math.round((total_prem * conf.strangle.loss_pct * conf.strangle[instrument].qty)/ 100)).toString();
+            // let sl = (-Math.round((total_prem * conf.strangle.loss_pct * conf[instrument].lot_size)/ 100)).toString();
             let sl = (conf.strangle.loss * conf.strangle.lots).toString();
             let row_id = `summary-${algo.deploy_stats[instrument].group.id}`;
             $(`#${row_id}`).find('.sl').val(sl)
@@ -493,7 +493,7 @@ client_api = function () {
                     success: function (data, textStatus, jqXHR) {
                         // console.log("Ajax success")
                         let info1 = data.values[0];
-                        let qty = conf.strangle[instrument].qty * conf.strangle.lots;
+                        let qty = conf[instrument].lot_size * conf.strangle.lots;
 
                         strangle_tracker.strangle_strike_details[instrument] = strangle_tracker.strangle_strike_details[instrument]  || [ ]
                         strangle_tracker.strangle_strike_details[instrument].push(get_strike_details(info1, strike, hedge, qty))
@@ -2800,7 +2800,7 @@ client_api = function () {
 
         trigger: function() {
             let ms_list = milestone_manager.get_milestones();
-            sl_action_threshold = conf.delay_SL * 1000 / conf.target_sl_check_interval; //Calculated every time. So, using debug mode can be updated
+            sl_action_threshold = conf.strangle.delay_SL * 1000 / conf.target_sl_check_interval; //Calculated every time. So, using debug mode can be updated
 
             for( const [row_id, mile_stone] of Object.entries(ms_list)) {
                 if(mile_stone.get_entry() != undefined) {// If it has entry object
@@ -3025,7 +3025,7 @@ client_api = function () {
                         milestone_manager.remove_milestone(row_id)
                     } else {
                         milestone_manager.increment_sl_hit_count(row_id)
-                        console.log("SL hit count = " + ms.get_sl_hit_count() + ", Trigger threshold count = " + sl_action_threshold + " Delay-SL by: " + conf.delay_SL + " seconds")
+                        console.log("SL hit count = " + ms.get_sl_hit_count() + ", Trigger threshold count = " + sl_action_threshold + " Delay-SL by: " + conf.strangle.delay_SL + " seconds")
                     }
                 }
             }
@@ -3873,6 +3873,7 @@ client_api = function () {
     /*Attach functions to connect, add to watch list button, etc*/
     $(document).ready(function() {
         load_login_creds_from_conf();
+        $('#num_lots').val(conf.strangle.lots); //load default lots from conf
         select_broker()
         hide_other_tabs('#open_orders')
         util.time.populate_time()

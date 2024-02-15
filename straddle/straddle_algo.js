@@ -278,7 +278,7 @@ client_api = function () {
                                 dname: info.dname,
                                 value: info.dname,
                                 lot_size: info.ls,
-                                qty: conf.straddle[instrument].qty,
+                                qty: conf[instrument].lot_size,
                                 algo : true,
                             }
                         }
@@ -543,7 +543,7 @@ client_api = function () {
         atm_strikes: {},
 
         find_atm_strike_price: function (instrument) {
-            let round_to = conf.straddle[instrument].round_to;
+            let round_to = conf[instrument].round_to;
             let mod = Math.round(this.get_ltp(instrument) % round_to);
             let strike_price;
             if (mod < round_to/2)
@@ -646,7 +646,7 @@ client_api = function () {
             let buy_or_sell = "S";
             let strategy = conf.straddle.strategy.trim().toLowerCase()
             let num_lots = parseInt($('#num_lots').val())
-            let qty = conf.straddle[instrument].qty * num_lots;
+            let qty = conf[instrument].lot_size * num_lots;
             if( strategy == "long") {
                 buy_or_sell = "B";      //Default is sell
             }
@@ -697,7 +697,7 @@ client_api = function () {
             let entry_price1 = parseFloat($(`#${algo.deploy_stats[instrument].ce_leg}`).find('.entry .price').text());
             let entry_price2 = parseFloat($(`#${algo.deploy_stats[instrument].pe_leg}`).find('.entry .price').text());
             let total_prem = entry_price1 + entry_price2;
-            // let target = (Math.round((total_prem * conf.straddle.profit_pct * conf.straddle[instrument].qty)/ 100)).toString();
+            // let target = (Math.round((total_prem * conf.straddle.profit_pct * conf[instrument].lot_size)/ 100)).toString();
             let target = (conf.straddle.profit * conf.straddle.lots).toString();
             let row_id = `summary-${algo.deploy_stats[instrument].group.id}`;
             $(`#${row_id}`).find('.target').val(target)
@@ -713,7 +713,7 @@ client_api = function () {
             let entry_price1 = parseFloat($(`#${algo.deploy_stats[instrument].ce_leg}`).find('.entry .price').text());
             let entry_price2 = parseFloat($(`#${algo.deploy_stats[instrument].pe_leg}`).find('.entry .price').text());
             let total_prem = entry_price1 + entry_price2;
-            // let sl = (-Math.round((total_prem * conf.straddle.loss_pct * conf.straddle[instrument].qty)/ 100)).toString();
+            // let sl = (-Math.round((total_prem * conf.straddle.loss_pct * conf[instrument].lot_size)/ 100)).toString();
             let sl = (conf.straddle.loss * conf.straddle.lots).toString();
             let row_id = `summary-${algo.deploy_stats[instrument].group.id}`;
             $(`#${row_id}`).find('.sl').val(sl)
@@ -2842,6 +2842,7 @@ client_api = function () {
     /*Attach functions to connect, add to watch list button, etc*/
     $(document).ready(function() {
         load_login_creds_from_conf();
+        $('#num_lots').val(conf.straddle.lots); //load default lots from conf
         select_broker();
         hide_other_tabs('#open_orders')
         updateClock();
