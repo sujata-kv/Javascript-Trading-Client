@@ -3531,8 +3531,16 @@ client_api = function () {
         // setTimeout(trade.calculate_spreads, 2000);
     }
 
+    function load_login_creds_from_conf() {
+        $('#login-creds').find('.shoonya-creds').find('.user-id').val(conf.broker['shoonya'].user_id);
+        $('#login-creds').find('.shoonya-creds').find('.session-token').val(conf.broker['shoonya'].session_token);
+        $('#login-creds').find('.kite-creds').find('.user-id').val(conf.broker['kite'].user_id);
+        $('#login-creds').find('.kite-creds').find('.session-token').val(conf.broker['kite'].session_token);
+    }
+
     /*Attach functions to connect, add to watch list button, etc*/
     $(document).ready(function() {
+        load_login_creds_from_conf();
         select_broker();
         hide_other_tabs('#open_orders')
         updateClock();

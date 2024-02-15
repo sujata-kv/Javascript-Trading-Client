@@ -3,11 +3,11 @@ conf = {
     broker : {
         shoonya: {
             user_id: "FA90807",    // FA85460
-            session_token: "6d3b852cc350f1d449ba418bb3e957fb724701858a2302273db850c58416ee2e",
+            session_token: "b1d0affc1bddc8747005a28b05311a9bfa0760f9f30033ca785e53ef13501815",
         },
         kite : {
-            user_id : "VC1177",
-            session_token : "cwWX0YPrv9XOc9zKLnLSC2JX2+8gDHTp66uhFxuilxlosDywQAOy7qBlaM/2XsgPG1SzQYoEBJM+CCFCBJWv3IBODW8WHv44Z15sHETZK1Y+oTag2xF38w=="
+            user_id : "VC1177",     // FZ0468
+            session_token : "cUdrwQSveGbx5z6MsOThnx483Td4lxxHRoB2FWsdg54H+P3divxToJ3AQaj66nazO/QPzf8SMR+XUpKUej5zEDVFj5BwoVI+ctQezNiXQv1xb7nVRgDYtg=="
         }
     },
 
