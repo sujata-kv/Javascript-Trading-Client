@@ -884,21 +884,6 @@ client_api = function () {
         })
     }
 
-
-    function updateClock() {
-        var currentTime = new Date();
-        var hours = currentTime.getHours();
-        var minutes = currentTime.getMinutes();
-        var seconds = currentTime.getSeconds();
-
-        // Add leading zero if minutes or seconds are less than 10
-        minutes = minutes < 10 ? '0' + minutes : minutes;
-        seconds = seconds < 10 ? '0' + seconds : seconds;
-
-        var formattedTime = hours + ':' + minutes + ':' + seconds;
-        document.getElementById('time').innerHTML = formattedTime;
-    }
-
     function connect_to_server(){
         broker.init();
         broker.connect();
@@ -924,8 +909,7 @@ client_api = function () {
         $('#select_instrument').val(conf.spreads.instrument);  //Use default value given in the conf
         $('#num_strikes').val(conf.spreads.strikes_after_before_atm);   //Use default value given in the conf
         connect_to_server();
-        updateClock();
-        setInterval(updateClock, 1000);
+        setInterval(lib.updateClock, 1000);
     });
 
     return {

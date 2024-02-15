@@ -3503,20 +3503,6 @@ client_api = function () {
         })
     };
 
-    function updateClock() {
-        var currentTime = new Date();
-        var hours = currentTime.getHours();
-        var minutes = currentTime.getMinutes();
-        var seconds = currentTime.getSeconds();
-
-        // Add leading zero if minutes or seconds are less than 10
-        minutes = minutes < 10 ? '0' + minutes : minutes;
-        seconds = seconds < 10 ? '0' + seconds : seconds;
-
-        var formattedTime = hours + ':' + minutes + ':' + seconds;
-        document.getElementById('time').innerHTML = formattedTime;
-    }
-
     function connect_to_server(){
         select_broker();
         broker.init();
@@ -3543,8 +3529,7 @@ client_api = function () {
         load_login_creds_from_conf();
         select_broker();
         hide_other_tabs('#open_orders')
-        updateClock();
-        setInterval(updateClock, 1000);
+        setInterval(lib.updateClock, 1000);
     });
 
     return {

@@ -3877,8 +3877,7 @@ client_api = function () {
         select_broker()
         hide_other_tabs('#open_orders')
         util.time.populate_time()
-        updateClock();
-        setInterval(updateClock, 1000);
+        setInterval(lib.updateClock, 1000);
     });
 
     return {
