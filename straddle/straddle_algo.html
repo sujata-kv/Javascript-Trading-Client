@@ -100,8 +100,8 @@
 
             <div class="col-md-7" style="text-align: right">
                 <form class="col-sm-2" id="long_short_option">
-                    <label><input type="radio" name="long" value="long">Long</label>
-                    <label><input type="radio" name="short" value="short">Short</label>
+                    <label><input type="radio" name="strategy" value="long" onchange="client_api.change_strategy()">Long</label>
+                    <label><input type="radio" name="strategy" value="short" onchange="client_api.change_strategy()">Short</label>
                 </form>
                 <select id="select_instrument" onchange="" style="width:20%">
                     <option selected value="bank_nifty">Bank-Nifty</option>

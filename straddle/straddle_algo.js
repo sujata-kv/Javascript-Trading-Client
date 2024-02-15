@@ -586,7 +586,8 @@ client_api = function () {
         deploying : false,
         run : function(instrument) {
             conf.straddle.lots = parseInt($('#num_lots').val())
-            console.log(conf.straddle.strategy.toUpperCase() + " Straddle Algo run function called for " + instrument + " Lots = " + conf.straddle.lots)
+            let strategy = conf.straddle.strategy.toUpperCase();
+            console.log( strategy + " Straddle Algo run function called for " + instrument + " Lots = " + conf.straddle.lots)
             if(!algo.deployed && !algo.deploying) {
                 algo.deploying = true;
                 let atm_ce_pe = atm_tracker.atm_strike_details[instrument]
@@ -594,12 +595,12 @@ client_api = function () {
                     let ltp1 = live_data[atm_ce_pe[0].token];
                     let ltp2 = live_data[atm_ce_pe[1].token];
                     let pct_diff = Math.abs(ltp1 - ltp2) / Math.min(ltp1, ltp2);
-                    console.log(atm_ce_pe[0].strike + "  Ltp1= " + ltp1 + " Ltp2= " + ltp2 + " Diff % = " + (pct_diff * 100).toFixed(0));
+                    console.log(`${atm_ce_pe[0].strike} Ltp1= ${ltp1} Ltp2= ${ltp2} Diff = ${(pct_diff * 100).toFixed(0)} %`);
                     if (pct_diff <= conf.straddle.atm_pct_diff/100) {
                         console.log(`Deploying algo for ${instrument}..`)
                         algo.deploy_straddle(instrument, atm_ce_pe)
                     } else {
-                        console.log("Not deploying algo as the difference between ATM premiums is more than "+ conf.straddle.atm_pct_diff + "%")
+                        console.log(`Not deploying ${strategy} straddle as the ATM premium diff is more than ${conf.straddle.atm_pct_diff} %`)
                         algo.deploying = false;
                         setTimeout(function() {algo.run(instrument);}, conf.straddle.monitor_interval)
                     }
@@ -2775,6 +2776,9 @@ client_api = function () {
         conf.straddle.atm_pct_diff = change_param('atm_pct_diff');
     }
 
+    function change_strategy() {
+        conf.straddle.strategy = $('input[name="strategy"]:checked').val();
+    }
 
     function hide_other_tabs(cur_tab) {
         let other_tabs = []
@@ -2791,7 +2795,7 @@ client_api = function () {
 
     function connect_to_server(){
         select_broker();
-        conf.straddle.strategy = $('input[name=option]:checked', '#long_short_option').val();
+        conf.straddle.strategy = $('input[name="strategy"]:checked').val();
 
         broker.init();
         broker.connect();
@@ -2813,8 +2817,14 @@ client_api = function () {
         $('#login-creds').find('.kite-creds').find('.session-token').val(conf.broker['kite'].session_token);
     }
 
-    function load_default_strategy(name) {
-        $(`#long_short_option input[type='radio'][name='${name}']`).attr('checked', true);
+    function load_default_strategy(strategy_name) {
+        // Check if the strategy_name is either "long" or "short"
+        if (strategy_name === "long" || strategy_name === "short") {
+            // Use jQuery to select the radio button by value
+            $('input[name="strategy"][value="' + strategy_name + '"]').prop('checked', true);
+        } else {
+            console.error("Invalid strategy_name. Please provide either 'long' or 'short'.");
+        }
     }
 
     /*Attach functions to connect, add to watch list button, etc*/
@@ -2847,7 +2857,8 @@ client_api = function () {
         "algo" : algo,
         "conf" : conf,
         "change_pct_diff": change_pct_diff,
-        "change_num_lots": change_num_lots
+        "change_num_lots": change_num_lots,
+        "change_strategy": change_strategy,
     }
 
 }();
