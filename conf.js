@@ -31,10 +31,11 @@ conf = {
     },
 
     straddle: {
-        atm_pct_diff: 10,
+        strategy: "long",
+        atm_pct_diff: 10,   // Default atm_pct_diff
         profit : 1000,
         loss : -1000,
-        lots : 1,       //Default
+        lots : 1,       //Default number of lots
         monitor_interval: 1000,                     //Monitor if the prices match the percentage diff to start straddle
         atm_premium_monitor_interval : 30000,       //Check whether ATM premium is changed
 
@@ -56,7 +57,7 @@ conf = {
         monitor_interval: 1000,
         retry_count : 1,
         deploy_hedge : true,
-        lots : 1,
+        lots : 1,            //Default number of lots
 
         bank_nifty: {
             strangle_distance_points : 500,

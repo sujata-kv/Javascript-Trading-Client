@@ -1,37 +1,7 @@
 client_api = window.client_api || {};
 
 client_api = function () {
-/*
-    let conf = {
-        atm_strike_check_interval : 60000,
-        atm_premium_monitor_interval : 30000,
-        target_sl_check_interval: 1000,
-        algo: {
-            // strategy : "long",  // "long" or "short"..  Long straddle or Short straddle
-            atm_pct_diff: 10,
-            profit : 1000,
-            loss : -1000,
-            lots : 1,
-            monitor_interval: 1000,
-            retry_count : 1,
-            bank_nifty: {
-                tolerate_deviation: 180,
-                qty: 15,
-                round_to: 100,
-            },
-            nifty : {
-                tolerate_deviation: 100,
-                qty: 50,
-                round_to: 50,
-            },
-            fin_nifty : {
-                tolerate_deviation: 100,
-                qty: 40,
-                round_to: 50,
-            }
-        },
-    }*/
-    
+
     let alert_msg_disappear_after = 3000; // Unit milliseconds
     let heartbeat_timeout = 7000;
     let vix_tk, nifty_tk, bank_nifty_tk, fin_nifty_tk = '';
@@ -624,7 +594,7 @@ client_api = function () {
                     let ltp1 = live_data[atm_ce_pe[0].token];
                     let ltp2 = live_data[atm_ce_pe[1].token];
                     let pct_diff = Math.abs(ltp1 - ltp2) / Math.min(ltp1, ltp2);
-                    console.log(atm_ce_pe[0].strike + "  Ltp1= " + ltp1 + " Ltp2= " + ltp2 + " % Diff = " + (pct_diff * 100).toFixed(0))
+                    console.log(atm_ce_pe[0].strike + "  Ltp1= " + ltp1 + " Ltp2= " + ltp2 + " Diff % = " + (pct_diff * 100).toFixed(0));
                     if (pct_diff <= conf.straddle.atm_pct_diff/100) {
                         console.log(`Deploying algo for ${instrument}..`)
                         algo.deploy_straddle(instrument, atm_ce_pe)
@@ -2788,6 +2758,24 @@ client_api = function () {
         }
     };
 
+    function change_param(id) {
+        let value = Math.abs(parseInt($(`#${id}`).val()));      //Convert to positive
+
+        console.log(id + " : " + value)
+        $(`#${id}`).val(value);
+        // $('.run').removeAttr('disabled')
+        return value;
+    }
+
+    function change_num_lots() {
+        conf.straddle.num_lots = change_param('num_lots');
+    }
+
+    function change_pct_diff() {
+        conf.straddle.atm_pct_diff = change_param('atm_pct_diff');
+    }
+
+
     function hide_other_tabs(cur_tab) {
         let other_tabs = []
         switch(cur_tab) {
@@ -2825,10 +2813,16 @@ client_api = function () {
         $('#login-creds').find('.kite-creds').find('.session-token').val(conf.broker['kite'].session_token);
     }
 
+    function load_default_strategy(name) {
+        $(`#long_short_option input[type='radio'][name='${name}']`).attr('checked', true);
+    }
+
     /*Attach functions to connect, add to watch list button, etc*/
     $(document).ready(function() {
         load_login_creds_from_conf();
+        load_default_strategy(conf.straddle.strategy); //load default strategy from conf
         $('#num_lots').val(conf.straddle.lots); //load default lots from conf
+        $('#atm_pct_diff').val(conf.straddle.atm_pct_diff); //load default lots from conf
         select_broker();
         hide_other_tabs('#open_orders')
         setInterval(lib.updateClock, 1000);
@@ -2852,6 +2846,8 @@ client_api = function () {
         "toggle_paper_trade": toggle_paper_trade,
         "algo" : algo,
         "conf" : conf,
+        "change_pct_diff": change_pct_diff,
+        "change_num_lots": change_num_lots
     }
 
 }();

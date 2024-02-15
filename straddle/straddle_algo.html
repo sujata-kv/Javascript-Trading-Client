@@ -75,7 +75,7 @@
 
     <div class="d-flex flex-column align-items-stretch trade-panel">
         <div class="row">
-            <div class="col-sm-3">
+<!--            <div class="col-sm-3">
                 <input type="text" class="form-control search-instrument watch_item"  value="" placeholder="Instrument" >
                 <div id="instr-drop-down" class="ui-front" style=""></div>
             </div>
@@ -88,28 +88,34 @@
                         <path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/>
                     </svg>
                 </span>
+            </div>-->
+
+            <div class="col-md-5 btn-group" >
+                <label>Diff %<input type="text" class="form-control col-sm-2" id="atm_pct_diff"  value="" onchange="client_api.change_pct_diff()"></label>
+
+                <span></span>
+                <label>Num Lots<input type="text" class="form-control col-sm-2" id="num_lots"  value="" onchange="client_api.change_num_lots()"></label>
+
             </div>
 
-            <div class="col-sm-7"  style="text-align: right;">
-                <span>Num Lots</span>
-                <input type="text" class="form-control col-sm-2" id="num_lots"  value="1">
+            <div class="col-md-7" style="text-align: right">
                 <form class="col-sm-2" id="long_short_option">
-                    <label><input type="radio" name="option" value="long" checked>Long</label>
-                    <label><input type="radio" name="option" value="short">Short</label>
+                    <label><input type="radio" name="long" value="long">Long</label>
+                    <label><input type="radio" name="short" value="short">Short</label>
                 </form>
                 <select id="select_instrument" onchange="" style="width:20%">
                     <option selected value="bank_nifty">Bank-Nifty</option>
                     <option value="nifty">Nifty</option>
                     <option value="fin_nifty">Fin-Nifty</option>
                 </select>
-                <button type="button" class="btn btn-success" onclick="$(this).attr('disabled', 'disabled');client_api.algo.run($('#select_instrument')[0].value);">Run Algo</button>
+                <button type="button" class="btn btn-success run" onclick="$(this).attr('disabled', 'disabled');client_api.algo.run($('#select_instrument')[0].value);">Run</button>
                 <input id="trade_type" type="checkbox" checked data-toggle="toggle"
                        onchange="client_api.toggle_paper_trade()"
                        data-on="Paper Trade" data-off="Real Trade" data-onstyle="warning" data-offstyle="success">
             </div>
         </div>
 
-        <table class="table table-secondary table-condensed table-striped table-bordered">
+        <!--<table class="table table-secondary table-condensed table-striped table-bordered">
             <thead class="thead-light">
             <tr>
                 <th> <input type="checkbox" value="" onclick="client_api.util.select_all(this, '#watch_list_body .select_box')"> </th>
@@ -129,7 +135,7 @@
         <div class="row">
             <button type="button" class="btn btn-success buy col-sm-2 offset-sm-1" onclick="client_api.orderbook.buy_selected(this)">Buy Selected</button>
             <button type="button" class="btn btn-danger sell col-sm-2" onclick="client_api.orderbook.sell_selected(this)" style="margin-left:30px">Sell Selected</button>
-        </div>
+        </div>-->
 
         <hr class="hr hr-blurry" />
 
@@ -570,13 +576,17 @@
         margin-left:20px;
     }
 
-    #num_lots {
+    #num_lots, #atm_pct_diff {
         display:inline;
-        width: 60px;
+        width: 50px;
     }
 
-    .trade-panel button, .trade-panel .form-control {
+    .trade-panel button, .trade-panel .form-control, span{
         font-size: 12px;
+    }
+
+    .run {
+        width: 100px;
     }
 
     /*    @media screen and (max-width: 900px) {
