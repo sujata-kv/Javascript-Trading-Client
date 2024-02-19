@@ -3290,7 +3290,7 @@ client_api = function () {
             }
         },
 
-        load_positions: function(tbody_selector) {
+        load_closed_positions: function(tbody_selector) {
             if($(`${tbody_selector} input:checkbox:checked`).length > 0) {
                 $(`${tbody_selector} input:checkbox:checked`).each(function () {
                     let row_elm = $(this).parent().parent()
@@ -3298,7 +3298,8 @@ client_api = function () {
                     let pos = positions.map_row_to_position(row_elm);
                     let ret = positions.display_closed_trade(pos);      //Returns true if the position is loaded, else returns false
 
-                    this.checked = ret? false: true;        //Uncheck the checkbox only if loaded.. Otherwise leave it as it is
+                    // this.checked = !ret;        //Uncheck the checkbox only if loaded.. Otherwise leave it as it is
+                    this.checked = false
                 })
                 $(tbody_selector).parent().find('thead input:checkbox')[0].checked = false; //uncheck parent checkbox
 
