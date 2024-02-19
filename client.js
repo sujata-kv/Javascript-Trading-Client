@@ -226,6 +226,26 @@ client_api = function () {
                     }
                 });
             },
+            
+            map_row_to_position : function(tr_elm) {
+                tr_elm = $(tr_elm)
+                let std_pos = {
+                    'exch': tr_elm.attr('exch'),
+                    'token': tr_elm.attr('token'),
+                    'instrument_token': tr_elm.attr('instrument_token'),
+                    'tsym': tr_elm.attr('tsym'),
+                    'netqty': tr_elm.find('.netqty').html(),
+                    'buyqty': tr_elm.find('.buy_qty').html(),
+                    'sellqty': tr_elm.find('.sell_qty').html(),
+                    'netavgbuyprc': tr_elm.find('.buy_price').html(),
+                    'netavgsellprc': tr_elm.find('.sell_price').html(),
+                    'margin': tr_elm.find('.margin').html(),
+                    'dname': tr_elm.find('.dname').html(),
+                    'rpnl': tr_elm.find('.rpnl').find('span').html(),
+                    'prd': tr_elm.find('.prd').html(),
+                }
+                return std_pos;
+            },
         },
 
         search: {
@@ -1255,6 +1275,10 @@ client_api = function () {
                     }
                 });
             },
+        },
+
+        map_row_to_position : function(tr_elm) {
+            show_error_msg("Yet to be implemented")
         },
     }
 
@@ -2842,7 +2866,7 @@ client_api = function () {
                 $('#' + row_id).find('.sl').val(sl)
             }
 
-            this.fill_in_max_profit_loss_for_debit_spread(tbody_elm)
+            //this.fill_in_max_profit_loss_for_debit_spread(tbody_elm)
         },
 
         fill_in_max_profit_loss_for_debit_spread : function(tbody_elm) {
@@ -3263,24 +3287,95 @@ client_api = function () {
                 let ticker = broker.get_ticker(item)
 
                 $('#positions_table').append(`<tr class="${cls}" exch="${item.exch}" token="${item.token}" tsym="${item.tsym}" lot_size="${item.ls}">
-                        <td class="text">${dname}</td>
+                        <td> <input type="checkbox" class="select_box" value="" onclick="client_api.util.uncheck(this)"> </td>
+                        <td class="text dname">${dname}</td>
                         <td class="num">${urmtm}</td>
-                        <td class="num">${rpnl}</td>
-                        <td>${item.daybuyavgprc}</td>
-                        <td>${item.daysellavgprc}</td>
-                        <td>${item.daybuyqty}</td>
-                        <td>${item.daysellqty}</td>
+                        <td class="num rpnl">${rpnl}</td>
+                        <td class="buy_price">${item.daybuyavgprc}</td>
+                        <td class="sell_price">${item.daysellavgprc}</td>
+                        <td class="buy_qty">${item.daybuyqty}</td>
+                        <td class="sell_qty">${item.daysellqty}</td>
                         <td class="pos_${ticker} num ltp">${item.lp}</td>
-                        <td>${prd}</td>
-                        <td class="num">${item.daybuyamt}</td>
+                        <td class="prd">${prd}</td>
+                        <td class="num margin">${item.daybuyamt}</td>
                         <td class="num">${item.daysellamt}</td>
                         <td class="num">${item.dayavgprc}</td>
-                        <td class="num">${item.netqty}</td>
+                        <td class="num netqty">${item.netqty}</td>
                         <td class="num">${item.netavgprc}</td>
                         <td>${item.exch}</td>
                 </tr>`);
             }
-        }
+        },
+
+        load_positions: function(tbody_selector) {
+            if($(`${tbody_selector} input:checkbox:checked`).length > 0) {
+                $(`${tbody_selector} input:checkbox:checked`).each(function () {
+                    let row_elm = $(this).parent().parent()
+                    this.checked = false;
+                    let pos = positions.map_row_to_position(row_elm);
+                    positions.display_closed_trade(pos);
+                })
+                $(tbody_selector).parent().find('thead input:checkbox')[0].checked = false; //uncheck parent checkbox
+
+                trade.update_total_margin($('#at-pool'))  // Update pool's margin
+                $('#notify-at-pool').html('')             // Remove the alert on grouping
+            } else {
+                show_error_msg("No position is selected")
+            }
+        },
+        
+        map_row_to_position : function(tr_elm) {
+            let pos = broker.position.map_row_to_position(tr_elm);
+            console.log(pos)
+            return pos;
+        },
+        
+        display_closed_trade :function(pos) {
+            let buy_sell = '<span class="badge bg-success">Buy</span>'      //Use buy as default.. we don't know once the position is closed, whether it was buy or sell
+            let trtype='B'
+            let buyqty = parseFloat(pos.buyqty), sellqty = parseFloat(pos.sellqty)
+            let open_qty = Math.abs( buyqty - sellqty );
+            let closed_qty = open_qty>0? (Math.max(buyqty, sellqty) - open_qty): buyqty;
+            pos.trantype = trtype;
+            let ttype = orderbook.know_bull_or_bear(pos)
+            let dname = (pos.dname != undefined) ? pos.dname : pos.tsym;
+            let pnl_cls = parseFloat(pos.rpnl)<0 ? "neg-mtm" : "pos-mtm";
+
+            console.log("Loading closed position : ", JSON.stringify(pos))
+            let token = broker.get_ticker(pos);
+            let ticker = "closed_"+ token
+            let position = trade.getTradePosition(ticker, pos.exch, trtype, closed_qty);
+            if (position.length == 0 && closed_qty > 0) { //Add new position only if it doesn't exist
+                console.log("Closed position doesn't exist in active trades. So adding it..")
+
+                let className = "table-secondary";
+                let tbody_elm = $('#at-pool');
+                let margin_used = (pos.netavgbuyprc * closed_qty).toFixed(2);
+
+                tbody_elm.append(`<tr id="closed_${++unique_row_id}" class="${className}" exch="${pos.exch}" token="${ticker}" instrument_token="${ticker}" tsym="${pos.tsym}" qty="${closed_qty}" ttype="${ttype}" trtype="${trtype}" prd="${pos.prd}" trade="closed" margin="${margin_used}">
+                    <td> <input type="checkbox" class="select_box" value="" onclick="client_api.util.uncheck(this)"> </td>
+                    <td>Closed position</td>
+                    <td>${dname}</td>
+                    <td class="entry num">
+                        <span class="price" title="Margin Used : ${margin_used}">${pos.netavgbuyprc}</span>
+                    </td>
+                    <td class="trade_${token} ltp">${pos.lp}</td>
+                    <td class="pnl ${pnl_cls}">${pos.rpnl}</td>
+                    <td><input type="text" disabled class="form-control target" placeholder="" ></td>
+                    <td><input type="text" disabled class="form-control sl" placeholder="" ></td>
+                    <td><span class="price exit-price">${pos.netavgsellprc}</span>
+                    </td>
+                    <td><input type="text" class="form-control qty" placeholder=""  value="${closed_qty}"></td>
+                    
+                    <td>CLOSED<br><span class="badge badge-pill bg-secondary" title="Watch live" onclick="client_api.trade.toggle_watch_closed_trade($(this))" style="cursor:pointer;padding:8px;margin-top:10px">Watch</span></td>
+                    <td><button type="button" class="btn btn-dark btn-sm delete" onclick="client_api.trade.delete(this)">Delete</button></td>
+                </tr>`);
+
+                trade.update_total_margin(tbody_elm);
+            } else {
+                show_success_msg("Position is already present in active trades")
+            }
+        },
     };
 
     const util = {

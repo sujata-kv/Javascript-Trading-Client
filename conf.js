@@ -3,11 +3,11 @@ conf = {
     broker : {
         shoonya: {
             user_id: "FA90807",    // FA85460
-            session_token: "b1d0affc1bddc8747005a28b05311a9bfa0760f9f30033ca785e53ef13501815",
+            session_token: "88e8b902f10951842071c8a47ba404c13845e6b5ddd9c80568ae9dffd74407c8",
         },
         kite : {
             user_id : "VC1177",     // FZ0468
-            session_token : "cUdrwQSveGbx5z6MsOThnx483Td4lxxHRoB2FWsdg54H+P3divxToJ3AQaj66nazO/QPzf8SMR+XUpKUej5zEDVFj5BwoVI+ctQezNiXQv1xb7nVRgDYtg=="
+            session_token : "MefPaG4EBt7Z3ifEHaq9EjePSuIBIpvHgxWJi4VnVNEioIbgVTNrAfTE9Bw4teU2eQ1h8zaESxHRePCjiaHfTQ8vM7IY0q4uPkOz3YtGahgIi95VV8+t1Q=="
         }
     },
 
@@ -27,7 +27,7 @@ conf = {
     spreads : {
         instrument : "bank_nifty",  // Default instrument..  nifty, bank_nifty, fin_nifty are the allowed values
         atm_strike_check_interval : 30000,
-        strikes_after_before_atm : 5,   //Default value
+        strikes_after_before_atm : 3,   //Default value
     },
 
     straddle: {
