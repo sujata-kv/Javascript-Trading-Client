@@ -80,4 +80,5 @@ conf = {
     target_sl_check_interval : 500, // In Milliseconds. Check for target and SL after every 500 ms
     heartbeat_timeout : 7000,
     alert_msg_disappear_after : 3000, // Unit milliseconds
+    alert_error_disappear_after : 10000, // Unit milliseconds
 }

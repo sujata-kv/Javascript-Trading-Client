@@ -222,7 +222,7 @@ client_api = function () {
                     },
                     error: function (jqXHR, textStatus, errorThrown) {
                         console.error("Ajax error")
-                        show_error_msg(JSON.parse(jqXHR.responseText).emsg)
+                        lib.show_error_msg(JSON.parse(jqXHR.responseText).emsg)
                     }
                 });
             },
@@ -281,7 +281,7 @@ client_api = function () {
                             },
                             error: function (jqXHR, textStatus, errorThrown) {
                                 console.log("Ajax error")
-                                show_error_msg(JSON.parse(jqXHR.responseText).emsg)
+                                lib.show_error_msg(JSON.parse(jqXHR.responseText).emsg)
                             },
                         })
                     },
@@ -408,8 +408,8 @@ client_api = function () {
                         let orderno = data.result;  // In case of modify and cancel order 'result' contains order ID.
                         data.orderno = orderno
                         success_call_bk(data)
-                        show_success_msg("Order with order num : " + orderno + " modified successfully")
-                    } else show_error_msg(data.emsg)
+                        lib.show_success_msg("Order with order num : " + orderno + " modified successfully")
+                    } else lib.show_error_msg(data.emsg)
                 })
             },
 
@@ -436,7 +436,7 @@ client_api = function () {
                         console.log("Ajax error : ", JSON.stringify(jqXHR))
                         if (jqXHR.status == 401)
                             login_status(false)
-                        show_error_msg(JSON.parse(jqXHR.responseText).emsg)
+                        lib.show_error_msg(JSON.parse(jqXHR.responseText).emsg)
                     }
                 });
             },
@@ -1027,7 +1027,7 @@ client_api = function () {
                         console.log("Ajax error : ", JSON.stringify(jqXHR))
                         if(jqXHR.status == 401)
                             login_status(false)
-                        show_error_msg(jqXHR.responseJSON.message)
+                        lib.show_error_msg(jqXHR.responseJSON.message)
                     }
                 });
             },
@@ -1058,7 +1058,7 @@ client_api = function () {
                         console.log("Ajax error : ", JSON.stringify(jqXHR))
                         if (jqXHR.status == 401)
                             login_status(false)
-                        show_error_msg(jqXHR.responseJSON.message)
+                        lib.show_error_msg(jqXHR.responseJSON.message)
                     }
                 });
             },
@@ -1108,15 +1108,15 @@ client_api = function () {
                                 let orderno = data.data.order_id
                                 data.data.orderno = orderno
                                 success_call_bk(data)
-                                show_success_msg("Order with order num : " + orderno + " modified successfully")
+                                lib.show_success_msg("Order with order num : " + orderno + " modified successfully")
                             }
-                        } else show_error_msg(data.emsg)
+                        } else lib.show_error_msg(data.emsg)
                     },
                     error: function (jqXHR, textStatus, errorThrown) {
                         console.log("Ajax error : ", JSON.stringify(jqXHR))
                         if (jqXHR.status == 401)
                             login_status(false)
-                        show_error_msg(jqXHR.responseJSON.message)
+                        lib.show_error_msg(jqXHR.responseJSON.message)
                     }
                 })
             },
@@ -1203,7 +1203,7 @@ client_api = function () {
                         console.log("Ajax error : ", JSON.stringify(jqXHR))
                         if (jqXHR.status == 401)
                             login_status(false)
-                        show_error_msg(jqXHR.responseJSON.message)
+                        lib.show_error_msg(jqXHR.responseJSON.message)
                     }
                 });
             },
@@ -1266,19 +1266,19 @@ client_api = function () {
                             let positions = kite.position.map_positions(data)
                             success_cb(positions)
                         } else {
-                            show_error_msg("Failed to fetch positions" + jqXHR.responseText)
+                            lib.show_error_msg("Failed to fetch positions" + jqXHR.responseText)
                         }
                     },
                     error: function (jqXHR, textStatus, errorThrown) {
                         console.error("Ajax error " + errorThrown)
-                        show_error_msg(jqXHR.responseText)
+                        lib.show_error_msg(jqXHR.responseText)
                     }
                 });
             },
         },
 
         map_row_to_position : function(tr_elm) {
-            show_error_msg("Yet to be implemented")
+            lib.show_error_msg("Yet to be implemented")
         },
     }
 
@@ -1324,23 +1324,6 @@ client_api = function () {
                 update_ltp("#active_trades_div tbody .trade_" + instr_token, ltp)  // In Active Trades table
                 break;
         }
-    }
-
-    function show_success_msg(msg) {
-        $('#order_success_msg').html("<strong>" + msg + "</strong>");
-        $('#order_success_alert').show();
-        setTimeout(function(){
-            // $('#order_success_msg').html("");
-            $('#order_success_alert').hide()}, conf.alert_msg_disappear_after);
-    }
-
-    function show_error_msg(msg, auto_hide=true) {
-        $('#order_error_msg').html("<strong>" + msg + "</strong>");
-        $('#order_error_alert').show();
-        if(auto_hide)
-            setTimeout(function(){
-                // $('#order_error_msg').html("");
-                $('#order_error_alert').hide()}, conf.alert_msg_disappear_after);
     }
 
     const ACTION = Object.freeze({
@@ -1475,22 +1458,22 @@ client_api = function () {
         display_order_exec_msg: function(order) {
             switch (order.status) {
                 case "OPEN" :
-                    show_success_msg("Order is open. Order number: " + order.norenordno + "  Symbol: " + order.tsym + " Qty: " + order.qty);
+                    lib.show_success_msg("Order is open. Order number: " + order.norenordno + "  Symbol: " + order.tsym + " Qty: " + order.qty);
                     break;
                 case "COMPLETE" :
-                    show_success_msg("Order completed. Order number: " + order.norenordno + "  Symbol: " + order.tsym + " Qty: " + order.qty);
+                    lib.show_success_msg("Order completed. Order number: " + order.norenordno + "  Symbol: " + order.tsym + " Qty: " + order.qty);
                     break;
                 case "PENDING" :
-                    show_error_msg("Order pending. Order number: " + order.norenordno + "  Symbol: " + order.tsym + " Qty: " + order.qty);
+                    lib.show_error_msg("Order pending. Order number: " + order.norenordno + "  Symbol: " + order.tsym + " Qty: " + order.qty);
                     break;
                 case "REJECTED" :
-                    show_error_msg("Order " + order.norenordno + " rejected. Reason : " + order.rejreason  + "   Symbol: " + order.tsym + " Qty: " + order.qty, false );
+                    lib.show_error_msg("Order " + order.norenordno + " rejected. Reason : " + order.rejreason  + "   Symbol: " + order.tsym + " Qty: " + order.qty, false );
                     break;
                 case "CANCELED": // Matching shoonya status
-                    show_success_msg("Order " + order.norenordno + " cancelled. Symbol: " + order.tsym + " Qty: " + order.qty );
+                    lib.show_success_msg("Order " + order.norenordno + " cancelled. Symbol: " + order.tsym + " Qty: " + order.qty );
                     break;
                 default:
-                    show_error_msg("Received invalid status for the order: " + order.norenordno + " Please verify the order status in the broker client" );
+                    lib.show_error_msg("Received invalid status for the order: " + order.norenordno + " Please verify the order status in the broker client" );
                     break;
             }
         },
@@ -1792,7 +1775,7 @@ client_api = function () {
                     }
                 })(row_id));
             } else
-                show_error_msg(data.emsg);
+                lib.show_error_msg(data.emsg);
         },
 
         place_order_default_cb : function(matching_order, orders, row_id) {
@@ -1876,7 +1859,7 @@ client_api = function () {
 
                         orderbook.update_open_orders();  // This line was before add_exit() call above. Moved to see if it fixes the kill-switch bug
                     } else
-                        show_error_msg(data.emsg);
+                        lib.show_error_msg(data.emsg);
                 });
                 $(td_elm).attr('disabled', 'disabled');
                 setTimeout(function(td_elm){$(td_elm).removeAttr('disabled')}, 5000, td_elm)
@@ -2523,7 +2506,7 @@ client_api = function () {
                 tr_elm.attr('trade', 'closed')
                 elm.text("Watch")
                 elm.attr('title', "Watch live")
-                show_success_msg("Resetting the P&L")
+                lib.show_success_msg("Resetting the P&L")
                 setTimeout(function() {
                     trade.update_pnl(tr_elm, tr_elm.find('.exit-price').text())
                     let group_id = tr_elm.parent().attr('id')
@@ -2592,7 +2575,7 @@ client_api = function () {
                 function entry_triggered() {
 
                     if(milestone_manager.entry_exists(row_id)) {  // To avoid duplicate execution
-                        show_success_msg("Entry triggered for row_id : " + row_id + " Trigger value = " + trig_value + " Spot value = " + cur_value)
+                        lib.show_success_msg("Entry triggered for row_id : " + row_id + " Trigger value = " + trig_value + " Spot value = " + cur_value)
                         console.log("Entry triggered for row_id : " + row_id + " Trigger value = " + trig_value + " Spot value = " + cur_value)
                         console.log(entry_obj)
                         let tr_elm = $(`#${row_id}`)
@@ -2677,7 +2660,7 @@ client_api = function () {
                     }
                     let name = (group_name=='')? "row: "+row_id : "group: " + group_name
                     msg = "Target triggered for " + name + " Trigger value = " + trig_value + " Current value = " + cur_spot_value
-                    show_success_msg(msg)
+                    lib.show_success_msg(msg)
                     console.log(msg)
                     milestone_manager.remove_milestone(row_id)
                 }
@@ -2762,7 +2745,7 @@ client_api = function () {
                         }
                         let name = (group_name == '') ? "row: " + row_id : "group: " + group_name
                         msg = "SL triggered for " + name + " Trigger value = " + trig_value + " Current value = " + cur_spot_value
-                        show_error_msg(msg)
+                        lib.show_error_msg(msg)
                         console.log(msg)
 
                         milestone_manager.remove_milestone(row_id)
@@ -3088,7 +3071,7 @@ client_api = function () {
             if (timeDiff > 0) {
                 trade.exit_handler = setTimeout(function () {
                     trade.close_all_trades();
-                    show_success_msg("Exited all positions")
+                    lib.show_success_msg("Exited all positions")
                 }, timeDiff);
             }
         },
@@ -3123,7 +3106,7 @@ client_api = function () {
                 ++count;
             })
 
-            if(count == 0) show_error_msg("No instrument is selected")
+            if(count == 0) lib.show_error_msg("No instrument is selected")
 
             if($tbody.children().length === 0) {
                 $tbody.parent().find('thead input:checkbox')[0].checked = false; //uncheck parent checkbox
@@ -3148,7 +3131,7 @@ client_api = function () {
 
                 watch_list.add_row_to_watch(params)
             } else {
-                show_error_msg("Please select an instrument from the drop down")
+                lib.show_error_msg("Please select an instrument from the drop down")
             }
         },
 
@@ -3311,16 +3294,18 @@ client_api = function () {
             if($(`${tbody_selector} input:checkbox:checked`).length > 0) {
                 $(`${tbody_selector} input:checkbox:checked`).each(function () {
                     let row_elm = $(this).parent().parent()
-                    this.checked = false;
+
                     let pos = positions.map_row_to_position(row_elm);
-                    positions.display_closed_trade(pos);
+                    let ret = positions.display_closed_trade(pos);      //Returns true if the position is loaded, else returns false
+
+                    this.checked = ret? false: true;        //Uncheck the checkbox only if loaded.. Otherwise leave it as it is
                 })
                 $(tbody_selector).parent().find('thead input:checkbox')[0].checked = false; //uncheck parent checkbox
 
                 trade.update_total_margin($('#at-pool'))  // Update pool's margin
                 $('#notify-at-pool').html('')             // Remove the alert on grouping
             } else {
-                show_error_msg("No position is selected")
+                lib.show_error_msg("No position is selected")
             }
         },
         
@@ -3372,8 +3357,10 @@ client_api = function () {
                 </tr>`);
 
                 trade.update_total_margin(tbody_elm);
+                return true;
             } else {
-                show_success_msg("Position is already present in active trades")
+                lib.show_success_msg("Position is already present in active trades")
+                return false;
             }
         },
     };
@@ -3449,7 +3436,7 @@ client_api = function () {
                     trade.reset_max_profit_loss('at-pool');
                     $('#group_name').val(''); //Reset group name
                 } else {
-                    show_error_msg("No position is selected")
+                    lib.show_error_msg("No position is selected")
                 }
             },
 
@@ -3471,7 +3458,7 @@ client_api = function () {
                     trade.update_total_margin($('#at-pool'))  // Update pool's margin as well
                     $('#notify-at-pool').html('')             // Remove the alert on grouping
                 } else {
-                    show_error_msg("No position is selected")
+                    lib.show_error_msg("No position is selected")
                 }
             },
 
@@ -3495,7 +3482,7 @@ client_api = function () {
                     $(group_selector).find('tr[trtype="B"]').each(function () {close(this);})       //Only buy positions are present
 
                 if(count == 0)
-                    show_error_msg("No position selected to exit")
+                    lib.show_error_msg("No position selected to exit")
 
                 function close(row) {
                     let checkbox = $(row).find('.select_box')[0];
@@ -3637,8 +3624,8 @@ client_api = function () {
         "live_data": live_data,
         "mgr": milestone_manager,
         "order_mgr" : open_order_mgr,
-        "show_success_msg" : show_success_msg,
-        "show_error_msg" : show_error_msg,
+        "lib.show_success_msg" : lib.show_success_msg,
+        "lib.show_error_msg" : lib.show_error_msg,
         "toggle_paper_trade": toggle_paper_trade,
         "toggle_exit_at_eom" : toggle_exit_at_eom,
         "connect_to_server" : connect_to_server,
