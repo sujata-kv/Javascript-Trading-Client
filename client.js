@@ -3360,7 +3360,8 @@ client_api = function () {
                 trade.update_total_margin(tbody_elm);
                 return true;
             } else {
-                lib.show_success_msg("Position is already present in active trades")
+                let msg = closed_qty>0 ? "Position is already present in active trades": "The position is still open.Try loading it through active trades button"
+                lib.show_success_msg(msg)
                 return false;
             }
         },
