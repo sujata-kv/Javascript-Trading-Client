@@ -2849,10 +2849,10 @@ client_api = function () {
                 $('#' + row_id).find('.sl').val(sl)
             }
 
-            //this.fill_in_max_profit_loss_for_debit_spread(tbody_elm)
+            trade.calculate_spreads(tbody_elm, $('#summary-at-pool .max-profit-loss'));
         },
 
-        fill_in_max_profit_loss_for_debit_spread : function(tbody_elm) {
+        calculate_spreads : function(tbody_elm, print_cell) {
             let row_count = tbody_elm.children().length
             if(row_count === 2) { // When only two legs are present
                 let row1 = $(tbody_elm.children()[0])
@@ -2876,12 +2876,14 @@ client_api = function () {
                     let strike2 = parseInt(instr2.split(" ").splice(2, 1)[0])
 
                     let spread = Math.abs(strike1-strike2)
-                    let ltp1 = parseFloat(row1.find('.ltp').text())
-                    let ltp2 = parseFloat(row2.find('.ltp').text())
+                    let prc1 = parseFloat(row1.find('.entry .price').text())
+                    let prc2 = parseFloat(row2.find('.entry .price').text())
+
+                    console.log(prc1, prc2)
 
                     let leg1_is_buy = row1.attr('trtype') == 'B'
-                    let credit_spread
-                    if(ltp1 < ltp2) {
+                    let credit_spread = false;
+                    if(prc1 < prc2) {
                         if(leg1_is_buy)
                             credit_spread = true
                         else credit_spread = false
@@ -2889,29 +2891,22 @@ client_api = function () {
 
                     let break_even, max_profit, max_loss
                     if(credit_spread) {
-                        let net_credit = Math.abs(ltp1-ltp2)
+                        let net_credit = Math.abs(prc1-prc2)
                         max_loss = (spread - net_credit) * qty
                         max_profit = net_credit * qty
                         break_even = strike2 - net_credit
                     } else {
-                        let net_debit = Math.abs(ltp1-ltp2)
+                        let net_debit = Math.abs(prc1-prc2)
                         max_profit = (spread - net_debit) * qty
                         max_loss = net_debit * qty
                         break_even = strike1 - net_debit
                     }
 
-                    $('#at-pool .max-profit-loss').html( (credit_spread?"Credit Spread": "Debit Spread") + "<br>Max profit = " + max_profit.toFixed(1) + "</br> Max loss = " + max_loss.toFixed(1) + "</br> Break-even=" + break_even.toFixed(0))
+                    print_cell.html( (credit_spread?"Credit Spread": "Debit Spread") + "<br>Max profit = " + max_profit.toFixed(1) + "</br> Max loss = " + max_loss.toFixed(1) + "</br> Break-even=" + break_even.toFixed(0))
                 }
             } else {
-                $('#at-pool .max-profit-loss').html("")
+                print_cell.html("")
             }
-        },
-
-        calculate_spreads : function() {
-            let tbody_elm = $('#at-pool')
-
-            trade.fill_in_max_profit_loss_for_debit_spread(tbody_elm)
-            setTimeout(trade.calculate_spreads, 1000);
         },
 
         getCounterTradePosition : function(open_ord_tr_elm) {
@@ -3596,9 +3591,6 @@ client_api = function () {
         setTimeout(client_api.trade.load_open_positions, 100);
         setTimeout(client_api.watch_list.restore_watch_list, 100);
         setTimeout(client_api.trade.trigger, 1000);
-
-        //Uncomment below line to enable spreads dynamic calculation
-        // setTimeout(trade.calculate_spreads, 2000);
     }
 
     function load_login_creds_from_conf() {
