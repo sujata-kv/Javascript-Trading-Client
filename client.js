@@ -3430,6 +3430,8 @@ client_api = function () {
                         parent_checkbox[0].checked = false;
                     }
 
+                    trade.calculate_spreads(tbody_elm, $(`#summary-at-${group.name} .max-profit-loss`));
+                    $('#summary-at-pool .max-profit-loss').html(""); //Reset debit-credit spread calculations
                     trade.reset_max_profit_loss('at-pool');
                     $('#group_name').val(''); //Reset group name
                 } else {
@@ -3449,7 +3451,10 @@ client_api = function () {
                     $(tbody_selector).parent().find('thead input:checkbox')[0].checked = false; //uncheck parent checkbox
                     if($(tbody_selector).children().length === 0) { //Remove group if no position is left in the group
                         $(tbody_selector).parent().parent().remove(); //Remove the div
+                    } else {
+                        $(`#summary-${tbody_selector} .max-profit-loss`).html(""); //Reset debit-credit spread calculations
                     }
+                    trade.calculate_spreads($('#at-pool'), $('#summary-at-pool .max-profit-loss'));
 
                     trade.update_total_margin($(tbody_selector))      // Update group's margin
                     trade.update_total_margin($('#at-pool'))  // Update pool's margin as well
