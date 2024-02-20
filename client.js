@@ -2876,8 +2876,8 @@ client_api = function () {
                     let strike2 = parseInt(instr2.split(" ").splice(2, 1)[0])
 
                     let spread = Math.abs(strike1-strike2)
-                    let prc1 = parseFloat(row1.find('.entry .price').text())
-                    let prc2 = parseFloat(row2.find('.entry .price').text())
+                    let prc1 = parseFloat(row1.find('.entry>.price').text())
+                    let prc2 = parseFloat(row2.find('.entry>.price').text())
 
                     console.log(prc1, prc2)
 
@@ -3025,7 +3025,7 @@ client_api = function () {
                         tbody_elm.append(`<tr id="row_id_${++unique_row_id}" class="${className}" exch="${pos.exch}" token="${ticker}" instrument_token="${ticker}" tsym="${pos.tsym}" qty="${qty}" ttype="${ttype}" trtype="${trtype}" prd="${pos.prd}" trade="active" margin="${margin_used}">
                             <td> <input type="checkbox" class="select_box" value="" onclick="client_api.util.uncheck(this)"> </td>
                             <td>${buy_sell}</td>
-                            <td>${dname}</td>
+                            <td class="instrument">${dname}</td>
                             <td class="entry num">
                                 <span class="price" title="Margin Used : ${margin_used}">${pos.netavgprc}</span>
                             </td>
