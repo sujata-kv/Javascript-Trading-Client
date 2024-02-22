@@ -2,12 +2,18 @@ conf = window.conf || {};
 conf = {
     broker : {
         shoonya: {
-            user_id: "FA90807",    // FA85460
-            session_token: "88e8b902f10951842071c8a47ba404c13845e6b5ddd9c80568ae9dffd74407c8",
+            user_id: "FA90807",
+            session_token: "cb75ebdb7e60679a2af6fa7b8fd9c25973e9671630297e36898665d8f0532aa2",
+
+/*            user_id: "FA85460",
+            session_token: "f9915f6fc30ace39c24bc0d752eb0c0cac653ff705db582c421efb2203b86b26",*/
         },
         kite : {
-            user_id : "VC1177",     // FZ0468
-            session_token : "MefPaG4EBt7Z3ifEHaq9EjePSuIBIpvHgxWJi4VnVNEioIbgVTNrAfTE9Bw4teU2eQ1h8zaESxHRePCjiaHfTQ8vM7IY0q4uPkOz3YtGahgIi95VV8+t1Q=="
+            user_id : "VC1177",
+            session_token : "QVE46PW31DAVTHHqvTfEyyL0MT4YI3XcFl2d0k03dWDTZfrqmmYf7JoeWzf4Z90EiWqUQzxo+l/nZHTCAKLr1J9SuGWxjfdoxl43FXv2fQT8G8GIFUeIcQ==",
+
+            /*user_id : "FZ0468",
+            session_token : "ouaXNC2JlRZOkPyjHZwamJ65QIDuFcA/OZAOcPAYTpfhXpImsH1/gK54kBsEyrPF0PK8uNvhQU0zYmP0ULEmyxYF7rsIBlaYpGF16HlnqYDD7MEUa2sy9g=="*/
         }
     },
 

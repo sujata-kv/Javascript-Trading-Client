@@ -1,13 +1,6 @@
 client_api = window.client_api || {};
 
 client_api = function () {
-/*    let conf = {
-        alert_profit_threshold : 50, //Alert once the profit % exceeds the specified value
-        alert_loss_threshold : 50, //Alert once the loss % exceeds the specified value
-        target_sl_check_interval : 500, // In Milliseconds. Check for target and SL after every 500 ms
-        heartbeat_timeout : 7000,
-        alert_msg_disappear_after : 3000, // Unit milliseconds
-    }*/
 
     let vix_tk, nifty_tk, bank_nifty_tk, fin_nifty_tk = '';
     let user_id = '', session_token='', ws = '';
@@ -2138,6 +2131,7 @@ client_api = function () {
             console.log(get_value_object("N-20000 D20"));
             console.log(get_value_object("B 20000 D5"));
             console.log(get_value_object("F 20000 D 5"));
+            console.log(get_value_object("T24322 100 D 5"));    //Token based
             console.log(get_value_object("-10000 D 8"));*/
 
             let spot_based = false;
@@ -2149,18 +2143,27 @@ client_api = function () {
                 value = value.trim();
                 value = value.toUpperCase()
                 console.log(value)
-                if(value.startsWith('N')  || value.startsWith('B') || value.startsWith('F')) {
+                if(value.startsWith('N')  || value.startsWith('B') || value.startsWith('F') || value.startsWith('T')) {
                     spot_based = true
-                    value = value.replace(/-/, '')
+                    // value = value.replace(/-/, '')
                     value = value.trim()
-                    let ii = (value).charAt(0).toUpperCase()
+                    let ii = (value).charAt(0)
                     if(ii === 'N')
                         instrument = 'nifty';
                     else if(ii === 'B')
                         instrument = 'bank_nifty'
                     else if(ii === 'F')
                         instrument = 'fin_nifty'
-                    value = value.replace(/[ NBF-]/g, '');
+                    else if (ii === 'T') {
+                        const regexPattern = /T(\d+) (.+)/;
+                        const matches = value.match(regexPattern);
+                        if (matches) {
+                            // Extracted values
+                            instrument = matches[1];        // Token is extracted into instrument
+                            value = matches[2];
+                        }
+                    }
+                    value = value.replace(/[ NBFT-]/g, '');
                 }
 
                 if(value.includes("D")) { //Extract delay
@@ -2168,7 +2171,9 @@ client_api = function () {
                 }
             }
 
-            return {spot_based : spot_based, value : value, instrument : instrument, delay: delay }
+            let ret = {spot_based : spot_based, value : value, instrument : instrument, delay: delay }
+            console.log(ret)
+            return ret;
         }
 
         get_value_string(value_obj) {
@@ -2178,6 +2183,7 @@ client_api = function () {
                     case 'nifty' : value_str = 'N '; break;
                     case 'bank_nifty' : value_str = 'B '; break;
                     case 'fin_nifty' : value_str = 'F '; break;
+                    default : value_str = 'T' + instrument + " "; break;
                 }
                 value_str = value_str + value_obj.value.trim();
             } else {
@@ -2187,6 +2193,7 @@ client_api = function () {
             if(value_obj.delay != undefined && value_obj.delay!=null) {
                 value_str = `${value_str} D${value_obj.delay}`;
             }
+            console.log(value_str)
             return value_str;
         }
 
@@ -2551,7 +2558,6 @@ client_api = function () {
                         case "bank_nifty" : cur_value = live_data[bank_nifty_tk]; break;
                         case "fin_nifty" : cur_value = live_data[fin_nifty_tk]; break;
                         default :
-                            // console.error(row_id + " Spot based entry.. neither nifty, nor bank-nifty, not even fin-nifty " + mile_stone);
                             // console.log(row_id + " Paper trade with limit order.");
                             cur_value = live_data[mile_stone.token];
                             break;
@@ -2600,7 +2606,7 @@ client_api = function () {
                         case "nifty" : cur_spot_value = live_data[nifty_tk]; break;
                         case "bank_nifty" : cur_spot_value = live_data[bank_nifty_tk]; break;
                         case "fin_nifty" : cur_spot_value = live_data[fin_nifty_tk]; break;
-                        default : console.error(row_id + "Wrong instrument name detected for target .. " + mile_stone.token); break;
+                        default : cur_spot_value = live_data[target_obj.instrument]; break;
                     }
                 } else { // Price based
                     if(row_id.startsWith("summary-")) { // Use total P & L value in case of cumulative target and SL
@@ -2614,7 +2620,7 @@ client_api = function () {
                     }
                 }
 
-                console.log(`Checking Target : ${ttype}  current : ${cur_spot_value}  trig : ${trig_value}`)
+                console.log(`Checking Target : ${ttype} for ${target_obj.instrument} current : ${cur_spot_value}  trig : ${trig_value}`)
 
                 if (target_obj.spot_based) {
                     if (ttype === 'bull') {
@@ -2656,7 +2662,12 @@ client_api = function () {
                     }
                     else {
                         let tr_elm = $(`#${row_id}`)
-                        tr_elm.find('.exit').click();
+                        let group_id = tr_elm.parent().attr('id')
+                        if(util.grouping.is_cascade_exit_enabled(group_id)) {   //Exit the entire group
+                            console.log("Cascade Exit is enabled for the group " + group_id + ". Exiting the entire group")
+                            util.grouping.exit_group(`#${group_id}`, true)
+                        } else  //Exit the row alone
+                            tr_elm.find('.exit').click();
                     }
                     let name = (group_name=='')? "row: "+row_id : "group: " + group_name
                     msg = "Target triggered for " + name + " Trigger value = " + trig_value + " Current value = " + cur_spot_value
@@ -2680,7 +2691,7 @@ client_api = function () {
                         case "nifty" : cur_spot_value = live_data[nifty_tk]; break;
                         case "bank_nifty" : cur_spot_value = live_data[bank_nifty_tk]; break;
                         case "fin_nifty" : cur_spot_value = live_data[fin_nifty_tk]; break;
-                        default : console.error(row_id + "Wrong instrument name detected for SL .. " + mile_stone.token); break;
+                        default : cur_spot_value = live_data[sl_obj.instrument]; break;
                     }
                 } else { // Price based
                     if (row_id.startsWith("summary-")) { // Use total P & L value in case of cumulative target and SL
@@ -2696,9 +2707,9 @@ client_api = function () {
 
                 if(sl_obj.delay != null) {
                     sl_action_threshold = Math.round(parseInt(sl_obj.delay) * 1000 / (conf.target_sl_check_interval + 20)); //20 milli seconds, extra execution time
-                    console.log(`Checking SL : ${ttype}  current : ${cur_spot_value}  trig : ${trig_value}  delay : ${sl_obj.delay}s`)
+                    console.log(`Checking SL : ${ttype} for ${sl_obj.instrument} current : ${cur_spot_value}  trig : ${trig_value}  delay : ${sl_obj.delay}s`)
                 } else
-                    console.log(`Checking SL : ${ttype}  current : ${cur_spot_value}  trig : ${trig_value}`)
+                    console.log(`Checking SL : ${ttype} for ${sl_obj.instrument} current : ${cur_spot_value}  trig : ${trig_value}`)
 
                 if(sl_obj.spot_based) {
                     if (ttype === 'bull') {
@@ -2741,7 +2752,12 @@ client_api = function () {
                             util.grouping.exit_group(group_selector, true)
                         } else {
                             let tr_elm = $(`#${row_id}`)
-                            tr_elm.find('.exit').click();
+                            let group_id = tr_elm.parent().attr('id')
+                            if(util.grouping.is_cascade_exit_enabled(group_id)) {   //Exit the entire group
+                                console.log("Cascade Exit is enabled for the group " + group_id + ". Exiting the entire group")
+                                util.grouping.exit_group(`#${group_id}`, true)
+                            } else  //Exit the row alone
+                                tr_elm.find('.exit').click();
                         }
                         let name = (group_name == '') ? "row: " + row_id : "group: " + group_name
                         msg = "SL triggered for " + name + " Trigger value = " + trig_value + " Current value = " + cur_spot_value
@@ -3389,6 +3405,7 @@ client_api = function () {
         grouping : {
             unique_group_id: 0,
             class_names : ['table-light', 'table-success'],
+            cascade_exits: [],
 
             generate_group_id : function(group_name) {
                 let uname;
@@ -3401,6 +3418,34 @@ client_api = function () {
 
                 let gid = "at-" + uname;
                 return {'name' : group_name, 'id': gid}
+            },
+
+            toggle_cascade_exit : function(btn, group_id) {
+                if($(btn).hasClass('btn-dark')) {
+                    $(btn).removeClass('btn-dark')
+                    $(btn).addClass('btn-light')
+                    $(btn).attr("title", "Cascade exit is turned OFF");
+                } else {
+                    $(btn).addClass('btn-dark')
+                    $(btn).removeClass('btn-light')
+                    $(btn).attr("title", "Cascade exit is turned ON");
+                }
+                this.toggle_cascade(group_id)
+            },
+
+            toggle_cascade(group_id) {
+                const index = this.cascade_exits.indexOf(group_id);
+                if (index !== -1) {
+                    // If the group_id exists, remove it
+                    this.cascade_exits.splice(index, 1);
+                } else {
+                    // If the group_id doesn't exist, add it
+                    this.cascade_exits.push(group_id);
+                }
+            },
+
+            is_cascade_exit_enabled(group_id) {
+                return this.cascade_exits.includes(group_id);
             },
 
             group_selected: function () {
@@ -3475,7 +3520,7 @@ client_api = function () {
 
             exit_group : function(group_selector, target_sl_triggered=false) {
                 let count = 0;
-                if($(group_selector).find('tr[trtype="S"]').length > 0) {
+                if($(group_selector).find('tr[trtype="S"]').length > 0) {       // Both buy and sell positions are present. Close the sell positions first, then buy positions
                     $(group_selector).find('tr[trtype="S"]').each(function (){ close(this);})
                     setTimeout(function() {
                         $(group_selector).find('tr[trtype="B"]').each(function () {close(this);})
@@ -3496,9 +3541,10 @@ client_api = function () {
             },
 
             create_table : function(group, class_name) {
-                $('#active_trades_div').append(`<div group="${group.id}">
+                $('#active_trades_div').append(`<div group="${group.id}" class="group-container">
                     <div>
-                        <button class="btn btn-secondary mb-3" onclick="client_api.util.grouping.ungroup_selected('#${group.id}')">Ungroup Selected</button>
+                        <button class="btn btn-secondary mb-3" onclick="client_api.util.grouping.ungroup_selected('#${group.id}')" style="margin-left:10px;">Ungroup Selected</button>
+                        <button class="btn btn-light mb-3" title="Exit all the trades in the group if any one is exited" onclick="client_api.util.grouping.toggle_cascade_exit(this, '${group.id}')">Cascade Exit</button>
                         <button class="btn btn-danger mb-3" onclick="client_api.util.grouping.exit_group('#${group.id}')">Exit</button>
                         <span class="del-icon" onclick="client_api.util.grouping.delete('#${group.id}')" title="Delete the closed trades" style="position: relative; top:-7px;">
                             <svg xmlns="http://www.w3.org/2000/svg" width="28" height="32" fill="currentColor" class="bi bi-trash" viewBox="0 0 16 16">
@@ -3506,7 +3552,7 @@ client_api = function () {
                                 <path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/>
                             </svg>
                         </span>
-                        <h5 style="float:right;">${group.name.toUpperCase()}</h5>
+                        <h5 class="group-name">${group.name.toUpperCase()}</h5>
                     </div>
                     <table  class="table ${class_name} table-condensed table-striped table-bordered">
                     
