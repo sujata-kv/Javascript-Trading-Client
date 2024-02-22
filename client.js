@@ -2161,6 +2161,10 @@ client_api = function () {
                             // Extracted values
                             instrument = matches[1];        // Token is extracted into instrument
                             value = matches[2];
+
+                            let params = {exch: "NFO", token: instrument}       //Token is subscribed to make sure to receive its live_data
+                            let sym_token = broker.get_subscribe_token(params);
+                            broker.subscribe_token(sym_token);
                         }
                     }
                     value = value.replace(/[ NBFT-]/g, '');
@@ -2558,8 +2562,9 @@ client_api = function () {
                         case "bank_nifty" : cur_value = live_data[bank_nifty_tk]; break;
                         case "fin_nifty" : cur_value = live_data[fin_nifty_tk]; break;
                         default :
+                            //TODO - Token based entry trigger is not handled yet.
                             // console.log(row_id + " Paper trade with limit order.");
-                            cur_value = live_data[mile_stone.token];
+                            cur_value = live_data[mile_stone.token];    //This line is for paper trade with limit order
                             break;
                     }
                 }
@@ -3544,7 +3549,7 @@ client_api = function () {
                 $('#active_trades_div').append(`<div group="${group.id}" class="group-container">
                     <div>
                         <button class="btn btn-secondary mb-3" onclick="client_api.util.grouping.ungroup_selected('#${group.id}')" style="margin-left:10px;">Ungroup Selected</button>
-                        <button class="btn btn-light mb-3" title="Exit all the trades in the group if any one is exited" onclick="client_api.util.grouping.toggle_cascade_exit(this, '${group.id}')">Cascade Exit</button>
+                        <button class="btn btn-light mb-3" title="Exit all the trades in the group if SL or Target is hit for any one" onclick="client_api.util.grouping.toggle_cascade_exit(this, '${group.id}')">Cascade Exit</button>
                         <button class="btn btn-danger mb-3" onclick="client_api.util.grouping.exit_group('#${group.id}')">Exit</button>
                         <span class="del-icon" onclick="client_api.util.grouping.delete('#${group.id}')" title="Delete the closed trades" style="position: relative; top:-7px;">
                             <svg xmlns="http://www.w3.org/2000/svg" width="28" height="32" fill="currentColor" class="bi bi-trash" viewBox="0 0 16 16">
@@ -3698,6 +3703,7 @@ $(document).ready(function() {
         }
     });
 
+    /* Uncomment this code to make the rows in the active trade to be draggable
     $("#at-pool").sortable({
         items: 'tr:not(tfoot tr, thead tr, tr.summary)',
         dropOnEmpty: false,
@@ -3707,7 +3713,7 @@ $(document).ready(function() {
         stop: function (G, ui) {
             ui.item.removeClass("select");
         }
-    });
+    });*/
 });
 
 
