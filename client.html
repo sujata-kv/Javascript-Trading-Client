@@ -156,7 +156,7 @@
             </div>
         </div>
 
-        <div class="row">
+        <div class="row" id="pool-tool-bar">
             <div class="col-sm-2">
                 <div class="su-custom-tab">
                     <button class="btn btn-success " type="button" onclick="client_api.trade.load_open_positions()">Active Trades</button>
@@ -465,7 +465,7 @@
     div.gross-pnl {
         float: right;
         position: relative;
-        top :-30px;
+        top :-55px;
     }
 
     .gross-pnl .pnl {
@@ -481,9 +481,11 @@
         /*padding-left: 12px;*/
         font-size: 22px;
     }
-
+    #pool-tool-bar {
+        margin-top: 30px;
+    }
     #active_trades_div {
-        margin-top:-40px;
+        margin-top:-65px;
     }
 
     .pos-mtm, .pnl, .margin_req, .neg-mtm, .ltp {
