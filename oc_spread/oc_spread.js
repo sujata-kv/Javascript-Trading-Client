@@ -371,9 +371,6 @@ client_api = function () {
         let num_strikes = Math.abs(parseInt($('#num_strikes').val()));      //Convert to positive
 
         console.log("Num strikes : " + num_strikes)
-        if(num_strikes > 10) { //Max supported = 10
-            num_strikes = 10;
-        }
         $('#num_strikes').val(num_strikes);
         conf.spreads.strikes_after_before_atm = num_strikes;
         option_chain_tracker.reset();
