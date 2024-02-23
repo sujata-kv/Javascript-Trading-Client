@@ -3094,6 +3094,7 @@ client_api = function () {
 
         edit_entry_price : function(entry_elm) {
             entry_elm = $(entry_elm)
+            let td_elm = entry_elm.parent();
 
             var inputElement = $('<input>', {
                 type: 'text',
@@ -3111,7 +3112,7 @@ client_api = function () {
                     text: inputElement.val()
                 });
 
-                newSpan.on('dblclk', function() {client_api.trade.edit_entry_price(newSpan)})
+                td_elm.on('dblclick', 'span.price', function() {client_api.trade.edit_entry_price(newSpan)});
                 inputElement.replaceWith(newSpan);
             });
         }
