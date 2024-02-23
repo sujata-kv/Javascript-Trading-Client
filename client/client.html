@@ -96,7 +96,7 @@
                 <div id="instr-drop-down" class="ui-front" style=""></div>
             </div>
             <div class=" col-sm-4" style="padding-left:0px">
-                <button class="btn btn-primary mb-3" id="add_to_watchlist" onclick="client_api.watch_list.add_to_watchlist()">Add To Watchlist</button>
+                <button class="btn btn-primary mb-3" id="add_to_watchlist" onclick="client_api.watch_list.add_to_watchlist()">Watch</button>
                 <button class="btn btn-secondary mb-3" onclick="$('input.search-instrument').val('')">Clear</button>
                 <span class="del-icon" onclick="client_api.watch_list.delete()" title="Delete selected rows" style="position: relative; top:-7px;">
                     <svg xmlns="http://www.w3.org/2000/svg" width="28" height="32" fill="currentColor" class="bi bi-trash" viewBox="0 0 16 16">
@@ -446,6 +446,10 @@
 
     .table th, .table td {
         text-align: center !important;
+    }
+
+    #add_to_watchlist {
+        width: 100px
     }
 
     #instr-drop-down {
