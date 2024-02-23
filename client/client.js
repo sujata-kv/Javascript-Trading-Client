@@ -2847,7 +2847,7 @@ client_api = function () {
                         <td class="entry num" title="Margin Used : ${margin_used}">
                             <span class="badge badge-pill bg-dark">${order.norentm.split(" ")[0]}</span>
                             </br><span class="badge bg-primary">${remarks}</span>
-                            </br><span class="price">${order.prc}</span>
+                            </br><span class="price" ondblclick="client_api.trade.edit_entry_price(this)">${order.prc}</span>
                         </td>
                         <td class="trade_${ticker} ltp">${live_data[ticker]}</td>
                         <td class="pnl"></td>
@@ -3048,7 +3048,7 @@ client_api = function () {
                             <td>${buy_sell}</td>
                             <td class="instrument">${dname}</td>
                             <td class="entry num">
-                                <span class="price" title="Margin Used : ${margin_used}">${pos.netavgprc}</span>
+                                <span class="price" title="Margin Used : ${margin_used}" ondblclick="client_api.trade.edit_entry_price(this)">${pos.netavgprc}</span>
                             </td>
                             <td class="trade_${ticker} ltp">${pos.lp}</td>
                             <td class="pnl"></td>
@@ -3091,6 +3091,30 @@ client_api = function () {
                 }, timeDiff);
             }
         },
+
+        edit_entry_price : function(entry_elm) {
+            entry_elm = $(entry_elm)
+
+            var inputElement = $('<input>', {
+                type: 'text',
+                value: entry_elm.text(),
+                class: 'edit-input form-control'
+            });
+
+            entry_elm.replaceWith(inputElement);
+
+            inputElement.focus();
+
+            inputElement.on('blur', function() {
+                var newSpan = $('<span>', {
+                    class: 'price',
+                    text: inputElement.val()
+                });
+
+                newSpan.on('dblclk', function() {client_api.trade.edit_entry_price(newSpan)})
+                inputElement.replaceWith(newSpan);
+            });
+        }
     };
 
     const watch_list = {
@@ -3359,7 +3383,7 @@ client_api = function () {
                     <td>Closed position</td>
                     <td>${dname}</td>
                     <td class="entry num">
-                        <span class="price" title="Margin Used : ${margin_used}">${pos.netavgbuyprc}</span>
+                        <span class="price" title="Margin Used : ${margin_used}" ondblclick="client_api.trade.edit_entry_price(this)">${pos.netavgbuyprc}</span>
                     </td>
                     <td class="trade_${token} ltp">${pos.lp}</td>
                     <td class="pnl ${pnl_cls}">${pos.rpnl}</td>
