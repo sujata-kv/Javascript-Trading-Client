@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Option Chain</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6FUUVM" crossorigin="anonymous">
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="wrapper">
+            <div class="row header">
+                <div class="col-md-2">
+                    <span class="" id="time"> </span>
+                    <span id="meridian"></span>
+                </div>
+                <div class="col-md-2" id="instrument"></div>
+                <div class="col-md-3" > Spot <span id="spot"></span></div>
+                <div class="col-md-3"> Syn fut <span id="syn_fut"> </span></div>
+                <div class="col-md-2">
+                    <select id="select_instrument" onchange="client_api.select_instrument($(this).val())" style="width:100% !important">
+                        <option selected value="bank_nifty">Bank Nifty</option>
+                        <option value="nifty">Nifty</option>
+                        <option value="fin_nifty">Fin Nifty</option>
+                    </select>
+                </div>
+            </div>
+            <div class="row control-panel">
+                <div class="col-md-3 btn-group" >
+                    <span>Number of strikes before <br> and after ATM</span>
+                    <input type="text" class="form-control" id="num_strikes" value="" onchange="client_api.change_num_strikes()">
+                </div>
+                <div class="offset-md-4 col-md-5 btn-group">
+                    <button class="btn btn-outline-primary" id="unselect_all"  onclick="client_api.unselect_all()">Unselect All</button>
+                    <span>Number of Lots</span>
+                    <input type="text" class="form-control col-sm-2" id="num_lots"  value="1">
+                    <button class="btn btn-outline-primary" id="deploy_selected"  onclick="client_api.deploy_selected()">Deploy Selected</button>
+                    <button class="btn-sm" id="trade_type"  onclick="client_api.toggle_paper_trade()">Watch Mode</button>
+                </div>
+            </div>
+
+            <div id="alert_div">
+                <div class="alert alert-success" id="order_success_alert" style="display:none">
+                    <span id="order_success_msg"></span>
+                    <button type="button" class="close-btn" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="alert alert-danger" id="order_error_alert" style="display:none">
+                    <span id="order_error_msg"></span>
+                    <button type="button" class="close-btn">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+            </div>
+
+            <div id="option_chain">
+                <table id="option_chain_table" class="table table-condensed table-bordered">
+                    <thead class="thead-light">
+                    <tr>
+                        <th scope="col" class="table-primary">Call</th>
+                        <th scope="col" class="table-primary">Strike</th>
+                        <th scope="col" class="table-primary">Put</th>
+                    </tr>
+                    </thead>
+                    <tbody id="option_chain_body">
+                    </tbody>
+                    <tfoot class="table-secondary">
+                        <th scope="col" id="ce_total"></th>
+                        <th scope="col"></th>
+                        <th scope="col" id="pe_total"></th>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+    <script src="https://code.jquery.com/jquery-3.6.4.min.js" integrity="sha256-oP6HI9z1XaZNBrJURtCoUT5SUnxFr8s3BzRl+cbzUq8=" crossorigin="anonymous"></script>
+    <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js" integrity="sha256-lSjKY0/srUM9BE3dPm+c4fBo1dky2v27Gdjm2uoZaL0=" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.14.7/dist/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
+    <!--<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.3.1/dist/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>-->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.min.js" integrity="sha384-fbbOQedDUMZZ5KreZpsbe1LCZPVmfTnH7ois6mU1QK+m14rQ1l2bGBq41eYeM/fS" crossorigin="anonymous"></script>
+
+    <script src="../lib/conf.js"></script>
+    <script src="../lib/lib.js"></script>
+    <script src="option_chain.js"/>
+    <link href="https://cdn.jsdelivr.net/gh/gitbrent/bootstrap4-toggle@3.6.1/css/bootstrap4-toggle.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.2/font/bootstrap-icons.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/gh/gitbrent/bootstrap4-toggle@3.6.1/js/bootstrap4-toggle.min.js"></script>
+
+    <style>
+        .wrapper {
+            padding : 50px;
+        }
+
+        .header {
+            font-size: 30px;
+            padding-bottom: 20px;
+        }
+        #instrument {
+            font-size:26px;
+        }
+        #select_instrument {
+            font-size: 20px;
+            width: 40% !important;
+        }
+
+        #option_chain_table {
+            width: 550px;
+            margin: 0 auto;
+            /*text-align: center;*/
+        }
+
+        /* Style for the buttons */
+        .btn-container {
+            display: none;
+            position: absolute;
+            z-index: 1;
+            padding-left: 0px;
+            margin-left: 0px;
+            float: right !important;
+        }
+
+        .btn {
+            cursor: pointer;
+            padding: 3px 10px;
+            border: none;
+            font-size: 12px;
+        }
+
+        .btn.buy, .btn.deploy {
+            background-color : #7c9d45;
+            color: white;
+            margin-left: 15px;
+        }
+
+        .btn.sell {
+            background-color: #ce6969;
+            color: white;
+            margin-left: 10px;
+        }
+
+        #option_chain  td {
+            width: 120px;
+            height: 55px
+        }
+
+        .select_buy {
+            background-color: rgba(200, 230, 189, 0.73) !important;
+        }
+
+        .select_sell {
+            background-color: rgba(252, 186, 186, 0.76) !important;
+        }
+
+        .paper_trade {
+            background-color : #fff;
+        }
+
+        .real_trade {
+            background-color: #d9eed2 ;
+        }
+
+
+        #trade_type, #unselect_all, #deploy_selected {
+            padding: 5px 10px;
+            /*font-size: 10px;*/
+            cursor: pointer;
+            border: none;
+            border-radius: 5px;
+            width: 60%;
+            margin: 0 10px 10px 10px;
+        }
+
+        #trade_type.active, #deploy_selected {
+            background-color: #198754;
+            color: #fff;
+
+        }
+
+        #trade_type {
+            background-color: #ffc107;
+            color: #252424;
+        }
+
+        #unselect_all {
+            background-color: rgba(148, 148, 148, 0.96);
+            color: #ffffff;
+        }
+
+        #alert_div {
+            position: absolute;
+            bottom: 30px;
+            right: 30px;
+        }
+
+        .alert{
+            z-index: 1000;
+            position: relative;
+        }
+
+        .close-btn {
+            cursor: pointer;
+            padding: 0 10px;
+            background-color: transparent;
+            border: 0;
+            font-size: 1.5rem;
+            font-weight: 700;
+            line-height: 1;
+            color: #000;
+            text-shadow: 0 1px 0 #fff;
+            opacity: .5;
+            /* position: absolute; */
+            /* right: 5px; */
+            /* margin-left:5px; */
+        }
+
+        #num_lots {
+            display:inline;
+            width: 100px;
+            margin:0 10px;
+        }
+
+        .control-panel {
+            font-size: 12px;
+        }
+
+        .control-panel .form-control {
+            width : 70px !important;
+        }
+
+        #num_strikes {
+            margin-left: 20px;
+        }
+
+        #time {
+            font-size: 35px;
+        }
+
+        #meridian {
+            font-size: 12px;
+            padding-top:10px;
+        }
+    </style>
+</body>
+
+</html>

@@ -3574,7 +3574,7 @@ client_api = function () {
                 $('#active_trades_div').append(`<div group="${group.id}" class="group-container">
                     <div>
                         <button class="btn btn-secondary mb-3" onclick="client_api.util.grouping.ungroup_selected('#${group.id}')" style="margin-left:10px;">Ungroup Selected</button>
-                        <button class="btn btn-light mb-3" title="Exit all the trades in the group if SL or Target is hit for any one" onclick="client_api.util.grouping.toggle_cascade_exit(this, '${group.id}')">Cascade Exit</button>
+                        <button class="btn btn-light mb-3 cascade-exit" title="Exit all the trades in the group if SL or Target is hit for any one" onclick="client_api.util.grouping.toggle_cascade_exit(this, '${group.id}')">Cascade Exit</button>
                         <button class="btn btn-danger mb-3" onclick="client_api.util.grouping.exit_group('#${group.id}')">Exit</button>
                         <span class="del-icon" onclick="client_api.util.grouping.delete('#${group.id}')" title="Delete the closed trades" style="position: relative; top:-7px;">
                             <svg xmlns="http://www.w3.org/2000/svg" width="28" height="32" fill="currentColor" class="bi bi-trash" viewBox="0 0 16 16">

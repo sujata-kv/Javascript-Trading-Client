@@ -168,7 +168,7 @@
                 <input id="group_name" style="text-transform: uppercase"  type="text" class="form-control"  value="" placeholder="Group name" >
 <!--                <div class="ui-front" style=""></div>-->
                 <button class="btn btn-primary mb-3" onclick="client_api.util.grouping.group_selected()" title="Group selected trades">Group</button>
-                <button class="btn btn-light mb-3" title="Exit all the trades in the group if SL or Target is hit for any one" onclick="client_api.util.grouping.toggle_cascade_exit(this, 'at-pool')">Cascade Exit</button>
+                <button class="btn btn-light mb-3 cascade-exit" title="Exit all the trades in the group if SL or Target is hit for any one" onclick="client_api.util.grouping.toggle_cascade_exit(this, 'at-pool')">Cascade Exit</button>
                 <button class="btn btn-danger mb-3" onclick="client_api.util.grouping.exit_group('#at-pool')" title="Close the selected trades">Exit</button>
                 <span class="del-icon" onclick="client_api.util.grouping.delete('#at-pool')" title="Delete the closed trades" style="position: relative; top:-7px;">
                     <svg xmlns="http://www.w3.org/2000/svg" width="28" height="32" fill="currentColor" class="bi bi-trash" viewBox="0 0 16 16">
@@ -626,6 +626,10 @@
 
     input.edit-input {
         width :100%;
+    }
+
+    .cascade-exit {
+        border: 1px solid green;
     }
 
     /*    @media screen and (max-width: 900px) {

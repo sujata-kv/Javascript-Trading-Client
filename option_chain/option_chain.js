@@ -363,17 +363,9 @@ client_api = function () {
         cur_atm_strike : "",
 
         cell_mapping : {        /*If any of these mappings change, then make sure to update the switch case where we create buttons */
-            left_put_spr2 : 0,
-            left_put_spr1 : 1,
-            left_spr2 : 2,
-            left_spr1 : 3,
-            ce : 4,
-            strike : 5,
-            pe : 6,
-            right_spr1 : 7,
-            right_spr2 : 8,
-            right_call_spr1 : 9,
-            right_call_spr2 : 10,
+            ce : 0,
+            strike : 1,
+            pe : 2,
         },
 
         selected_cells :{},
@@ -470,8 +462,8 @@ client_api = function () {
                             let cellIndex = cell.index()
 
                             switch(cellIndex) {
-                                case 4:
-                                case 6:
+                                case 0:
+                                case 2:
                                     let btnContainer = cell.find(".btn-container");
                                     let btnB = $('<button class="btn buy">B</button>').click(function() {orderbook.buy($(this.parentNode.parentNode), 1)});  //Num of lots = 1 for buy sell buttons
                                     let btnS = $('<button class="btn sell">S</button>').click(function() {orderbook.sell($(this.parentNode.parentNode), 1)}); //Num of lots = 1 for buy sell buttons
@@ -484,7 +476,7 @@ client_api = function () {
                                     break;
 
                                 default:
-                                    let cellContent = cell.find('span').text()
+                                    /*let cellContent = cell.find('span').text()
                                     if(cellContent !== "") {
                                         let btnContainer = cell.find(".btn-container");
                                         let num_lots = parseInt($('#num_lots').val())
@@ -495,7 +487,7 @@ client_api = function () {
 
                                         // Show buttons on hover
                                         btnContainer.css('display', 'inline');
-                                    }
+                                    }*/
                                     break;
                             }
                         },
@@ -631,73 +623,19 @@ client_api = function () {
         make_spreads: function(strike) {
 
             let spreads_template = {                //Contains spreads for a row, for a strike price
-                left_put_spr2 : {buy:"", sell:"", leg_diff:0},
-                left_put_spr1 : {buy:"", sell:"", leg_diff:0},
-                left_spr1 : {buy:"", sell:""},
-                left_spr2 : {buy:"", sell:""},
-                right_spr1 : {buy:"", sell:""},
-                right_spr2 : {buy:"", sell:""},
-                right_call_spr1 : {buy:"", sell:"", leg_diff:0},
-                right_call_spr2 : {buy:"", sell:"", leg_diff:0},
             };
 
             console.log("Making spreads for strike : " + strike)
             const row_spread = { ...spreads_template };
 
             //Bull call spreads
-            let buy_leg_token = this.get_token_for_strike(strike, "CE");
-            row_spread.left_spr1.buy = buy_leg_token;
-            row_spread.left_spr1.sell = this.get_token_for_strike(strike + conf[conf.spreads.instrument].round_to, "CE");
-            row_spread.left_spr2.buy = buy_leg_token;
-            row_spread.left_spr2.sell = this.get_token_for_strike(strike + 2 * conf[conf.spreads.instrument].round_to, "CE");
-
-            //Bull put spreads
-            let sell_leg_token = this.get_token_for_strike(strike, "PE");
-            row_spread.left_put_spr1.sell = sell_leg_token;
-            row_spread.left_put_spr1.buy = this.get_token_for_strike(strike - conf[conf.spreads.instrument].round_to, "PE");
-            row_spread.left_put_spr1.leg_diff = conf[conf.spreads.instrument].round_to
-            row_spread.left_put_spr2.sell = sell_leg_token;
-            row_spread.left_put_spr2.buy = this.get_token_for_strike(strike - 2 * conf[conf.spreads.instrument].round_to, "PE");
-            row_spread.left_put_spr2.leg_diff = 2 * conf[conf.spreads.instrument].round_to
+            let ce_leg = this.get_token_for_strike(strike, "CE");
+            let pe_leg = this.get_token_for_strike(strike, "PE");
 
             //Attach token attributes to CE and PE cells
             let row = $(`#row_${strike}`)[0]
-            row.cells[this.cell_mapping.ce].setAttribute('token', buy_leg_token)
-            row.cells[this.cell_mapping.left_spr1].setAttribute('buy_token', row_spread.left_spr1.buy)
-            row.cells[this.cell_mapping.left_spr1].setAttribute('sell_token', row_spread.left_spr1.sell)
-            row.cells[this.cell_mapping.left_spr2].setAttribute('buy_token', row_spread.left_spr2.buy)
-            row.cells[this.cell_mapping.left_spr2].setAttribute('sell_token', row_spread.left_spr2.sell)
-            row.cells[this.cell_mapping.left_put_spr1].setAttribute('buy_token', row_spread.left_put_spr1.buy)
-            row.cells[this.cell_mapping.left_put_spr1].setAttribute('sell_token', row_spread.left_put_spr1.sell)
-            row.cells[this.cell_mapping.left_put_spr2].setAttribute('buy_token', row_spread.left_put_spr2.buy)
-            row.cells[this.cell_mapping.left_put_spr2].setAttribute('sell_token', row_spread.left_put_spr2.sell)
-
-            //Bear put spreads
-            buy_leg_token = this.get_token_for_strike(strike, "PE");
-            row_spread.right_spr1.buy = buy_leg_token;
-            row_spread.right_spr1.sell = this.get_token_for_strike(strike - conf[conf.spreads.instrument].round_to, "PE" );
-            row_spread.right_spr2.buy = buy_leg_token;
-            row_spread.right_spr2.sell = this.get_token_for_strike(strike - 2 * conf[conf.spreads.instrument].round_to, "PE" );
-
-            //Bear call spreads
-            sell_leg_token = this.get_token_for_strike(strike, "CE");
-            row_spread.right_call_spr1.sell = sell_leg_token;
-            row_spread.right_call_spr1.buy = this.get_token_for_strike(strike + conf[conf.spreads.instrument].round_to, "CE" );
-            row_spread.right_call_spr1.leg_diff = conf[conf.spreads.instrument].round_to;
-            row_spread.right_call_spr2.sell = sell_leg_token;
-            row_spread.right_call_spr2.buy = this.get_token_for_strike(strike + 2 * conf[conf.spreads.instrument].round_to, "CE" );
-            row_spread.right_call_spr2.leg_diff = 2 * conf[conf.spreads.instrument].round_to;
-
-            //Attach token attributes to CE and PE cells
-            row.cells[this.cell_mapping.pe].setAttribute('token', buy_leg_token)
-            row.cells[this.cell_mapping.right_spr1].setAttribute('buy_token', row_spread.right_spr1.buy)
-            row.cells[this.cell_mapping.right_spr1].setAttribute('sell_token', row_spread.right_spr1.sell)
-            row.cells[this.cell_mapping.right_spr2].setAttribute('buy_token', row_spread.right_spr2.buy)
-            row.cells[this.cell_mapping.right_spr2].setAttribute('sell_token', row_spread.right_spr2.sell)
-            row.cells[this.cell_mapping.right_call_spr1].setAttribute('buy_token', row_spread.right_call_spr1.buy)
-            row.cells[this.cell_mapping.right_call_spr1].setAttribute('sell_token', row_spread.right_call_spr1.sell)
-            row.cells[this.cell_mapping.right_call_spr2].setAttribute('buy_token', row_spread.right_call_spr2.buy)
-            row.cells[this.cell_mapping.right_call_spr2].setAttribute('sell_token', row_spread.right_call_spr2.sell)
+            row.cells[this.cell_mapping.ce].setAttribute('token', ce_leg)
+            row.cells[this.cell_mapping.pe].setAttribute('token', pe_leg)
 
             this.spreads[strike] = row_spread;
 
@@ -713,18 +651,6 @@ client_api = function () {
             if(row_spread != undefined) {
                 let row_id = this.get_row_id(strike)
                 let row = document.getElementById(row_id)
-
-                if (optt === "CE") {
-                    $(row.cells[this.cell_mapping.left_spr1]).find('span').text( get_max_loss(row_spread.left_spr1.buy, row_spread.left_spr1.sell) );
-                    $(row.cells[this.cell_mapping.left_spr2]).find('span').text( get_max_loss(row_spread.left_spr2.buy, row_spread.left_spr2.sell) );
-                    $(row.cells[this.cell_mapping.left_put_spr1]).find('span').text( get_max_loss(row_spread.left_put_spr1.buy, row_spread.left_put_spr1.sell, true, row_spread.left_put_spr1.leg_diff) );
-                    $(row.cells[this.cell_mapping.left_put_spr2]).find('span').text( get_max_loss(row_spread.left_put_spr2.buy, row_spread.left_put_spr2.sell, true, row_spread.left_put_spr2.leg_diff) );
-                } else if (optt === "PE") {
-                    $(row.cells[this.cell_mapping.right_spr1]).find('span').text( get_max_loss(row_spread.right_spr1.buy, row_spread.right_spr1.sell) );
-                    $(row.cells[this.cell_mapping.right_spr2]).find('span').text( get_max_loss(row_spread.right_spr2.buy, row_spread.right_spr2.sell) );
-                    $(row.cells[this.cell_mapping.right_call_spr1]).find('span').text( get_max_loss(row_spread.right_call_spr1.buy, row_spread.right_call_spr1.sell, true, row_spread.right_call_spr1.leg_diff) );
-                    $(row.cells[this.cell_mapping.right_call_spr2]).find('span').text( get_max_loss(row_spread.right_call_spr2.buy, row_spread.right_call_spr2.sell, true, row_spread.right_call_spr2.leg_diff) );
-                }
 
                 //Update synthetic future value
                 if(strike == option_chain_tracker.cur_atm_strike) {
