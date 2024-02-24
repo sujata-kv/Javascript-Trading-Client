@@ -1501,7 +1501,7 @@ client_api = function () {
                         <td class="order-num">${order.norenordno}</td>
                         <td>${dname}</td>
                         <th class="open_order_${order.token} ltp"></th>
-                        <td><input type="text" class="form-control entry" placeholder=""  value="${order.prc}"></td>
+                        <td><input type="text" class="form-control entry" placeholder=""  value="${order.prc}" onclick="this.select()"></td>
                         <td><input type="text" class="form-control target" placeholder=""  value=""></td>
                         <td><input type="text" class="form-control sl" placeholder=""  value=""></td>
                         <td><input type="text" class="form-control qty" placeholder=""  value="${order.qty}"></td>
@@ -1612,7 +1612,7 @@ client_api = function () {
                     <td class="order-num">Spot Based Entry</td>
                     <td>${dname}</td>
                     <th class="open_order_${item.token} ltp"></th>
-                    <td><input type="text" class="form-control entry" placeholder=""  value="${entry_val}"></td>
+                    <td><input type="text" class="form-control entry" placeholder=""  value="${entry_val}" onclick="this.select()"></td>
                     <td><input type="text" class="form-control target" placeholder=""  value=""></td>
                     <td><input type="text" class="form-control sl" placeholder=""  value=""></td>
                     <td><input type="text" class="form-control qty" placeholder=""  value="${item.qty}"></td>
@@ -3105,6 +3105,7 @@ client_api = function () {
             entry_elm.replaceWith(inputElement);
 
             inputElement.focus();
+            inputElement.select()
 
             inputElement.on('blur', function() {
                 var newSpan = $('<span>', {
@@ -3241,6 +3242,7 @@ client_api = function () {
         add_ltp : function(input_elm) {
             let row_elm = $(input_elm).parent().parent()
             $(input_elm).val(row_elm.find('.ltp').text())
+            $(input_elm).select();
         },
 
         delete_item : function(th_elm) {
