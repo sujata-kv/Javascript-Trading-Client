@@ -1501,9 +1501,9 @@ client_api = function () {
                         <td class="order-num">${order.norenordno}</td>
                         <td>${dname}</td>
                         <th class="open_order_${order.token} ltp"></th>
-                        <td><input type="text" class="form-control entry" placeholder=""  value="${order.prc}" onclick="/*this.select()*/"></td>
-                        <td><input type="text" class="form-control target" placeholder=""  value="" ondblclick="client_api.watch_list.toggle_ltp(this);"></td>
-                        <td><input type="text" class="form-control sl" placeholder=""  value="" ondblclick="client_api.watch_list.toggle_ltp(this);"></td>
+                        <td><input type="text" class="form-control entry" placeholder=""  value="${order.prc}" onkeydown="client_api.util.handle_enter_key(event, $(this).parent().parent().find('.modify'))"></td>
+                        <td><input type="text" class="form-control target" placeholder=""  value="" ondblclick="client_api.watch_list.toggle_ltp(this);" onkeydown="client_api.util.handle_enter_key(event, $(this).parent().parent().find('.modify'))"></td>
+                        <td><input type="text" class="form-control sl" placeholder=""  value="" ondblclick="client_api.watch_list.toggle_ltp(this);" onkeydown="client_api.util.handle_enter_key(event, $(this).parent().parent().find('.modify'))"></td>
                         <td><input type="text" class="form-control qty" placeholder=""  value="${order.qty}" ></td>
     
                         <td><button type="button" class="btn btn-success modify" onclick="client_api.orderbook.modify_order(this)">Modify</button></td>
@@ -1612,9 +1612,9 @@ client_api = function () {
                     <td class="order-num">Spot Based Entry</td>
                     <td>${dname}</td>
                     <th class="open_order_${item.token} ltp"></th>
-                    <td><input type="text" class="form-control entry" placeholder=""  value="${entry_val}" onclick="this.select()"></td>
-                    <td><input type="text" class="form-control target" placeholder=""  value="" ondblclick="client_api.watch_list.toggle_ltp(this);"></td>
-                    <td><input type="text" class="form-control sl" placeholder=""  value="" ondblclick="client_api.watch_list.toggle_ltp(this);"></td>
+                    <td><input type="text" class="form-control entry" placeholder=""  value="${entry_val}" onkeydown="client_api.util.handle_enter_key(event, $(this).parent().parent().find('.modify'))"></td>
+                    <td><input type="text" class="form-control target" placeholder=""  value="" ondblclick="client_api.watch_list.toggle_ltp(this);" onkeydown="client_api.util.handle_enter_key(event, $(this).parent().parent().find('.modify'))"></td>
+                    <td><input type="text" class="form-control sl" placeholder=""  value="" ondblclick="client_api.watch_list.toggle_ltp(this);" onkeydown="client_api.util.handle_enter_key(event, $(this).parent().parent().find('.modify'))"></td>
                     <td><input type="text" class="form-control qty" placeholder=""  value="${item.qty}"></td>
 
                     <td><button type="button" class="btn btn-success modify" onclick="client_api.orderbook.modify_order(this)">Modify</button></td>
@@ -2868,8 +2868,8 @@ client_api = function () {
                         </td>
                         <td class="trade_${ticker} ltp">${live_data[ticker]}</td>
                         <td class="pnl"></td>
-                        <td><input type="text" disabled class="form-control target" placeholder="" value="" ondblclick="client_api.watch_list.toggle_ltp(this);"></td>
-                        <td><input type="text" disabled class="form-control sl" placeholder="" value="" ondblclick="client_api.watch_list.toggle_ltp(this);"></td>
+                        <td><input type="text" disabled class="form-control target" placeholder="" value="" ondblclick="client_api.watch_list.toggle_ltp(this);" onkeydown="client_api.util.handle_enter_key(event, $(this).parent().parent().find('.modify'))"></td>
+                        <td><input type="text" disabled class="form-control sl" placeholder="" value="" ondblclick="client_api.watch_list.toggle_ltp(this);" onkeydown="client_api.util.handle_enter_key(event, $(this).parent().parent().find('.modify'))"></td>
                         <td><input type="text" class="form-control exit-limit" placeholder="" ondblclick="client_api.watch_list.add_ltp(this); $(this).unbind('click');"></td>
                         <td><input type="text" class="form-control qty" placeholder=""  value="${order.qty}"></td>
                         <td><button type="button" class="btn btn-success modify" onclick="client_api.trade.modify(this, $(this).text())">Edit</button></td>
@@ -3069,8 +3069,8 @@ client_api = function () {
                             </td>
                             <td class="trade_${ticker} ltp">${pos.lp}</td>
                             <td class="pnl"></td>
-                            <td><input type="text" disabled class="form-control target" placeholder="" ondblclick="client_api.watch_list.toggle_ltp(this);"></td>
-                            <td><input type="text" disabled class="form-control sl" placeholder="" ondblclick="client_api.watch_list.toggle_ltp(this);"></td>
+                            <td><input type="text" disabled class="form-control target" placeholder="" ondblclick="client_api.watch_list.toggle_ltp(this);" onkeydown="client_api.util.handle_enter_key(event, $(this).parent().parent().find('.modify'))"></td>
+                            <td><input type="text" disabled class="form-control sl" placeholder="" ondblclick="client_api.watch_list.toggle_ltp(this);" onkeydown="client_api.util.handle_enter_key(event, $(this).parent().parent().find('.modify'))"></td>
                             <td><input type="text" class="form-control exit-limit" placeholder="" ondblclick="client_api.watch_list.add_ltp(this); $(this).unbind('click');"></td>
                             <td><input type="text" class="form-control qty" placeholder=""  value="${qty}"></td>
                             <td><button type="button" class="btn btn-success modify" onclick="client_api.trade.modify(this, $(this).text())">Edit</button></td>
@@ -3653,8 +3653,8 @@ client_api = function () {
                             <th scope="col">${group.name.toUpperCase()}</th>
                             <th>Total</th>
                             <th scope="col" class="pnl" id="pnl-${group.id}"></th>
-                            <th><input type="text" disabled class="form-control target" placeholder="" value="" ondblclick="client_api.watch_list.toggle_ltp(this);"></th>
-                            <th><input type="text" disabled class="form-control sl" placeholder="" value="" ondblclick="client_api.watch_list.toggle_ltp(this);"></th>
+                            <th><input type="text" disabled class="form-control target" placeholder="" value="" ondblclick="client_api.watch_list.toggle_ltp(this);" onkeydown="client_api.util.handle_enter_key(event, $(this).parent().parent().find('.modify'))"></th>
+                            <th><input type="text" disabled class="form-control sl" placeholder="" value="" ondblclick="client_api.watch_list.toggle_ltp(this);" onkeydown="client_api.util.handle_enter_key(event, $(this).parent().parent().find('.modify'))"></th>
                             <th>
                                 <select disabled class="form-select" onchange="client_api.trade.select_trade_type(this, $(this).parent().parent())" title="Trade type Bull/Bear">
                                     <option selected value="bull">Bull</option>
@@ -3667,6 +3667,12 @@ client_api = function () {
                         </tr>
                     </tfoot> </table></div>`)
             },
+        },
+
+        handle_enter_key : function(event, btn) {
+            if(event.key == "Enter") {
+                btn.click();
+            }
         }
     };
 
