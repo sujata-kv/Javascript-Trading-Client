@@ -1501,7 +1501,7 @@ client_api = function () {
                         <td class="order-num">${order.norenordno}</td>
                         <td>${dname}</td>
                         <th class="open_order_${order.token} ltp"></th>
-                        <td><input type="text" class="form-control entry" placeholder=""  value="${order.prc}" onclick="this.select()"></td>
+                        <td><input type="text" class="form-control entry" placeholder=""  value="${order.prc}" onclick="/*this.select()*/"></td>
                         <td><input type="text" class="form-control target" placeholder=""  value="" ondblclick="client_api.watch_list.toggle_ltp(this);"></td>
                         <td><input type="text" class="form-control sl" placeholder=""  value="" ondblclick="client_api.watch_list.toggle_ltp(this);"></td>
                         <td><input type="text" class="form-control qty" placeholder=""  value="${order.qty}" ></td>
@@ -2571,18 +2571,17 @@ client_api = function () {
                 let trig_value = parseFloat(entry_obj.value);
                 let ttype = mile_stone.ttype;
                 let buy_sell = mile_stone.buy_sell;
-                if (entry_obj.type == MS_TYPE.spot_based) { //Paper trade with limit order also will come here //TODO- change later on
+                if (entry_obj.type == MS_TYPE.spot_based) {
                     switch(entry_obj.instrument) {
                         case "nifty" : cur_value = live_data[nifty_tk]; break;
                         case "bank_nifty" : cur_value = live_data[bank_nifty_tk]; break;
                         case "fin_nifty" : cur_value = live_data[fin_nifty_tk]; break;
-                        default :
-                            // console.log(row_id + " Paper trade with limit order.");
-                            cur_value = live_data[mile_stone.token];    //This line is for paper trade with limit order //TODO- change later on
-                            break;
                     }
                 } else if (entry_obj.type == MS_TYPE.token_based) {
                     cur_value = live_data[entry_obj.instrument];
+                } else if(entry_obj.type == MS_TYPE.paper_entry) {
+                    // console.log(row_id + " Paper trade with limit order.");
+                    cur_value = live_data[mile_stone.token];
                 }
                 console.log(`Checking Entry : ${ttype}  current : ${cur_value}  trig : ${trig_value}`)
 
