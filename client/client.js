@@ -1502,9 +1502,9 @@ client_api = function () {
                         <td>${dname}</td>
                         <th class="open_order_${order.token} ltp"></th>
                         <td><input type="text" class="form-control entry" placeholder=""  value="${order.prc}" onclick="this.select()"></td>
-                        <td><input type="text" class="form-control target" placeholder=""  value=""></td>
-                        <td><input type="text" class="form-control sl" placeholder=""  value=""></td>
-                        <td><input type="text" class="form-control qty" placeholder=""  value="${order.qty}"></td>
+                        <td><input type="text" class="form-control target" placeholder=""  value="" ondblclick="client_api.watch_list.toggle_ltp(this);"></td>
+                        <td><input type="text" class="form-control sl" placeholder=""  value="" ondblclick="client_api.watch_list.toggle_ltp(this);"></td>
+                        <td><input type="text" class="form-control qty" placeholder=""  value="${order.qty}" ></td>
     
                         <td><button type="button" class="btn btn-success modify" onclick="client_api.orderbook.modify_order(this)">Modify</button></td>
                         <td><button type="button" class="btn btn-danger cancel" onclick="client_api.orderbook.cancel_order(this)">Cancel</button></td>
@@ -1547,7 +1547,7 @@ client_api = function () {
             let qty = tr_elm.find('.qty').val()
 
             let params = broker.order.get_order_params(tr_elm, buy_sell, entry_obj, qty)
-            if (entry_obj.spot_based) {
+            if (entry_obj.type == MS_TYPE.spot_based) {
                 params.dname = tr_elm.attr('dname')
                 if(broker.name != "shoonya")
                     params = broker.order.map_order(params)
@@ -1613,8 +1613,8 @@ client_api = function () {
                     <td>${dname}</td>
                     <th class="open_order_${item.token} ltp"></th>
                     <td><input type="text" class="form-control entry" placeholder=""  value="${entry_val}" onclick="this.select()"></td>
-                    <td><input type="text" class="form-control target" placeholder=""  value=""></td>
-                    <td><input type="text" class="form-control sl" placeholder=""  value=""></td>
+                    <td><input type="text" class="form-control target" placeholder=""  value="" ondblclick="client_api.watch_list.toggle_ltp(this);"></td>
+                    <td><input type="text" class="form-control sl" placeholder=""  value="" ondblclick="client_api.watch_list.toggle_ltp(this);"></td>
                     <td><input type="text" class="form-control qty" placeholder=""  value="${item.qty}"></td>
 
                     <td><button type="button" class="btn btn-success modify" onclick="client_api.orderbook.modify_order(this)">Modify</button></td>
@@ -1624,11 +1624,11 @@ client_api = function () {
             let ticker = broker.get_ticker({'token' : item.token, 'instrument_token': item.instrument_token})
             let entry_obj = milestone_manager.get_value_object(entry_val)
             if(paper_entry) {   //Handle limit entry for paper trades..
-                entry_obj.spot_based = true;        //Manipulate entry obj to ensure that it checks for the entry trigger
+                entry_obj.type = MS_TYPE.paper_entry;        //Manipulate entry obj to ensure that it checks for the entry trigger
                 milestone_manager.add_entry(row_id, ticker, ttype, item.trantype, entry_obj);
                 milestone_manager.add_order_id(row_id, item.norenordno)
             }
-            else if(entry_obj.spot_based)
+            else if(entry_obj.type == MS_TYPE.spot_based || entry_obj.type == MS_TYPE.token_based)
                 milestone_manager.add_entry(row_id, ticker, ttype, item.trantype, entry_obj);
         },
 
@@ -1690,9 +1690,9 @@ client_api = function () {
             }
 
             let entry_obj = milestone_manager.get_value_object(entry_value)
-            if((entry_obj.spot_based && entry_obj.value != '') || is_paper_trade()) {  // Spot based entry
+            if((entry_obj.type != MS_TYPE.price_based && entry_obj.value != '') || is_paper_trade()) {  // Spot based entry
                 if(is_paper_trade()) {
-                    entry_obj.spot_based = true;        //Manipulate entry obj to ensure that it checks for the entry trigger
+                    entry_obj.type = MS_TYPE.paper_entry;        //Manipulate entry obj to ensure that it checks for the entry trigger
                 }
                 milestone_manager.add_entry(row_id, ticker, ttype, trtype, entry_obj)
                 //Existing order should be cancelled, if there is an open order
@@ -2117,6 +2117,13 @@ client_api = function () {
         }
     }
 
+    const MS_TYPE = Object.freeze({
+        spot_based : "spot",
+        token_based : "token",
+        price_based : "price",
+        paper_entry : "paper",
+    });
+
     class MileStoneManager {
         constructor() {
             this.milestones = {}
@@ -2134,7 +2141,7 @@ client_api = function () {
             console.log(get_value_object("T24322 100 D 5"));    //Token based
             console.log(get_value_object("-10000 D 8"));*/
 
-            let spot_based = false;
+            let type = MS_TYPE.price_based;
             let instrument = 'price';
             let value = val_str;
             let delay = null
@@ -2144,7 +2151,7 @@ client_api = function () {
                 value = value.toUpperCase()
                 console.log(value)
                 if(value.startsWith('N')  || value.startsWith('B') || value.startsWith('F') || value.startsWith('T')) {
-                    spot_based = true
+                    type = value.startsWith('T')? MS_TYPE.token_based: MS_TYPE.spot_based;
                     // value = value.replace(/-/, '')
                     value = value.trim()
                     let ii = (value).charAt(0)
@@ -2175,28 +2182,36 @@ client_api = function () {
                 }
             }
 
-            let ret = {spot_based : spot_based, value : value, instrument : instrument, delay: delay }
+            let ret = {type : type, value : value, instrument : instrument, delay: delay }
             console.log(ret)
             return ret;
         }
 
         get_value_string(value_obj) {
             let value_str = '';
-            if(value_obj.spot_based) {
-                switch(value_obj.instrument) {
-                    case 'nifty' : value_str = 'N '; break;
-                    case 'bank_nifty' : value_str = 'B '; break;
-                    case 'fin_nifty' : value_str = 'F '; break;
-                    default : value_str = 'T' + instrument + " "; break;
-                }
-                value_str = value_str + value_obj.value.trim();
-            } else {
-                value_str = value_obj.value.trim()
+
+            switch(value_obj.type) {
+                case MS_TYPE.spot_based:
+                    switch(value_obj.instrument) {
+                        case 'nifty' : value_str = 'N '; break;
+                        case 'bank_nifty' : value_str = 'B '; break;
+                        case 'fin_nifty' : value_str = 'F '; break;
+                        // default : value_str = 'T' + instrument + " "; break;
+                    }
+                    value_str = value_str + value_obj.value.trim();
+                    break;
+                case MS_TYPE.token_based:
+                    value_str = 'T' + instrument + " " + value_obj.value.trim();
+                    break;
+                case MS_TYPE.price_based:
+                    value_str = value_obj.value.trim()
+                    break;
             }
 
             if(value_obj.delay != undefined && value_obj.delay!=null) {
                 value_str = `${value_str} D${value_obj.delay}`;
             }
+
             console.log(value_str)
             return value_str;
         }
@@ -2556,22 +2571,23 @@ client_api = function () {
                 let trig_value = parseFloat(entry_obj.value);
                 let ttype = mile_stone.ttype;
                 let buy_sell = mile_stone.buy_sell;
-                if (entry_obj.spot_based) {
+                if (entry_obj.type == MS_TYPE.spot_based) { //Paper trade with limit order also will come here //TODO- change later on
                     switch(entry_obj.instrument) {
                         case "nifty" : cur_value = live_data[nifty_tk]; break;
                         case "bank_nifty" : cur_value = live_data[bank_nifty_tk]; break;
                         case "fin_nifty" : cur_value = live_data[fin_nifty_tk]; break;
                         default :
-                            //TODO - Token based entry trigger is not handled yet.
                             // console.log(row_id + " Paper trade with limit order.");
-                            cur_value = live_data[mile_stone.token];    //This line is for paper trade with limit order
+                            cur_value = live_data[mile_stone.token];    //This line is for paper trade with limit order //TODO- change later on
                             break;
                     }
+                } else if (entry_obj.type == MS_TYPE.token_based) {
+                    cur_value = live_data[entry_obj.instrument];
                 }
                 console.log(`Checking Entry : ${ttype}  current : ${cur_value}  trig : ${trig_value}`)
 
                 //Only spot based entry should be checked. If it is price based then limit order will be placed
-                if(entry_obj.spot_based) {
+                if(entry_obj.type != MS_TYPE.price_based) {
                     if (ttype === 'bull') {
                         if (cur_value <= trig_value) {
                             entry_triggered()
@@ -2606,13 +2622,14 @@ client_api = function () {
                 let trig_value = parseFloat(target_obj.value);
                 let ttype = mile_stone.ttype;
                 let buy_sell = mile_stone.buy_sell;
-                if (target_obj.spot_based) {
+                if (target_obj.type == MS_TYPE.spot_based) {
                     switch(target_obj.instrument) {
                         case "nifty" : cur_spot_value = live_data[nifty_tk]; break;
                         case "bank_nifty" : cur_spot_value = live_data[bank_nifty_tk]; break;
                         case "fin_nifty" : cur_spot_value = live_data[fin_nifty_tk]; break;
-                        default : cur_spot_value = live_data[target_obj.instrument]; break;
                     }
+                } else if (target_obj.type == MS_TYPE.token_based) {
+                    cur_spot_value = live_data[target_obj.instrument];
                 } else { // Price based
                     if(row_id.startsWith("summary-")) { // Use total P & L value in case of cumulative target and SL
                         cur_spot_value = $(`#${row_id}`).find('.pnl').text()
@@ -2627,7 +2644,7 @@ client_api = function () {
 
                 console.log(`Checking Target : ${ttype} for ${target_obj.instrument} current : ${cur_spot_value}  trig : ${trig_value}`)
 
-                if (target_obj.spot_based) {
+                if (target_obj.type == MS_TYPE.spot_based) {
                     if (ttype === 'bull') {
                         if(cur_spot_value >= trig_value) {
                             target_triggered()
@@ -2637,7 +2654,7 @@ client_api = function () {
                             target_triggered()
                         }
                     }
-                } else if(target_obj.instrument === "price") {  //Price based
+                } else {  //Price based and token based
                     if(row_id.startsWith("summary-")) {
                         if (cur_spot_value >= trig_value) {
                             target_triggered()
@@ -2691,13 +2708,14 @@ client_api = function () {
                 let buy_sell = mile_stone.buy_sell;
                 let sl_action_threshold = 1;    //Default
 
-                if (sl_obj.spot_based) {
+                if (sl_obj.type === MS_TYPE.spot_based) {
                     switch(sl_obj.instrument) {
                         case "nifty" : cur_spot_value = live_data[nifty_tk]; break;
                         case "bank_nifty" : cur_spot_value = live_data[bank_nifty_tk]; break;
                         case "fin_nifty" : cur_spot_value = live_data[fin_nifty_tk]; break;
-                        default : cur_spot_value = live_data[sl_obj.instrument]; break;
                     }
+                } else if (sl_obj.type === MS_TYPE.token_based) {
+                    cur_spot_value = live_data[sl_obj.instrument];
                 } else { // Price based
                     if (row_id.startsWith("summary-")) { // Use total P & L value in case of cumulative target and SL
                         cur_spot_value = $('#' + row_id).find('.pnl').text()
@@ -2716,7 +2734,7 @@ client_api = function () {
                 } else
                     console.log(`Checking SL : ${ttype} for ${sl_obj.instrument} current : ${cur_spot_value}  trig : ${trig_value}`)
 
-                if(sl_obj.spot_based) {
+                if(sl_obj.type === MS_TYPE.spot_based) {
                     if (ttype === 'bull') {
                         if (cur_spot_value <= trig_value) {
                             sl_triggered()
@@ -2726,7 +2744,7 @@ client_api = function () {
                             sl_triggered()
                         }
                     }
-                } else if(sl_obj.instrument === "price") {
+                } else { //Price and token based
                     if(row_id.startsWith("summary-")) {
                         if (cur_spot_value <= trig_value) {
                             sl_triggered()
@@ -2851,9 +2869,9 @@ client_api = function () {
                         </td>
                         <td class="trade_${ticker} ltp">${live_data[ticker]}</td>
                         <td class="pnl"></td>
-                        <td><input type="text" disabled class="form-control target" placeholder="" value=""></td>
-                        <td><input type="text" disabled class="form-control sl" placeholder="" value="" ></td>
-                        <td><input type="text" class="form-control exit-limit" placeholder="" onclick="client_api.watch_list.add_ltp(this); $(this).unbind('click');"></td>
+                        <td><input type="text" disabled class="form-control target" placeholder="" value="" ondblclick="client_api.watch_list.toggle_ltp(this);"></td>
+                        <td><input type="text" disabled class="form-control sl" placeholder="" value="" ondblclick="client_api.watch_list.toggle_ltp(this);"></td>
+                        <td><input type="text" class="form-control exit-limit" placeholder="" ondblclick="client_api.watch_list.add_ltp(this); $(this).unbind('click');"></td>
                         <td><input type="text" class="form-control qty" placeholder=""  value="${order.qty}"></td>
                         <td><button type="button" class="btn btn-success modify" onclick="client_api.trade.modify(this, $(this).text())">Edit</button></td>
                         <td><button type="button" class="btn btn-danger exit" onclick="client_api.trade.exit(this)">Exit</button></td>
@@ -3052,9 +3070,9 @@ client_api = function () {
                             </td>
                             <td class="trade_${ticker} ltp">${pos.lp}</td>
                             <td class="pnl"></td>
-                            <td><input type="text" disabled class="form-control target" placeholder="" ></td>
-                            <td><input type="text" disabled class="form-control sl" placeholder="" ></td>
-                            <td><input type="text" class="form-control exit-limit" placeholder="" onclick="client_api.watch_list.add_ltp(this); $(this).unbind('click');"></td>
+                            <td><input type="text" disabled class="form-control target" placeholder="" ondblclick="client_api.watch_list.toggle_ltp(this);"></td>
+                            <td><input type="text" disabled class="form-control sl" placeholder="" ondblclick="client_api.watch_list.toggle_ltp(this);"></td>
+                            <td><input type="text" class="form-control exit-limit" placeholder="" ondblclick="client_api.watch_list.add_ltp(this); $(this).unbind('click');"></td>
                             <td><input type="text" class="form-control qty" placeholder=""  value="${qty}"></td>
                             <td><button type="button" class="btn btn-success modify" onclick="client_api.trade.modify(this, $(this).text())">Edit</button></td>
                             <td><button type="button" class="btn btn-danger exit" onclick="client_api.trade.exit(this)">Exit</button></td>
@@ -3226,7 +3244,7 @@ client_api = function () {
                 <td class="dname">${params.sym}</td>
                 <td class="margin_req num"></td>
                 <td class="watch_${ticker} ltp" lot_size="${params.lot_size}"></td>
-                <td class="input_box"><input type="text" class="form-control entry" placeholder="" onclick="client_api.watch_list.add_ltp(this); $(this).unbind('click');"></td>  
+                <td class="input_box"><input type="text" class="form-control entry" placeholder="" ondblclick="client_api.watch_list.toggle_ltp(this); $(this).unbind('click');"></td>  
                 <td class="input_box"><input type="text" class="form-control qty" placeholder="" value="${params.lot_size}"></td>
                 <td><button type="button" class="btn btn-success buy" onclick="client_api.orderbook.buy(this)">BUY</button></td>
                 <td><button type="button" class="btn btn-danger sell" onclick="client_api.orderbook.sell(this)">SELL</button></td>
@@ -3242,7 +3260,30 @@ client_api = function () {
         add_ltp : function(input_elm) {
             let row_elm = $(input_elm).parent().parent()
             $(input_elm).val(row_elm.find('.ltp').text())
-            $(input_elm).select();
+            // $(input_elm).select();
+        },
+
+        toggle_ltp : function(input_elm) {
+            let row_elm = $(input_elm).parent().parent()
+            let cur_val = $(input_elm).val().trim().toUpperCase();
+            let new_val = '';
+            if(cur_val == '') {
+                let tsym = row_elm.attr("tsym");
+                if(tsym.startsWith("NIFTY")) {
+                    new_val = `N ${parseInt(live_data[nifty_tk])}`
+                } else if(tsym.startsWith("BANK")) {
+                    new_val = `B ${parseInt(live_data[bank_nifty_tk])}`
+                } else if(tsym.startsWith("FIN")) {
+                    new_val = `F ${parseInt(live_data[fin_nifty_tk])}`
+                }
+            } else if(/^[NBF]/.test(cur_val)) { //If it contains spot based value, then toggle to LTP and vice versa
+                new_val = row_elm.find('.ltp').text();
+            } else {
+                new_val = '';
+            }
+
+            $(input_elm).val(new_val)
+            // $(input_elm).select();
         },
 
         delete_item : function(th_elm) {
@@ -3613,8 +3654,8 @@ client_api = function () {
                             <th scope="col">${group.name.toUpperCase()}</th>
                             <th>Total</th>
                             <th scope="col" class="pnl" id="pnl-${group.id}"></th>
-                            <th><input type="text" disabled class="form-control target" placeholder="" value=""></th>
-                            <th><input type="text" disabled class="form-control sl" placeholder="" value=""></th>
+                            <th><input type="text" disabled class="form-control target" placeholder="" value="" ondblclick="client_api.watch_list.toggle_ltp(this);"></th>
+                            <th><input type="text" disabled class="form-control sl" placeholder="" value="" ondblclick="client_api.watch_list.toggle_ltp(this);"></th>
                             <th>
                                 <select disabled class="form-select" onchange="client_api.trade.select_trade_type(this, $(this).parent().parent())" title="Trade type Bull/Bear">
                                     <option selected value="bull">Bull</option>
