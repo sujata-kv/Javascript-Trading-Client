@@ -92,7 +92,7 @@
     <div class="d-flex flex-column align-items-stretch trade-panel">
         <div class="row">
             <div class=" col-sm-4">
-                <input type="text" class="form-control search-instrument watch_item"  value="" placeholder="Instrument" >
+                <input type="text" class="form-control search-instrument watch_item"  value="" placeholder="Instrument" onkeydown="client_api.watch_list.auto_complete(event, this)">
                 <div id="instr-drop-down" class="ui-front" style=""></div>
             </div>
             <div class=" col-sm-4" style="padding-left:0px">

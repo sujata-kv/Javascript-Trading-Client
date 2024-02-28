@@ -3309,6 +3309,32 @@ client_api = function () {
 
             tr_elm.remove();
         },
+
+        auto_complete : function(e, input) {
+            if(e.code == "Space") {         // On pressing space, auto completes based on spot values for nifty, bank nifty and fin nifty
+                let val = $(input).val().toLowerCase();
+                val = val.replace(/[\s+-_]/, ""); // replace multiple spaces and - and _ with ''
+                let spot, round;
+                if(val == "bank" || val== "banknifty") {
+                    spot = live_data[bank_nifty_tk];
+                    round = conf['bank_nifty'].round_to;
+                    spot = Math.round(spot/round) * round
+                    $(input).val("Banknifty " + spot)
+                } else if(val == "nifty") {
+                    spot = live_data[nifty_tk];
+                    round = conf['nifty'].round_to;
+                    spot = Math.round(spot/round) * round
+                    $(input).val("Nifty " + spot)
+                } else if(val == "fin" || val == "finnifty") {
+                    spot = live_data[fin_nifty_tk];
+                    round = conf['fin_nifty'].round_to;
+                    spot = Math.round(spot/round) * round
+                    $(input).val("Finnifty " + spot)
+                }
+            } else if(e.ctrlKey && e.key.toLowerCase() == "x") {  // Ctrl + x  clears input
+                $(input).val("")
+            }
+        }
     };
 
     const positions = {
