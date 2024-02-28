@@ -3124,6 +3124,7 @@ client_api = function () {
 
         edit_entry_price : function(entry_elm) {
             entry_elm = $(entry_elm)
+            let className = entry_elm.attr('class')
             let td_elm = entry_elm.parent();
 
             var inputElement = $('<input>', {
@@ -3139,7 +3140,7 @@ client_api = function () {
 
             inputElement.on('blur', function() {
                 var newSpan = $('<span>', {
-                    class: 'price',
+                    class: className,
                     text: inputElement.val()
                 });
 
@@ -3310,7 +3311,7 @@ client_api = function () {
             tr_elm.remove();
         },
 
-        auto_complete : function(e, input) {
+        handle_keys : function(e, input) {
             if(e.code == "Space") {         // On pressing spacebar, auto completes based on spot values for nifty, bank nifty and fin nifty
                 let val = $(input).val().toLowerCase();
                 val = val.replace(/[\s+-_]/, ""); // replace multiple spaces and - and _ with ''
@@ -3331,6 +3332,8 @@ client_api = function () {
                     spot = Math.round(spot/round) * round
                     $(input).val("Finnifty " + spot)
                 }
+            } else if(e.key == "Enter") { // TODO - Doesn't work as of now. Needs some modification
+                // $('#add_to_watchlist').click();
             } else if(e.ctrlKey && e.key.toLowerCase() == "x") {  // Ctrl + x  clears input
                 $(input).val("")
             }
@@ -3451,8 +3454,7 @@ client_api = function () {
             let pnl_cls = parseFloat(pos.rpnl)<0 ? "neg-mtm" : "pos-mtm";
 
             console.log("Loading closed position : ", JSON.stringify(pos))
-            let token = broker.get_ticker(pos);
-            let ticker = "closed_"+ token
+            let ticker = broker.get_ticker(pos);
             let position = trade.getTradePosition(ticker, pos.exch, trtype, closed_qty);
             if (position.length == 0 && closed_qty > 0) { //Add new position only if it doesn't exist
                 console.log("Closed position doesn't exist in active trades. So adding it..")
@@ -3468,11 +3470,11 @@ client_api = function () {
                     <td class="entry num">
                         <span class="price" title="Margin Used : ${margin_used}" ondblclick="client_api.trade.edit_entry_price(this)">${pos.netavgbuyprc}</span>
                     </td>
-                    <td class="trade_${token} ltp">${pos.lp}</td>
+                    <td class="trade_${ticker} ltp">${pos.lp}</td>
                     <td class="pnl ${pnl_cls}">${pos.rpnl}</td>
                     <td><input type="text" disabled class="form-control target" placeholder="" ></td>
                     <td><input type="text" disabled class="form-control sl" placeholder="" ></td>
-                    <td><span class="price exit-price">${pos.netavgsellprc}</span>
+                    <td><span class="price exit-price" ondblclick="client_api.trade.edit_entry_price(this)">${pos.netavgsellprc}</span>
                     </td>
                     <td><input type="text" class="form-control qty" placeholder=""  value="${closed_qty}"></td>
                     
