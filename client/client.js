@@ -2377,9 +2377,11 @@ client_api = function () {
                 let row_id = tr_elm.attr('id');
 
                 if (pnl < 0) {
-                    pnl_elm.css('color', 'red')
+                    pnl_elm.removeClass('pos-mtm')
+                    pnl_elm.addClass('neg-mtm')
                 } else {
-                    pnl_elm.css('color', 'green')
+                    pnl_elm.removeClass('neg-mtm')
+                    pnl_elm.addClass('pos-mtm')
                 }
                 let ret = this.get_max_profit_loss(row_id, gross_pnl);
 
@@ -2471,7 +2473,9 @@ client_api = function () {
                 const row_id = 'summary-' + group_id;
                 const notify = $('#notify-' + group_id)
                 if (total < 0) {
-                    total_pnl_elm.css('color', 'red')
+                    // total_pnl_elm.css('color', 'red')
+                    total_pnl_elm.removeClass('pos-mtm')
+                    total_pnl_elm.addClass('neg-mtm')
 
                     //Check if the loss exceeds the alert threshold
                     let total_margin = parseFloat($(`#${group_id}`).attr('total-margin'))
@@ -2484,7 +2488,9 @@ client_api = function () {
                         }
                     }
                 } else {
-                    total_pnl_elm.css('color', 'green')
+                    // total_pnl_elm.css('color', 'green')
+                    total_pnl_elm.removeClass('neg-mtm')
+                    total_pnl_elm.addClass('pos-mtm')
 
                     //Check if the profit exceeds the alert threshold
                     let total_margin = parseFloat($(`#${group_id}`).attr('total-margin'))
