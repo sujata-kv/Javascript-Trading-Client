@@ -3134,7 +3134,7 @@ client_api = function () {
             });
 
             entry_elm.replaceWith(inputElement);
-
+            inputElement.keydown( function(event) {event.key == "Enter"? inputElement.blur():""});  //On press of Enter save the input
             inputElement.focus();
             inputElement.select()
 
