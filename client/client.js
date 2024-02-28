@@ -255,11 +255,23 @@ client_api = function () {
         },
 
         search: {
+            select: function (event, ui) {
+                // when item is selected
+                $(this).val(ui.item.value);
+                $(this).attr('lot_size', ui.item.lot_size)
+                $(this).attr('exch', ui.item.exch)
+                $(this).attr('token', ui.item.token)
+                $(this).attr('tsym', ui.item.tsym)
+                $(this).attr('dname', ui.item.dname)
+                $(this).attr('optt', ui.item.optt)
+                console.log("Selected item : ", ui.item)
+            },
+
             attach_search_autocomplete: function () {
                 /* Search instrument autocomplete */
                 $("input.search-instrument").autocomplete({
                     minLength: 2,
-                    autoFocus: true,
+                    // autoFocus: true,
                     appendTo: '#instr-drop-down',
                     source: function (request, response) {
                         params = {"uid": user_id, "stext": encodeURIComponent(request.term)}
@@ -292,17 +304,7 @@ client_api = function () {
                         })
                     },
 
-                    select: function (event, ui) {
-                        // when item is selected
-                        $(this).val(ui.item.value);
-                        $(this).attr('lot_size', ui.item.lot_size)
-                        $(this).attr('exch', ui.item.exch)
-                        $(this).attr('token', ui.item.token)
-                        $(this).attr('tsym', ui.item.tsym)
-                        $(this).attr('dname', ui.item.dname)
-                        $(this).attr('optt', ui.item.optt)
-                        console.log("Selected item : ", ui.item)
-                    },
+                    select: this.select,
 
                     create: function () {
                         $(this).data('ui-autocomplete')._renderItem = function (ul, item) {
@@ -313,6 +315,33 @@ client_api = function () {
                         };
                     }
                 });
+
+                $("input.search-instrument").keydown(function(event) {
+                    let list = $('#instr-drop-down').find('ul')
+                    if(event.keyCode == 40) { //Down arrow pressed
+                        let selected = list.find('.selected')
+                        if(selected.length == 0) {
+                            list.find('li').first().addClass('selected')
+                        } else {
+                            selected.removeClass('selected')
+                            selected.next().addClass('selected')
+                        }
+                        // $("input.search-instrument").text(list.find('.selected').text())
+                    } else if (event.keyCode == 38) { // Up arrow pressed
+                        let list = $('#instr-drop-down').find('ul')
+                        let selected = list.find('.selected')
+                        if(selected.length == 0) {
+                            list.find('li').first().addClass('selected')
+                        } else {
+                            selected.removeClass('selected')
+                            selected.prev().addClass('selected')
+                        }
+                        // $("input.search-instrument").text(list.find('.selected').text())
+                    } else if(event.key == "Enter") {
+                        this.select(event, list.find('.selected')[0])
+                        $('#add_to_watchlist').click();
+                    }
+                })
             }
         },
 
@@ -3207,11 +3236,24 @@ client_api = function () {
                 if (optt === "PE" && params.exch === "NFO") {
                     params.put_option = true
                 }
-
-                watch_list.add_row_to_watch(params)
+                if(!this.already_exists(params.token)) {
+                    watch_list.add_row_to_watch(params)
+                } else {
+                    lib.show_success_msg(params.sym + " is already present")
+                }
             } else {
                 lib.show_error_msg("Please select an instrument from the drop down")
             }
+        },
+
+        already_exists(token) {
+            let found = false;
+            $('#watch_list_body').find("td.token").each(function(index, td) {
+                if(token === $(td).text()) {
+                    found = true;
+                }
+            })
+            return found;
         },
 
         selection_is_valid : function() {
