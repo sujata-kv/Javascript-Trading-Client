@@ -3311,7 +3311,7 @@ client_api = function () {
         },
 
         auto_complete : function(e, input) {
-            if(e.code == "Space") {         // On pressing space, auto completes based on spot values for nifty, bank nifty and fin nifty
+            if(e.code == "Space") {         // On pressing spacebar, auto completes based on spot values for nifty, bank nifty and fin nifty
                 let val = $(input).val().toLowerCase();
                 val = val.replace(/[\s+-_]/, ""); // replace multiple spaces and - and _ with ''
                 let spot, round;
@@ -3320,7 +3320,7 @@ client_api = function () {
                     round = conf['bank_nifty'].round_to;
                     spot = Math.round(spot/round) * round
                     $(input).val("Banknifty " + spot)
-                } else if(val == "nifty") {
+                } else if(val == "nif" || val == "nifty") {
                     spot = live_data[nifty_tk];
                     round = conf['nifty'].round_to;
                     spot = Math.round(spot/round) * round
