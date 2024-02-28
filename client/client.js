@@ -2,6 +2,19 @@ client_api = window.client_api || {};
 
 client_api = function () {
 
+/*
+    let navigation = {
+        segments : [
+            'table.watch-list',
+            'table.active-trades',
+            'table.open-orders',
+            'table.order-book',
+            'table.positions'
+        ],
+        focused_segment : 0,
+    }
+*/
+
     let vix_tk, nifty_tk, bank_nifty_tk, fin_nifty_tk = '';
     let user_id = '', session_token='', ws = '';
     let subscribed_symbols = []
@@ -1486,9 +1499,9 @@ client_api = function () {
                 let type = order.amo == "Yes"? "AMO ": "";
                 let buy_sell = '';
                 if (order.trantype == "B") {
-                    buy_sell = '<span class="badge bg-success">' + type + 'Buy</span>'
+                    buy_sell = '<span class="badge bg-success">' + type + 'Buy</span><br>'
                 } else {
-                    buy_sell = '<span class="badge bg-danger">' + type + 'Sell</span>'
+                    buy_sell = '<span class="badge bg-danger">' + type + 'Sell</span><br>'
                 }
                 let ttype = orderbook.know_bull_or_bear(order)
 
@@ -1497,7 +1510,7 @@ client_api = function () {
                 let row_id = "row_id_" + unique_row_id;
                 $('#open_order_list').append(`<tr id="${row_id}" ordid="${order.norenordno}" exch="${order.exch}" tsym="${order.tsym}" 
                                     qty="${order.qty}" token="${order.token}" ttype="${ttype}" trtype="${order.trantype}" variety="${order.variety}"">
-                        <td>${buy_sell}</td>
+                        <td>${buy_sell + order.token}</td>
                         <td class="order-num">${order.norenordno}</td>
                         <td>${dname}</td>
                         <th class="open_order_${order.token} ltp"></th>
@@ -1596,9 +1609,9 @@ client_api = function () {
         add_to_spot_order_list : function(item, entry_val, paper_entry=false) {
             let buy_sell = '';
             if (item.trantype === "B") {
-                buy_sell = '<span class="badge bg-success">Buy</span>'
+                buy_sell = `<span class="badge bg-success">${paper_entry?"Paper":""} Buy</span><br>`
             } else {
-                buy_sell = '<span class="badge bg-danger">Sell</span>'
+                buy_sell = `<span class="badge bg-danger">${paper_entry?"Paper":""} Sell</span><br>`
             }
 
             let ttype = this.know_bull_or_bear(item)
@@ -1608,7 +1621,7 @@ client_api = function () {
             let row_id = `row_id_${++unique_row_id}`
             item.norenordno = paper_entry? item.norenordno + row_id : item.norenordno;
             $('#spot_order_list').append(`<tr id="${row_id}" ordid="${item.norenordno}" exch="${item.exch}" tsym="${item.tsym}" dname="${dname}"  qty="${item.qty}" token="${item.token}" instrument_token="${item.instrument_token}" ttype="${ttype}" trtype="${item.trantype}">
-                    <td>${buy_sell}</td>
+                    <td>${buy_sell + item.token}</td>
                     <td class="order-num">Spot Based Entry</td>
                     <td>${dname}</td>
                     <th class="open_order_${item.token} ltp"></th>
@@ -2838,9 +2851,9 @@ client_api = function () {
             let buy_sell = '';
             let paper_tag = paper_trade?"Paper ":""
             if (order.trantype == "B") {
-                buy_sell = `<span class="badge bg-success"> ${paper_tag} Buy</span>`
+                buy_sell = `<span class="badge bg-success"> ${paper_tag} Buy</span><br>`
             } else {
-                buy_sell = `<span class="badge bg-danger"> ${paper_tag} Sell</span>`
+                buy_sell = `<span class="badge bg-danger"> ${paper_tag} Sell</span><br>`
             }
             let dname = (order.dname != undefined)? order.dname : order.tsym;
 
@@ -2859,7 +2872,7 @@ client_api = function () {
 
             tbody_elm.append(`<tr id="${row_id}" class="${className}" ordid="${order.norenordno}"  exch="${order.exch}" token="${order.token}" instrument_token="${order.instrument_token}" qty="${order.qty}" tsym="${order.tsym}" ttype="${ttype}" trtype="${order.trantype}" prd="${order.prd}" trade="active" margin="${margin_used}">
                         <td> <input type="checkbox" class="select_box" value="" onclick="client_api.util.uncheck(this)"> </td>
-                        <td>${buy_sell}</td>
+                        <td>${buy_sell + order.token}</td>
                         <td class="instrument">${dname}</td>
                         <td class="entry num" title="Margin Used : ${margin_used}">
                             <span class="badge badge-pill bg-dark">${order.norentm.split(" ")[0]}</span>
@@ -3037,10 +3050,10 @@ client_api = function () {
                 let buy_sell = '', trtype='';
                 let qty = pos.netqty;
                 if (qty > 0) {
-                    buy_sell = '<span class="badge bg-success">Buy</span>'
+                    buy_sell = '<span class="badge bg-success">Buy</span><br>'
                     trtype='B'
                 } else {
-                    buy_sell = '<span class="badge bg-danger">Sell</span>'
+                    buy_sell = '<span class="badge bg-danger">Sell</span><br>'
                     trtype='S'
                 }
                 pos.trantype = trtype;
@@ -3062,7 +3075,7 @@ client_api = function () {
 
                         tbody_elm.append(`<tr id="row_id_${++unique_row_id}" class="${className}" exch="${pos.exch}" token="${ticker}" instrument_token="${ticker}" tsym="${pos.tsym}" qty="${qty}" ttype="${ttype}" trtype="${trtype}" prd="${pos.prd}" trade="active" margin="${margin_used}">
                             <td> <input type="checkbox" class="select_box" value="" onclick="client_api.util.uncheck(this)"> </td>
-                            <td>${buy_sell}</td>
+                            <td>${buy_sell + ticker}</td>
                             <td class="instrument">${dname}</td>
                             <td class="entry num">
                                 <span class="price" title="Margin Used : ${margin_used}" ondblclick="client_api.trade.edit_entry_price(this)">${pos.netavgprc}</span>
@@ -3241,6 +3254,7 @@ client_api = function () {
     
                 <td> <input type="checkbox" class="select_box" value="" onclick="client_api.util.uncheck(this)"> </td>
                 <td class="dname">${params.sym}</td>
+                <td class="token">${params.token}</td>
                 <td class="margin_req num"></td>
                 <td class="watch_${ticker} ltp" lot_size="${params.lot_size}"></td>
                 <td class="input_box"><input type="text" class="form-control entry" placeholder="" ondblclick="client_api.watch_list.toggle_ltp(this); $(this).unbind('click');"></td>  
@@ -3400,7 +3414,7 @@ client_api = function () {
         },
         
         display_closed_trade :function(pos) {
-            let buy_sell = '<span class="badge bg-success">Buy</span>'      //Use buy as default.. we don't know once the position is closed, whether it was buy or sell
+            // let buy_sell = '<span class="badge bg-success">Buy</span>'      //Use buy as default.. we don't know once the position is closed, whether it was buy or sell
             let trtype='B'
             let buyqty = parseFloat(pos.buyqty), sellqty = parseFloat(pos.sellqty)
             let open_qty = Math.abs( buyqty - sellqty );
@@ -3423,7 +3437,7 @@ client_api = function () {
 
                 tbody_elm.append(`<tr id="closed_${++unique_row_id}" class="${className}" exch="${pos.exch}" token="${ticker}" instrument_token="${ticker}" tsym="${pos.tsym}" qty="${closed_qty}" ttype="${ttype}" trtype="${trtype}" prd="${pos.prd}" trade="closed" margin="${margin_used}">
                     <td> <input type="checkbox" class="select_box" value="" onclick="client_api.util.uncheck(this)"> </td>
-                    <td>Closed position</td>
+                    <td>Closed <br> ${ticker}</td>
                     <td>${dname}</td>
                     <td class="entry num">
                         <span class="price" title="Margin Used : ${margin_used}" ondblclick="client_api.trade.edit_entry_price(this)">${pos.netavgbuyprc}</span>
@@ -3763,6 +3777,27 @@ $(document).ready(function() {
         event.preventDefault();
         $(this).parent().hide();
     });
+
+    document.addEventListener('keydown', function (event) {
+        if(event.ctrlKey && event.key.toLowerCase() == "s") {
+            event.preventDefault();
+            $('input.search-instrument').focus();
+        } else if(event.ctrlKey && event.key.toLowerCase() == "l") {
+            $('table.watch-list').addClass('selected')
+        } else if(event.ctrlKey && event.key.toLowerCase() == "a") {
+            event.preventDefault();
+            $('table.active-trades').addClass('selected')
+        } else if(event.ctrlKey && event.key.toLowerCase() == "o") {
+            event.preventDefault();
+            $('table.open-orders').addClass('selected')
+        } else if(event.ctrlKey && event.key.toLowerCase() == "b") {
+            event.preventDefault();
+            $('table.order-book').addClass('selected')
+        } else if(event.ctrlKey && event.key.toLowerCase() == "p") {
+            event.preventDefault();
+            $('table.positions').addClass('selected')
+        }
+    })
 
     $("#watch_list_body").sortable({
         // items: 'tr:not(tr:first-child)',

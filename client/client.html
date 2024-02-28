@@ -109,7 +109,7 @@
             <div class="col-sm-2" style="text-align: right;">
                 <input id="exit_at_eom" type="checkbox" checked data-toggle="toggle"
                        onchange="client_api.toggle_exit_at_eom()"
-                       data-on="No auto exit" data-off="Exit @ 3:20" data-onstyle="info" data-offstyle="danger">
+                       data-on="No auto exit" data-off="Exit @ 3:20" data-onstyle="secondary" data-offstyle="danger">
             </div>
             <div class="col-sm-2" style="text-align: right;">
                 <input id="trade_type" type="checkbox" checked data-toggle="toggle"
@@ -118,11 +118,12 @@
             </div>
         </div>
 
-        <table class="table table-secondary table-condensed table-striped table-bordered">
+        <table class="table table-secondary table-condensed table-striped table-bordered watch-list">
             <thead class="thead-light">
             <tr>
                 <th> <input type="checkbox" value="" onclick="client_api.util.select_all(this, '#watch_list_body .select_box')"> </th>
                 <th scope="col">Instrument</th>
+                <th scope="col">Token</th>
                 <th scope="col" title="Margin required per lot">Margin</th>
                 <th scope="col">LTP</th>
                 <th scope="col">Entry</th>
@@ -193,7 +194,7 @@
         </div>
 
         <div id="active_trades_div">
-            <table  class="table table-success table-condensed table-striped table-bordered">
+            <table  class="table table-success table-condensed table-striped table-bordered active-trades">
                 <thead>
                     <tr>
                         <th> <input type="checkbox" value="" onclick="client_api.util.select_all(this, '#at-pool .select_box')"> </th>
@@ -262,7 +263,7 @@
         </div>
 
         <div id="open_orders">
-            <table class="table table-condensed table-striped table-bordered">
+            <table class="table table-condensed table-striped table-bordered open-orders">
                 <thead>
                 <tr>
                     <th scope="col">Type</th>
@@ -287,7 +288,7 @@
         </div>
 
         <div id="order_book">
-            <table class="table table-condensed table-bordered table-striped">
+            <table class="table table-condensed table-bordered table-striped order-book">
                 <thead>
                 <tr>
                     <th scope="col">OrderID</th>
@@ -332,7 +333,7 @@
                 <div class="col"></div>
             </div>
 
-            <table class="table table-condensed table-bordered table-striped">
+            <table class="table table-condensed table-bordered table-striped positions">
                 <thead>
                 <tr>
                     <th> <input type="checkbox" value="" onclick="client_api.util.select_all(this, '#positions_table .select_box')"> </th>
@@ -631,6 +632,11 @@
 
     .cascade-exit {
         border: 1px solid green;
+    }
+
+    table.selected {
+        border: 2px solid green;
+        border-radius: 5px;
     }
 
     /*    @media screen and (max-width: 900px) {
