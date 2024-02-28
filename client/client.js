@@ -3364,7 +3364,7 @@ client_api = function () {
                 let val = $(input).val().toLowerCase();
                 val = val.replace(/[\s+-_]/, ""); // replace multiple spaces and - and _ with ''
                 let spot, round;
-                if(val == "bank" || val== "banknifty") {
+                if(val == "ban" || val == "bank" || val== "banknifty") {
                     spot = live_data[bank_nifty_tk];
                     round = conf['bank_nifty'].round_to;
                     spot = Math.round(spot/round) * round
