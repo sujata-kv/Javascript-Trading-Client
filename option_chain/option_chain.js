@@ -98,7 +98,7 @@ client_api = function () {
                         if(instr_token === conf.spreads.instrument_token) {
                             $('#spot').html(ltpf.toFixed(2))
                         } else {
-                            option_chain_tracker.update_table(instr_token, ltpf)
+                            option_chain_tracker.update_table(instr_token, ltpf, result.v)
                         }
                     }
                 }
@@ -363,9 +363,11 @@ client_api = function () {
         cur_atm_strike : "",
 
         cell_mapping : {        /*If any of these mappings change, then make sure to update the switch case where we create buttons */
-            ce : 0,
-            strike : 1,
-            pe : 2,
+            cvol : 0,
+            ce : 1,
+            strike : 2,
+            pe : 3,
+            pvol: 4,
         },
 
         selected_cells :{},
@@ -462,8 +464,8 @@ client_api = function () {
                             let cellIndex = cell.index()
 
                             switch(cellIndex) {
-                                case 0:
-                                case 2:
+                                case option_chain_tracker.cell_mapping.ce:
+                                case option_chain_tracker.cell_mapping.pe:
                                     let btnContainer = cell.find(".btn-container");
                                     let btnB = $('<button class="btn buy">B</button>').click(function() {orderbook.buy($(this.parentNode.parentNode), 1)});  //Num of lots = 1 for buy sell buttons
                                     let btnS = $('<button class="btn sell">S</button>').click(function() {orderbook.sell($(this.parentNode.parentNode), 1)}); //Num of lots = 1 for buy sell buttons
@@ -531,7 +533,7 @@ client_api = function () {
             const priceTableBody = document.querySelector('#option_chain_body');
             let row = document.getElementById(`#${rowId}`);
 
-            let selected_cells = {};
+            let selected_cells = {}; //Highlight the selected cells again
             for(const [key, value] of Object.entries(option_chain_tracker.selected_cells)) {
                 if(key.startsWith(rowId)) {
                     let cellIndex = key.split(":")[1]
@@ -559,9 +561,9 @@ client_api = function () {
                     if (i == option_chain_tracker.cell_mapping.ce || i == option_chain_tracker.cell_mapping.pe) {
                         //Restore buy, sell leg selections
                         if(selected_cells[i]!=undefined) {
-                            cell.className = selected_cells[i]=='B'? 'select_buy':'select_sell'
+                            cell.className = selected_cells[i]=='B'? 'select_buy num':'select_sell num'
                         }else {
-                            cell.className = ''
+                            cell.className = 'num'
                         }
 
                         //Attach onclick handler, to be able to select the CE and PE legs for the BUY and SELL operations
@@ -570,6 +572,8 @@ client_api = function () {
                                 // console.log("Button click handler")
                                 e.stopPropagation()
                             })
+                    } else if(i == option_chain_tracker.cell_mapping.cvol || i == option_chain_tracker.cell_mapping.pvol) {
+                        cell.className = 'num'
                     }
 
                     function cell_click_handler(e) {
@@ -577,27 +581,23 @@ client_api = function () {
                         let cell_identifier = $(cell).closest('tr')[0].id + ":" + cell.cellIndex
 
                         let clsName = cell.className
-                        switch(clsName) {
-                            case "" :
-                                $(cell).addClass("select_buy")
-                                option_chain_tracker.selected_cells[cell_identifier]= 'B'
-                                break;
-                            case "select_buy":
-                                $(cell).removeClass("select_buy")
-                                $(cell).addClass("select_sell")
-                                option_chain_tracker.selected_cells[cell_identifier]= 'S'
-                                break;
-                            case "select_sell":
-                                $(cell).removeClass("select_sell")
-                                delete option_chain_tracker.selected_cells[cell_identifier]
-                                break;
+                        if(clsName.includes("select_buy")) {
+                            $(cell).removeClass("select_buy")
+                            $(cell).addClass("select_sell")
+                            option_chain_tracker.selected_cells[cell_identifier]= 'S'
+                        } else if(clsName.includes("select_sell")) {
+                            $(cell).removeClass("select_sell")
+                            delete option_chain_tracker.selected_cells[cell_identifier]
+                        } else {
+                            $(cell).addClass("select_buy")
+                            option_chain_tracker.selected_cells[cell_identifier]= 'B'
                         }
                     }
                 }
             }
         },
 
-        update_table : function(token, lp) {
+        update_table : function(token, lp, vol) {
             // console.log("Update table called for " + token + " LP = " + lp)
             const priceTableBody = document.querySelector('#option_chain_body');
             let data = this.get_token_details(token)
@@ -609,8 +609,12 @@ client_api = function () {
                 /*Update PE and CE*/
                 if (data.optt === 'CE') {
                     $(row.cells[this.cell_mapping.ce]).find('span').text(lp.toFixed(2));
+                    if(vol!=undefined)
+                        $(row.cells[this.cell_mapping.cvol]).find('span').text((parseInt(vol)/1000).toFixed(0));
                 } else if (data.optt === 'PE') {
                     $(row.cells[this.cell_mapping.pe]).find('span').text(lp.toFixed(2));
+                    if(vol!=undefined)
+                        $(row.cells[this.cell_mapping.pvol]).find('span').text((parseInt(vol)/1000).toFixed(0));
                 }
 
                 let combined_prem = parseFloat(row.cells[this.cell_mapping.ce].textContent) + parseFloat(row.cells[this.cell_mapping.pe].textContent)

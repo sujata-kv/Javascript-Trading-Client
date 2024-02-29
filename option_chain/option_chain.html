@@ -57,17 +57,21 @@
                 <table id="option_chain_table" class="table table-condensed table-bordered">
                     <thead class="thead-light">
                     <tr>
+                        <th scope="col" class="table-primary">Volume (K)</th>
                         <th scope="col" class="table-primary">Call</th>
                         <th scope="col" class="table-primary">Strike</th>
                         <th scope="col" class="table-primary">Put</th>
+                        <th scope="col" class="table-primary">Volume (K)</th>
                     </tr>
                     </thead>
                     <tbody id="option_chain_body">
                     </tbody>
                     <tfoot class="table-secondary">
+                        <th scope="col"></th>
                         <th scope="col" id="ce_total"></th>
                         <th scope="col"></th>
                         <th scope="col" id="pe_total"></th>
+                        <th scope="col"></th>
                     </tfoot>
                 </table>
             </div>
@@ -88,7 +92,8 @@
 
     <style>
         .wrapper {
-            padding : 50px;
+            padding: 10px 50px;
+            paddint-top: 10px;
         }
 
         .header {
@@ -104,7 +109,7 @@
         }
 
         #option_chain_table {
-            width: 550px;
+            width: 750px;
             margin: 0 auto;
             /*text-align: center;*/
         }
@@ -112,11 +117,11 @@
         /* Style for the buttons */
         .btn-container {
             display: none;
-            position: absolute;
-            z-index: 1;
+            /* position: absolute; */
+            /* z-index: 1; */
             padding-left: 0px;
             margin-left: 0px;
-            float: right !important;
+            float: left;
         }
 
         .btn {
@@ -221,6 +226,7 @@
 
         .control-panel {
             font-size: 12px;
+            padding-bottom: 20px;
         }
 
         .control-panel .form-control {
@@ -239,6 +245,15 @@
             font-size: 12px;
             padding-top:10px;
         }
+
+        .num {
+            text-align: right;
+        }
+
+        th, td {
+            text-align: center;
+        }
+
     </style>
 </body>
 
