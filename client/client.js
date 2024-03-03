@@ -1624,15 +1624,17 @@ client_api = function () {
 
             let ttype = this.know_bull_or_bear(item)
 
+            let ticker = broker.get_ticker({'token' : item.token, 'instrument_token': item.instrument_token})
+
             let dname = (item.dname != undefined)? decodeURIComponent(item.dname) : item.tsym;
             dname = dname.trim()
             let row_id = `row_id_${++unique_row_id}`
             item.norenordno = paper_entry? item.norenordno + row_id : item.norenordno;
             $('#spot_order_list').append(`<tr id="${row_id}" ordid="${item.norenordno}" exch="${item.exch}" tsym="${item.tsym}" dname="${dname}"  qty="${item.qty}" token="${item.token}" instrument_token="${item.instrument_token}" ttype="${ttype}" trtype="${item.trantype}">
-                    <td>${buy_sell + item.token}</td>
+                    <td>${buy_sell + ticker}</td>
                     <td class="order-num">Spot Based Entry</td>
                     <td>${dname}</td>
-                    <th class="open_order_${item.token} ltp"></th>
+                    <th class="open_order_${item.ticker} ltp"></th>
                     <td><input type="text" class="form-control entry" placeholder=""  value="${entry_val}" onkeydown="client_api.util.handle_enter_key(event, $(this).parent().parent().find('.modify'))"></td>
                     <td><input type="text" class="form-control target" placeholder=""  value="" ondblclick="client_api.watch_list.toggle_ltp(this);" onkeydown="client_api.util.handle_enter_key(event, $(this).parent().parent().find('.modify'))"></td>
                     <td><input type="text" class="form-control sl" placeholder=""  value="" ondblclick="client_api.watch_list.toggle_ltp(this);" onkeydown="client_api.util.handle_enter_key(event, $(this).parent().parent().find('.modify'))"></td>
@@ -1642,7 +1644,6 @@ client_api = function () {
                     <td><button type="button" class="btn btn-danger cancel" onclick="client_api.orderbook.cancel_order(this)">Cancel</button></td>
             </tr>`);
 
-            let ticker = broker.get_ticker({'token' : item.token, 'instrument_token': item.instrument_token})
             let entry_obj = milestone_manager.get_value_object(entry_val)
             if(paper_entry) {   //Handle limit entry for paper trades..
                 entry_obj.type = MS_TYPE.paper_entry;        //Manipulate entry obj to ensure that it checks for the entry trigger
@@ -2886,7 +2887,7 @@ client_api = function () {
 
             tbody_elm.append(`<tr id="${row_id}" class="${className}" ordid="${order.norenordno}"  exch="${order.exch}" token="${order.token}" instrument_token="${order.instrument_token}" qty="${order.qty}" tsym="${order.tsym}" ttype="${ttype}" trtype="${order.trantype}" prd="${order.prd}" trade="active" margin="${margin_used}">
                         <td> <input type="checkbox" class="select_box" value="" onclick="client_api.util.uncheck(this)"> </td>
-                        <td>${buy_sell + order.token}</td>
+                        <td>${buy_sell + ticker}</td>
                         <td class="instrument">${dname}</td>
                         <td class="entry num" title="Margin Used : ${margin_used}">
                             <span class="badge badge-pill bg-dark">${order.norentm.split(" ")[0]}</span>
@@ -3282,7 +3283,7 @@ client_api = function () {
     
                 <td> <input type="checkbox" class="select_box" value="" onclick="client_api.util.uncheck(this)"> </td>
                 <td class="dname">${params.sym}</td>
-                <td class="token">${params.token}</td>
+                <td class="token">${ticker}</td>
                 <td class="margin_req num"></td>
                 <td class="watch_${ticker} ltp" lot_size="${params.lot_size}"></td>
                 <td class="input_box"><input type="text" class="form-control entry" placeholder="" ondblclick="client_api.watch_list.toggle_ltp(this); $(this).unbind('click');"></td>  
