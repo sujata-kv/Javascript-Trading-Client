@@ -308,7 +308,7 @@ client_api = function () {
 
                     create: function () {
                         $(this).data('ui-autocomplete')._renderItem = function (ul, item) {
-                            return $('<li class="dropdown-item">')
+                            return $('<li>')
                                 .append(item.label)
                                 .append('</li>')
                                 .appendTo(ul); // customize your HTML
@@ -316,32 +316,7 @@ client_api = function () {
                     }
                 });
 
-                $("input.search-instrument").keydown(function(event) {
-                    let list = $('#instr-drop-down').find('ul')
-                    if(event.keyCode == 40) { //Down arrow pressed
-                        let selected = list.find('.selected')
-                        if(selected.length == 0) {
-                            list.find('li').first().addClass('selected')
-                        } else {
-                            selected.removeClass('selected')
-                            selected.next().addClass('selected')
-                        }
-                        // $("input.search-instrument").text(list.find('.selected').text())
-                    } else if (event.keyCode == 38) { // Up arrow pressed
-                        let list = $('#instr-drop-down').find('ul')
-                        let selected = list.find('.selected')
-                        if(selected.length == 0) {
-                            list.find('li').first().addClass('selected')
-                        } else {
-                            selected.removeClass('selected')
-                            selected.prev().addClass('selected')
-                        }
-                        // $("input.search-instrument").text(list.find('.selected').text())
-                    } else if(event.key == "Enter") {
-                        this.select(event, list.find('.selected')[0])
-                        $('#add_to_watchlist').click();
-                    }
-                })
+                watch_list.search.attach_keyboard_shortcuts();
             }
         },
 
@@ -939,39 +914,43 @@ client_api = function () {
                 this.parsedData.push(...nse_parsed_data);
             },
 
+            select: function (event, ui) {
+                // when item is selected
+                $(this).val(ui.item.value);
+                $(this).attr('lot_size', ui.item.lot_size)
+                $(this).attr('exch', ui.item.exch)
+                $(this).attr('token', ui.item.token)
+                $(this).attr('tsym', ui.item.tsym)
+                $(this).attr('dname', ui.item.dname)
+                $(this).attr('optt', ui.item.optt)
+                $(this).attr('instrument_token', ui.item.instrument_token)
+                console.log("Selected item : ", ui.item)
+            },
+
             attach_search_autocomplete : function() {
                 /* Search instrument autocomplete */
                 $("input.search-instrument").autocomplete({
                     minLength: 2,
-                    autoFocus: true,
+                    // autoFocus: true,
                     appendTo: '#instr-drop-down',
                     source: function (request, response) {
                         const results = kite.search.search_for_key(request.term)
                         response(results)
                     },
 
-                    select: function (event, ui) {
-                        // when item is selected
-                        $(this).val(ui.item.value);
-                        $(this).attr('lot_size', ui.item.lot_size)
-                        $(this).attr('exch', ui.item.exch)
-                        $(this).attr('token', ui.item.token)
-                        $(this).attr('tsym', ui.item.tsym)
-                        $(this).attr('dname', ui.item.dname)
-                        $(this).attr('optt', ui.item.optt)
-                        $(this).attr('instrument_token', ui.item.instrument_token)
-                        console.log("Selected item : ", ui.item)
-                    },
+                    select: this.select,
 
                     create: function () {
                         $(this).data('ui-autocomplete')._renderItem = function (ul, item) {
-                            return $('<li class="dropdown-item">')
+                            return $('<li>')
                                 .append(item.label)
                                 .append('</li>')
                                 .appendTo(ul); // customize your HTML
                         };
                     }
                 });
+
+                watch_list.search.attach_keyboard_shortcuts();
             },
         },
 
@@ -3384,6 +3363,39 @@ client_api = function () {
                 // $('#add_to_watchlist').click();
             } else if(e.ctrlKey && e.key.toLowerCase() == "x") {  // Ctrl + x  clears input
                 $(input).val("")
+            }  else if(e.ctrlKey && e.key.toLowerCase() == "a") {  // Ctrl + a  selects input
+                $(input).select();
+            }
+        },
+
+        search : {
+            attach_keyboard_shortcuts: function() {
+                $("input.search-instrument").keydown(function(event) {
+                    let list = $('#instr-drop-down').find('ul')
+                    if(event.keyCode == 40) { //Down arrow pressed
+                        let selected = list.find('.selected')
+                        if(selected.length == 0) {
+                            list.find('li').first().addClass('selected')
+                        } else {
+                            selected.removeClass('selected')
+                            selected.next().addClass('selected')
+                        }
+                        // $("input.search-instrument").text(list.find('.selected').text())
+                    } else if (event.keyCode == 38) { // Up arrow pressed
+                        let list = $('#instr-drop-down').find('ul')
+                        let selected = list.find('.selected')
+                        if(selected.length == 0) {
+                            list.find('li').first().addClass('selected')
+                        } else {
+                            selected.removeClass('selected')
+                            selected.prev().addClass('selected')
+                        }
+                        // $("input.search-instrument").text(list.find('.selected').text())
+                    } else if(event.key == "Enter") {
+                        this.select(event, list.find('.selected')[0])
+                        $('#add_to_watchlist').click();
+                    }
+                })
             }
         }
     };
@@ -3855,21 +3867,21 @@ $(document).ready(function() {
     });
 
     document.addEventListener('keydown', function (event) {
-        if(event.ctrlKey && event.key.toLowerCase() == "s") {
+        if(event.altKey && event.key.toLowerCase() == "s") {
             event.preventDefault();
             $('input.search-instrument').focus();
-        } else if(event.ctrlKey && event.key.toLowerCase() == "l") {
+        } else if(event.altKey && event.key.toLowerCase() == "w") {
             $('table.watch-list').addClass('selected')
-        } else if(event.ctrlKey && event.key.toLowerCase() == "a") {
+        } else if(event.altKey && event.key.toLowerCase() == "a") {
             event.preventDefault();
             $('table.active-trades').addClass('selected')
-        } else if(event.ctrlKey && event.key.toLowerCase() == "o") {
+        } else if(event.altKey && event.key.toLowerCase() == "o") {
             event.preventDefault();
             $('table.open-orders').addClass('selected')
-        } else if(event.ctrlKey && event.key.toLowerCase() == "b") {
+        } else if(event.altKey && event.key.toLowerCase() == "b") {
             event.preventDefault();
             $('table.order-book').addClass('selected')
-        } else if(event.ctrlKey && event.key.toLowerCase() == "p") {
+        } else if(event.altKey && event.key.toLowerCase() == "p") {
             event.preventDefault();
             $('table.positions').addClass('selected')
         }
