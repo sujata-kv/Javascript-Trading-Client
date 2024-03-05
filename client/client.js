@@ -1522,7 +1522,7 @@ client_api = function () {
                         <td class="order-num">${order.norenordno}</td>
                         <td>${dname}</td>
                         <th class="open_order_${order.token} ltp"></th>
-                        <td><input type="text" class="form-control entry" placeholder=""  value="${order.prc}" onkeydown="client_api.util.handle_enter_key(event, $(this).parent().parent().find('.modify'))"></td>
+                        <td><input type="text" class="form-control entry" placeholder=""  value="${order.prc}" ondblclick="client_api.watch_list.toggle_ltp(this);" onkeydown="client_api.util.handle_enter_key(event, $(this).parent().parent().find('.modify'))"></td>
                         <td><input type="text" class="form-control target" placeholder=""  value="" ondblclick="client_api.watch_list.toggle_ltp(this);" onkeydown="client_api.util.handle_enter_key(event, $(this).parent().parent().find('.modify'))"></td>
                         <td><input type="text" class="form-control sl" placeholder=""  value="" ondblclick="client_api.watch_list.toggle_ltp(this);" onkeydown="client_api.util.handle_enter_key(event, $(this).parent().parent().find('.modify'))"></td>
                         <td><input type="text" class="form-control qty" placeholder=""  value="${order.qty}" ></td>
@@ -1634,8 +1634,8 @@ client_api = function () {
                     <td>${buy_sell + ticker}</td>
                     <td class="order-num">Spot Based Entry</td>
                     <td>${dname}</td>
-                    <th class="open_order_${item.ticker} ltp"></th>
-                    <td><input type="text" class="form-control entry" placeholder=""  value="${entry_val}" onkeydown="client_api.util.handle_enter_key(event, $(this).parent().parent().find('.modify'))"></td>
+                    <th class="open_order_${ticker} ltp"></th>
+                    <td><input type="text" class="form-control entry" placeholder=""  value="${entry_val}" ondblclick="client_api.watch_list.toggle_ltp(this);" onkeydown="client_api.util.handle_enter_key(event, $(this).parent().parent().find('.modify'))"></td>
                     <td><input type="text" class="form-control target" placeholder=""  value="" ondblclick="client_api.watch_list.toggle_ltp(this);" onkeydown="client_api.util.handle_enter_key(event, $(this).parent().parent().find('.modify'))"></td>
                     <td><input type="text" class="form-control sl" placeholder=""  value="" ondblclick="client_api.watch_list.toggle_ltp(this);" onkeydown="client_api.util.handle_enter_key(event, $(this).parent().parent().find('.modify'))"></td>
                     <td><input type="text" class="form-control qty" placeholder=""  value="${item.qty}"></td>
@@ -3775,6 +3775,7 @@ client_api = function () {
         handle_enter_key : function(event, btn) {
             if(event.key == "Enter") {
                 btn.click();
+                $(event.srcElement).blur();
             }
         }
     };
