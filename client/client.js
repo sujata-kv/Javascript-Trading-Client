@@ -434,7 +434,7 @@ client_api = function () {
                     data: payload,
                     success: function (data, textStatus, jqXHR) {
                         if (jqXHR.status == 200) {
-                            console.log("get_orderbook success")
+                            // console.log("get_orderbook success")
                         }
 
                         for (const [key, order] of Object.entries(data)) {
@@ -1516,6 +1516,15 @@ client_api = function () {
                 let dname = (order.dname != undefined)? order.dname : order.tsym;
                 ++unique_row_id;
                 let row_id = "row_id_" + unique_row_id;
+                let target = sl = "";
+                let ret = milestone_manager.get_milestone_by_order_id(order.norenordno);
+
+                if(ret != null) {    //Restore SL and Target if set for the open order
+                    milestone_manager.change_row_id(ret.row_id, row_id)
+                    target = milestone_manager.get_value_string(ret.milestone.target)
+                    sl = milestone_manager.get_value_string(ret.milestone.sl)
+                }
+
                 $('#open_order_list').append(`<tr id="${row_id}" ordid="${order.norenordno}" exch="${order.exch}" tsym="${order.tsym}" 
                                     qty="${order.qty}" token="${order.token}" ttype="${ttype}" trtype="${order.trantype}" variety="${order.variety}"">
                         <td>${buy_sell + order.token}</td>
@@ -1523,8 +1532,8 @@ client_api = function () {
                         <td>${dname}</td>
                         <th class="open_order_${order.token} ltp"></th>
                         <td><input type="text" class="form-control entry" placeholder=""  value="${order.prc}" ondblclick="client_api.watch_list.toggle_ltp(this);" onkeydown="client_api.util.handle_enter_key(event, $(this).parent().parent().find('.modify'))"></td>
-                        <td><input type="text" class="form-control target" placeholder=""  value="" ondblclick="client_api.watch_list.toggle_ltp(this);" onkeydown="client_api.util.handle_enter_key(event, $(this).parent().parent().find('.modify'))"></td>
-                        <td><input type="text" class="form-control sl" placeholder=""  value="" ondblclick="client_api.watch_list.toggle_ltp(this);" onkeydown="client_api.util.handle_enter_key(event, $(this).parent().parent().find('.modify'))"></td>
+                        <td><input type="text" class="form-control target" placeholder=""  value="${target}" ondblclick="client_api.watch_list.toggle_ltp(this);" onkeydown="client_api.util.handle_enter_key(event, $(this).parent().parent().find('.modify'))"></td>
+                        <td><input type="text" class="form-control sl" placeholder=""  value="${sl}" ondblclick="client_api.watch_list.toggle_ltp(this);" onkeydown="client_api.util.handle_enter_key(event, $(this).parent().parent().find('.modify'))"></td>
                         <td><input type="text" class="form-control qty" placeholder=""  value="${order.qty}" ></td>
     
                         <td><button type="button" class="btn btn-success modify" onclick="client_api.orderbook.modify_order(this)">Modify</button></td>
@@ -1926,11 +1935,11 @@ client_api = function () {
         get_order_status(orderno, action, oncomplete_cb) {
 
             if(open_order_mgr.exec_permission(orderno, action)) {
-                console.log(action + ": get_order_status : " + orderno + " Making get_orderbook post req")
+                // console.log(action + ": get_order_status : " + orderno + " Making get_orderbook post req")
                 broker.order.get_orderbook(function (orders) {
                     let matching_order = orders.find(order => order.norenordno === orderno)
                     if (matching_order != undefined) {
-                        console.log(orderno + " : Found matching order ")
+                        // console.log(orderno + " : Found matching order ")
                         switch (matching_order.status) {
                             case "OPEN":
                                 setTimeout(function () {
@@ -2070,6 +2079,14 @@ client_api = function () {
             this.token = token;
             this.sl_hit_count = 0;
             this.open_order = false;
+            this.order_id = '';
+        }
+
+        set_open_order(open_order, order_id) {
+            this.open_order = open_order;
+            if(open_order) {
+                this.order_id = order_id
+            }
         }
 
         add_order_id(order_id) {
@@ -2261,6 +2278,12 @@ client_api = function () {
             return this.milestones[row_id]
         }
 
+        change_row_id(old_row_id, new_row_id) {
+            let ms = this.milestones[old_row_id]
+            this.milestones[new_row_id] = ms
+            this.remove_milestone(old_row_id)
+        }
+
         get_milestone_by_order_id(order_id) {
             for(const [row_id, milestone] of Object.entries(this.milestones)) {
                 if(milestone.get_order_id() === order_id) {
@@ -2270,18 +2293,19 @@ client_api = function () {
                     };
                 }
             }
+            return null;
         }
 
         add_target(row_id, token, ttype, buy_sell, value_obj, open_order=false) {
             let old_ms = this.milestones[row_id]
-
+            let order_id = open_order? $(`#${row_id}`).find('.order-num').html() : ""
             if(old_ms == undefined) {
                 let ms = new MileStone(ttype, buy_sell, token);
                 ms.set_target(value_obj);
-                ms.open_order = open_order
+                ms.set_open_order(open_order, order_id);
                 this.milestones[row_id] = ms
             } else {
-                old_ms.open_order = open_order
+                old_ms.set_open_order(open_order, order_id);
                 old_ms.set_ttype(ttype)
                 old_ms.set_target(value_obj)
             }
@@ -2290,14 +2314,14 @@ client_api = function () {
 
         add_sl(row_id, token, ttype, buy_sell, value_obj, open_order=false) {
             let old_ms = this.milestones[row_id]
-
+            let order_id = open_order? $(`#${row_id}`).find('.order-num').html() : ""
             if(old_ms == undefined) {
                 let ms = new MileStone(ttype, buy_sell, token);
                 ms.set_sl(value_obj);
-                ms.open_order = open_order
+                ms.set_open_order(open_order, order_id);
                 this.milestones[row_id] = ms
             } else {
-                old_ms.open_order = open_order
+                old_ms.set_open_order(open_order, order_id);
                 old_ms.set_ttype(ttype)
                 old_ms.set_sl(value_obj)
             }
