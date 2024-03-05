@@ -2993,9 +2993,9 @@ client_api = function () {
         getTradePosition : function(token, exch, trtype, qty) {
             let position;
             if(broker.name === "shoonya")
-                position = $(`#at-pool tr[token=${token}][exch=${exch}][qty=${qty}][trtype=${trtype}]`)     //Search by attribute value
+                position = $(`#at-pool tr[token=${token}][exch=${exch}][qty=${qty}]`)     //Search by attribute value [trtype=${trtype}]
             else if(broker.name === "kite")
-                position = $(`#at-pool tr[instrument_token=${token}][exch=${exch}][qty=${qty}][trtype=${trtype}]`)
+                position = $(`#at-pool tr[instrument_token=${token}][exch=${exch}][qty=${qty}]`)    //[trtype=${trtype}]
             return position;
         },
 
