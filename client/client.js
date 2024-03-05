@@ -3162,6 +3162,31 @@ client_api = function () {
                 td_elm.on('dblclick', 'span.price', function() {client_api.trade.edit_entry_price(newSpan)});
                 inputElement.replaceWith(newSpan);
             });
+        },
+
+        swap_entry_exit: function(span_elm) {
+            let buy_sell = $(span_elm).text();
+            let row_elm = $(span_elm).parent().parent();
+            let entry_elm = row_elm.find('.entry').find('.price');
+            let exit_elm = row_elm.find('.exit-price');
+
+            if(buy_sell.toUpperCase() == "BUY") {
+                $(span_elm).removeClass("bg-success");
+                $(span_elm).addClass("bg-danger");
+                $(span_elm).text("Sell");
+                row_elm.attr("trtype", "S")
+            } else if(buy_sell.toUpperCase() == "SELL") {
+                $(span_elm).addClass("bg-success");
+                $(span_elm).removeClass("bg-danger");
+                $(span_elm).text("Buy");
+                row_elm.attr("trtype", "B")
+            }
+            let ttype = row_elm.attr("ttype")
+            row_elm.attr('ttype', (ttype==="bull"? "bear": "bull"))
+            let entry_price = entry_elm.text();
+            let exit_price = exit_elm.text();
+            entry_elm.text(exit_price);
+            exit_elm.text(entry_price);
         }
     };
 
@@ -3522,48 +3547,20 @@ client_api = function () {
 
                 let className = "table-secondary";
                 let tbody_elm = $('#at-pool');
-                let margin_used = "";
-
-                let pnl = parseFloat(pos.rpnl);
-                let buy_prc = pos.netavgbuyprc, sell_prc = pos.netavgsellprc, entry, exit;
-                let buy_leg;
-                if(pnl > 0 ) { // Profit case
-                    if (buy_prc < sell_prc) { // Buy position
-                        buy_leg = true;
-                        entry = buy_prc
-                        exit = sell_prc
-                        margin_used = (pos.netavgbuyprc * closed_qty).toFixed(2);
-                    } else { // Sell position
-                        buy_leg = false;
-                        entry = sell_prc
-                        exit = buy_prc
-                    }
-                } else {    // Loss case
-                    if (buy_prc > sell_prc) { // Buy position
-                        buy_leg = true;
-                        entry = buy_prc
-                        exit = sell_prc
-                        margin_used = (pos.netavgbuyprc * closed_qty).toFixed(2);
-                    } else { // Sell position
-                        buy_leg = false;
-                        entry = sell_prc
-                        exit = buy_prc
-                    }
-                }
-                let badge_cls = buy_leg? "bg-success": "bg-failure"
+                let margin_used = (pos.netavgbuyprc * closed_qty).toFixed(2);
 
                 tbody_elm.append(`<tr id="closed_${++unique_row_id}" class="${className}" exch="${pos.exch}" token="${ticker}" instrument_token="${ticker}" tsym="${pos.tsym}" qty="${closed_qty}" ttype="${ttype}" trtype="${trtype}" prd="${pos.prd}" trade="closed" margin="${margin_used}">
                     <td> <input type="checkbox" class="select_box" value="" onclick="client_api.util.uncheck(this)"> </td>
-                    <td>Closed<br><span class="badge badge-pill ${badge_cls}">${buy_leg?"Buy":"Sell"}</span> <br> ${ticker}</td>
+                    <td>Closed<br><span class="badge badge-pill bg-success" onclick="client_api.trade.swap_entry_exit(this)">Buy</span> <br> ${ticker}</td>
                     <td>${dname}</td>
                     <td class="entry num">
-                        <span class="price" title="Margin Used : ${margin_used}" ondblclick="client_api.trade.edit_entry_price(this)">${entry}</span>
+                        <span class="price" title="Margin Used : ${margin_used}" ondblclick="client_api.trade.edit_entry_price(this)">${pos.netavgbuyprc}</span>
                     </td>
                     <td class="trade_${ticker} ltp">${pos.lp}</td>
                     <td class="pnl ${pnl_cls}">${pos.rpnl}</td>
                     <td><input type="text" disabled class="form-control target" placeholder="" ></td>
                     <td><input type="text" disabled class="form-control sl" placeholder="" ></td>
-                    <td><span class="price exit-price" ondblclick="client_api.trade.edit_entry_price(this)">${exit}</span>
+                    <td><span class="price exit-price" ondblclick="client_api.trade.edit_entry_price(this)">${pos.netavgsellprc}</span>
                     </td>
                     <td><input type="text" class="form-control qty" placeholder=""  value="${closed_qty}"></td>
                     
