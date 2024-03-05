@@ -1516,13 +1516,14 @@ client_api = function () {
                 let dname = (order.dname != undefined)? order.dname : order.tsym;
                 ++unique_row_id;
                 let row_id = "row_id_" + unique_row_id;
-                let target = sl = "";
+                let target = sl = void_cond = "";
                 let ret = milestone_manager.get_milestone_by_order_id(order.norenordno);
 
                 if(ret != null) {    //Restore SL and Target if set for the open order
                     milestone_manager.change_row_id(ret.row_id, row_id)
                     target = milestone_manager.get_value_string(ret.milestone.target)
                     sl = milestone_manager.get_value_string(ret.milestone.sl)
+                    void_cond = milestone_manager.get_value_string(ret.milestone.void_cond)
                 }
 
                 $('#open_order_list').append(`<tr id="${row_id}" ordid="${order.norenordno}" exch="${order.exch}" tsym="${order.tsym}" 
@@ -1534,6 +1535,7 @@ client_api = function () {
                         <td><input type="text" class="form-control entry" placeholder=""  value="${order.prc}" ondblclick="client_api.watch_list.toggle_ltp(this);" onkeydown="client_api.util.handle_enter_key(event, $(this).parent().parent().find('.modify'))"></td>
                         <td><input type="text" class="form-control target" placeholder=""  value="${target}" ondblclick="client_api.watch_list.toggle_ltp(this);" onkeydown="client_api.util.handle_enter_key(event, $(this).parent().parent().find('.modify'))"></td>
                         <td><input type="text" class="form-control sl" placeholder=""  value="${sl}" ondblclick="client_api.watch_list.toggle_ltp(this);" onkeydown="client_api.util.handle_enter_key(event, $(this).parent().parent().find('.modify'))"></td>
+                        <td><input type="text" class="form-control void-cond" placeholder=""  value="${void_cond}" ondblclick="client_api.watch_list.toggle_ltp(this);" onkeydown="client_api.util.handle_enter_key(event, $(this).parent().parent().find('.modify'))"></td>
                         <td><input type="text" class="form-control qty" placeholder=""  value="${order.qty}" ></td>
     
                         <td><button type="button" class="btn btn-success modify" onclick="client_api.orderbook.modify_order(this)">Modify</button></td>
@@ -1647,6 +1649,7 @@ client_api = function () {
                     <td><input type="text" class="form-control entry" placeholder=""  value="${entry_val}" ondblclick="client_api.watch_list.toggle_ltp(this);" onkeydown="client_api.util.handle_enter_key(event, $(this).parent().parent().find('.modify'))"></td>
                     <td><input type="text" class="form-control target" placeholder=""  value="" ondblclick="client_api.watch_list.toggle_ltp(this);" onkeydown="client_api.util.handle_enter_key(event, $(this).parent().parent().find('.modify'))"></td>
                     <td><input type="text" class="form-control sl" placeholder=""  value="" ondblclick="client_api.watch_list.toggle_ltp(this);" onkeydown="client_api.util.handle_enter_key(event, $(this).parent().parent().find('.modify'))"></td>
+                    <td><input type="text" class="form-control void-cond" placeholder=""  value="" ondblclick="client_api.watch_list.toggle_ltp(this);" onkeydown="client_api.util.handle_enter_key(event, $(this).parent().parent().find('.modify'))"></td>
                     <td><input type="text" class="form-control qty" placeholder=""  value="${item.qty}"></td>
 
                     <td><button type="button" class="btn btn-success modify" onclick="client_api.orderbook.modify_order(this)">Modify</button></td>
@@ -1680,7 +1683,7 @@ client_api = function () {
                 broker.order.cancel_order(orderno, tr_elm, function(orders) {
                     let matching_order = orders.find(order => order.norenordno === orderno)
                     if (matching_order != undefined) {
-                        orderbook.display_order_exec_msg(matching_order);
+                        // orderbook.display_order_exec_msg(matching_order);    //Already being displayed in get_order_status
                     }
                     milestone_manager.remove_milestone(row_id); //Remove milestone
                     orderbook.update_open_order_list(orders);
@@ -1700,9 +1703,9 @@ client_api = function () {
             let token = tr_elm.attr('token')
             let instrument_token = tr_elm.attr('instrument_token')
 
-            let target_value = tr_elm.find('.target').val()
-
             let ticker = broker.get_ticker({'token': token, 'instrument_token': instrument_token})
+
+            let target_value = tr_elm.find('.target').val()
 
             if(target_value == undefined || target_value == '') {
                 milestone_manager.remove_target(row_id);
@@ -1719,6 +1722,16 @@ client_api = function () {
                 let sl_obj = milestone_manager.get_value_object(sl_value)
                 milestone_manager.add_sl(row_id, ticker, ttype, trtype, sl_obj, true);
             }
+
+            let void_cond = tr_elm.find('.void-cond').val()
+
+            if(void_cond == undefined || void_cond == '') {
+                milestone_manager.remove_void_cond(row_id);
+            } else {  // SL has some value
+                let void_cond_obj = milestone_manager.get_value_object(void_cond)
+                milestone_manager.add_void_cond(row_id, ticker, ttype, trtype, void_cond_obj, true);
+            }
+
 
             let entry_obj = milestone_manager.get_value_object(entry_value)
             if((entry_obj.type != MS_TYPE.price_based && entry_obj.value != '') || is_paper_trade()) {  // Spot based entry
@@ -2080,6 +2093,10 @@ client_api = function () {
             this.sl_hit_count = 0;
             this.open_order = false;
             this.order_id = '';
+            this.entry;
+            this.target;
+            this.sl;
+            this.void_cond;
         }
 
         set_open_order(open_order, order_id) {
@@ -2142,6 +2159,14 @@ client_api = function () {
             this.sl_hit_count++;
         }
 
+        set_void_cond(void_cond) {
+            this.void_cond = void_cond;
+        }
+
+        get_void_cond() {
+            return this.void_cond;
+        }
+
         del_entry() {
             delete this.entry
         }
@@ -2153,6 +2178,14 @@ client_api = function () {
         del_sl() {
             this.sl_hit_count = 0;
             delete this.sl
+        }
+
+        del_void_cond() {
+            delete this.void_cond
+        }
+
+        is_safe_to_delete() {
+            return this.entry == undefined && this.target == undefined && this.sl == undefined && this.void_cond == undefined;
         }
     }
 
@@ -2328,11 +2361,28 @@ client_api = function () {
             console.log(`${row_id} ${ttype.toUpperCase()} SL: ${JSON.stringify(value_obj)}  Token:${token}`)
         }
 
+        add_void_cond(row_id, token, ttype, buy_sell, value_obj, open_order=false) {
+            let old_ms = this.milestones[row_id]
+            let order_id = open_order? $(`#${row_id}`).find('.order-num').html() : ""
+            if(old_ms == undefined) {
+                let ms = new MileStone(ttype, buy_sell, token);
+                ms.set_void_cond(value_obj);
+                ms.set_open_order(open_order, order_id);
+                this.milestones[row_id] = ms
+            } else {
+                old_ms.set_open_order(open_order, order_id);
+                old_ms.set_ttype(ttype)
+                old_ms.set_void_cond(value_obj)
+            }
+            console.log(`${row_id} ${ttype.toUpperCase()} Void Condition: ${JSON.stringify(value_obj)}  Token:${token}`)
+        }
+
+
         remove_entry(row_id) {
             let old_ms = this.milestones[row_id]
             if (old_ms != undefined) {
                 old_ms.del_entry()
-                if( old_ms.get_target()== undefined && old_ms.get_sl() == undefined) {
+                if( old_ms.is_safe_to_delete()) {
                     delete this.milestones[row_id]
                 }
             }
@@ -2352,7 +2402,7 @@ client_api = function () {
             let old_ms = this.milestones[row_id]
             if (old_ms != undefined) {
                 old_ms.del_target()
-                if( old_ms.get_entry()=='undefined' && old_ms.get_sl() == 'undefined') {
+                if( old_ms.is_safe_to_delete()) {
                     delete this.milestones[row_id]
                 }
             }
@@ -2362,11 +2412,22 @@ client_api = function () {
             let old_ms = this.milestones[row_id]
             if (old_ms != undefined) {
                 old_ms.del_sl()
-                if( old_ms.get_entry()=='undefined' && old_ms.get_target() == 'undefined') {
+                if( old_ms.is_safe_to_delete()) {
                     delete this.milestones[row_id]
                 }
             }
         }
+
+        remove_void_cond(row_id) {
+            let old_ms = this.milestones[row_id]
+            if (old_ms != undefined) {
+                old_ms.del_void_cond()
+                if( old_ms.is_safe_to_delete()) {
+                    delete this.milestones[row_id]
+                }
+            }
+        }
+
 
         increment_sl_hit_count(row_id) {
             let ms = this.milestones[row_id]
@@ -2602,14 +2663,21 @@ client_api = function () {
                     check_entry_trigger(row_id, mile_stone)
                 }
 
-                if(mile_stone.get_target() != undefined && !mile_stone.open_order) {// If it has target object
-                    // console.log('checking target trigger')
-                    check_target_trigger(row_id, mile_stone)
-                }
+                if(mile_stone.open_order) {
+                    if(mile_stone.get_void_cond() != undefined) {// If it has void condition defined
+                        // console.log('checking void condition')
+                        check_void_cond_trigger(row_id, mile_stone)
+                    }
+                } else {
+                    if (mile_stone.get_target() != undefined) {// If it has target object
+                        // console.log('checking target trigger')
+                        check_target_trigger(row_id, mile_stone)
+                    }
 
-                if(mile_stone.get_sl() != undefined && !mile_stone.open_order) {// If it has sl object
-                    // console.log('checking SL trigger')
-                    check_sl_trigger(row_id, mile_stone)
+                    if (mile_stone.get_sl() != undefined) {// If it has sl object
+                        // console.log('checking SL trigger')
+                        check_sl_trigger(row_id, mile_stone)
+                    }
                 }
             }
 
@@ -2664,6 +2732,62 @@ client_api = function () {
                         })
                         tr_elm.remove();    //Remove entry from Open order table
                     }
+                }
+            }
+
+            function check_void_cond_trigger(row_id, mile_stone) {  //If void condition is triggered, open order needs to be cancelled
+                let cur_spot_value = 0;
+                let void_cond_obj = mile_stone.get_void_cond();
+                let trig_value = parseFloat(void_cond_obj.value);
+                let ttype = mile_stone.ttype;
+                let buy_sell = mile_stone.buy_sell;
+                if (void_cond_obj.type == MS_TYPE.spot_based) {
+                    switch(void_cond_obj.instrument) {
+                        case "nifty" : cur_spot_value = live_data[nifty_tk]; break;
+                        case "bank_nifty" : cur_spot_value = live_data[bank_nifty_tk]; break;
+                        case "fin_nifty" : cur_spot_value = live_data[fin_nifty_tk]; break;
+                    }
+                } else if (void_cond_obj.type == MS_TYPE.token_based) {
+                    cur_spot_value = live_data[void_cond_obj.instrument];
+                } else { // Price based
+                    cur_spot_value = live_data[mile_stone.token]; //Check for LTP of the instrument
+                }
+
+                console.log(`Checking Void Condition : ${ttype} for ${void_cond_obj.instrument} current : ${cur_spot_value}  trig : ${trig_value}`)
+
+                if (void_cond_obj.type == MS_TYPE.spot_based) {
+                    if (ttype === 'bull') {
+                        if(cur_spot_value >= trig_value) {
+                            void_cond_triggered()
+                        }
+                    } else if (ttype === 'bear') {
+                        if(cur_spot_value <= trig_value) {
+                            void_cond_triggered()
+                        }
+                    }
+                } else {  //Price based and token based
+                    // Instrument LTP based checking
+                    if (buy_sell === 'B') {
+                        if (cur_spot_value >= trig_value) {
+                            void_cond_triggered()
+                        }
+                    } else if (buy_sell === 'S') {
+                        if (cur_spot_value <= trig_value) {
+                            void_cond_triggered()
+                        }
+                    }
+                }
+
+                function void_cond_triggered() {
+                    let tr_elm = $(`#${row_id}`)
+
+                    tr_elm.find('.cancel').click();
+
+                    let name = "row: " + row_id
+                    let msg = "Void condition triggered for " + name + " Trigger value = " + trig_value + " Current value = " + cur_spot_value
+                    lib.show_success_msg(msg)
+                    console.log(msg)
+                    milestone_manager.remove_milestone(row_id)
                 }
             }
 
@@ -2749,7 +2873,6 @@ client_api = function () {
                     milestone_manager.remove_milestone(row_id)
                 }
             }
-
 
             function check_sl_trigger(row_id, mile_stone) {
                 let cur_spot_value = 0;
