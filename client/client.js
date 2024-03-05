@@ -2191,7 +2191,7 @@ client_api = function () {
                             instrument = matches[1];        // Token is extracted into instrument
                             value = matches[2];
 
-                            let params = {exch: "NFO", token: instrument}       //Token is subscribed to make sure to receive its live_data
+                            let params = {exch: "NFO", token: instrument, instrument_token: instrument}       //Token is subscribed to make sure to receive its live_data
                             let sym_token = broker.get_subscribe_token(params);
                             broker.subscribe_token(sym_token);
                         }
