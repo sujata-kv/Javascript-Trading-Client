@@ -1611,6 +1611,13 @@ client_api = function () {
                                 sl = tr_elm.find('.sl').val().trim();
                             }
                         }
+
+                        playSound = function () {
+                            var audio = new Audio('../audio/beep_beep.mp3');
+                            audio.loop = false;
+                            audio.play();
+                        }
+                        playSound();
                         orderbook.place_paper_trade(params, live_data[broker.get_ticker(params)], target, sl)
                     } else {    //Limit order. Wait for price to reach the limit to enter paper trade
                         params.norenordno = "paper_open_"
@@ -2331,7 +2338,7 @@ client_api = function () {
 
         add_target(row_id, token, ttype, buy_sell, value_obj, open_order=false) {
             let old_ms = this.milestones[row_id]
-            let order_id = open_order? $(`#${row_id}`).find('.order-num').html() : ""
+            let order_id = open_order? $(`#${row_id}`).attr('ordid') : ""
             if(old_ms == undefined) {
                 let ms = new MileStone(ttype, buy_sell, token);
                 ms.set_target(value_obj);
@@ -2347,7 +2354,7 @@ client_api = function () {
 
         add_sl(row_id, token, ttype, buy_sell, value_obj, open_order=false) {
             let old_ms = this.milestones[row_id]
-            let order_id = open_order? $(`#${row_id}`).find('.order-num').html() : ""
+            let order_id = open_order? $(`#${row_id}`).attr('ordid') : ""
             if(old_ms == undefined) {
                 let ms = new MileStone(ttype, buy_sell, token);
                 ms.set_sl(value_obj);
@@ -2363,7 +2370,7 @@ client_api = function () {
 
         add_void_cond(row_id, token, ttype, buy_sell, value_obj, open_order=false) {
             let old_ms = this.milestones[row_id]
-            let order_id = open_order? $(`#${row_id}`).find('.order-num').html() : ""
+            let order_id = open_order? $(`#${row_id}`).attr('ordid') : ""
             if(old_ms == undefined) {
                 let ms = new MileStone(ttype, buy_sell, token);
                 ms.set_void_cond(value_obj);
