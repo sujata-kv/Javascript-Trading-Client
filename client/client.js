@@ -232,26 +232,6 @@ client_api = function () {
                     }
                 });
             },
-            
-            map_row_to_position : function(tr_elm) {
-                tr_elm = $(tr_elm)
-                let std_pos = {
-                    'exch': tr_elm.attr('exch'),
-                    'token': tr_elm.attr('token'),
-                    'instrument_token': tr_elm.attr('instrument_token'),
-                    'tsym': tr_elm.attr('tsym'),
-                    'netqty': tr_elm.find('.netqty').html(),
-                    'buyqty': tr_elm.find('.buy_qty').html(),
-                    'sellqty': tr_elm.find('.sell_qty').html(),
-                    'netavgbuyprc': tr_elm.find('.buy_price').html(),
-                    'netavgsellprc': tr_elm.find('.sell_price').html(),
-                    'margin': tr_elm.find('.margin').html(),
-                    'dname': tr_elm.find('.dname').html(),
-                    'rpnl': tr_elm.find('.rpnl').find('span').html(),
-                    'prd': tr_elm.find('.prd').html(),
-                }
-                return std_pos;
-            },
         },
 
         search: {
@@ -3635,7 +3615,7 @@ client_api = function () {
 
                 let ticker = broker.get_ticker(item)
 
-                $('#positions_table').append(`<tr class="${cls}" exch="${item.exch}" token="${item.token}" tsym="${item.tsym}" lot_size="${item.ls}">
+                $('#positions_table').append(`<tr class="${cls}" exch="${item.exch}" token="${item.token}" instrument_token="${item.instrument_token}" tsym="${item.tsym}" lot_size="${item.ls}">
                         <td> <input type="checkbox" class="select_box" value="" onclick="client_api.util.uncheck(this)"> </td>
                         <td class="text dname">${dname}</td>
                         <td class="num">${urmtm}</td>
@@ -3675,13 +3655,27 @@ client_api = function () {
                 lib.show_error_msg("No position is selected")
             }
         },
-        
+
         map_row_to_position : function(tr_elm) {
-            let pos = broker.position.map_row_to_position(tr_elm);
-            console.log(pos)
-            return pos;
+            tr_elm = $(tr_elm)
+            let std_pos = {
+                'exch': tr_elm.attr('exch'),
+                'token': tr_elm.attr('token'),
+                'instrument_token': tr_elm.attr('instrument_token'),
+                'tsym': tr_elm.attr('tsym'),
+                'netqty': tr_elm.find('.netqty').html(),
+                'buyqty': tr_elm.find('.buy_qty').html(),
+                'sellqty': tr_elm.find('.sell_qty').html(),
+                'netavgbuyprc': tr_elm.find('.buy_price').html(),
+                'netavgsellprc': tr_elm.find('.sell_price').html(),
+                'margin': tr_elm.find('.margin').html(),
+                'dname': tr_elm.find('.dname').html(),
+                'rpnl': tr_elm.find('.rpnl').find('span').html(),
+                'prd': tr_elm.find('.prd').html(),
+            }
+            return std_pos;
         },
-        
+
         display_closed_trade :function(pos) {
             // let buy_sell = '<span class="badge bg-success">Buy</span>'      //Use buy as default.. we don't know once the position is closed, whether it was buy or sell
             let trtype='B'
@@ -3696,6 +3690,11 @@ client_api = function () {
             console.log("Loading closed position : ", JSON.stringify(pos))
             let ticker = broker.get_ticker(pos);
             let position = trade.getTradePosition(ticker, pos.exch, trtype, closed_qty);
+
+            /*Subscribe so that LTP can be shown and it can be watched*/
+            let sym_token = broker.get_subscribe_token(pos);
+            broker.subscribe_token(sym_token);
+
             if (position.length == 0 && closed_qty > 0) { //Add new position only if it doesn't exist
                 console.log("Closed position doesn't exist in active trades. So adding it..")
 
