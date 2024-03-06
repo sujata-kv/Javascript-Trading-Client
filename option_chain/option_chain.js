@@ -610,11 +610,11 @@ client_api = function () {
                 if (data.optt === 'CE') {
                     $(row.cells[this.cell_mapping.ce]).find('span').text(lp.toFixed(2));
                     if(vol!=undefined)
-                        $(row.cells[this.cell_mapping.cvol]).find('span').text((parseInt(vol)/1000).toFixed(0));
+                        $(row.cells[this.cell_mapping.cvol]).find('span').text((parseInt(vol)/100000).toFixed(0));
                 } else if (data.optt === 'PE') {
                     $(row.cells[this.cell_mapping.pe]).find('span').text(lp.toFixed(2));
                     if(vol!=undefined)
-                        $(row.cells[this.cell_mapping.pvol]).find('span').text((parseInt(vol)/1000).toFixed(0));
+                        $(row.cells[this.cell_mapping.pvol]).find('span').text((parseInt(vol)/100000).toFixed(0));
                 }
 
                 let combined_prem = parseFloat(row.cells[this.cell_mapping.ce].textContent) + parseFloat(row.cells[this.cell_mapping.pe].textContent)
