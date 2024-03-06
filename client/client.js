@@ -1600,6 +1600,8 @@ client_api = function () {
                         playSound();
                         orderbook.place_paper_trade(params, live_data[broker.get_ticker(params)], target, sl)
                     } else {    //Limit order. Wait for price to reach the limit to enter paper trade
+                        if(broker.name != "shoonya")
+                            params = broker.order.map_order(params)
                         params.norenordno = "paper_open_"
                         this.add_to_spot_order_list(params, entry_val, paper_entry=true)
                     }
@@ -2051,11 +2053,11 @@ client_api = function () {
             if(order.exch === "NFO") {
                 if(order.dname != undefined && order.dname != '') {  //"dname":"BANKNIFTY MAR FUT", "NIFTY 23MAR23 16000 PE ", "NIFTY 23MAR23 16000 CE ",
                     let dname = order.dname.trim()
-                    if (dname.endsWith("PE")) {
+                    if (dname.includes("PE")) {
                         if(order.trantype === "B") trade_type = "bear"
                         else if(order.trantype === "S") trade_type = "bull"
                     }
-                    else if (dname.endsWith("CE")) {
+                    else if (dname.includes("CE")) {
                         if(order.trantype === "B") trade_type = "bull"
                         else if(order.trantype === "S") trade_type = "bear"
                     } else {
@@ -2692,8 +2694,8 @@ client_api = function () {
                 }
                 console.log(`Checking Entry : ${ttype}  current : ${cur_value}  trig : ${trig_value}`)
 
-                //Only spot based entry should be checked. If it is price based then limit order will be placed
-                if(entry_obj.type != MS_TYPE.price_based) {
+                //Only spot based entry should be checked. If it is price based then limit order will be placed in real. But for paper trade, check has to be there.
+                if(entry_obj.type == MS_TYPE.spot_based) {
                     if (ttype === 'bull') {
                         if (cur_value <= trig_value) {
                             entry_triggered()
@@ -2702,6 +2704,14 @@ client_api = function () {
                         if (cur_value >= trig_value) {
                             entry_triggered()
                         }
+                    }
+                } else if(entry_obj.type == MS_TYPE.price_based) {  //Only paper trade
+                    if (cur_value <= trig_value) {
+                        entry_triggered()
+                    }
+                } else if(entry_obj.type == MS_TYPE.token_based) {  //TODO - Yet to be implemented
+                    if (cur_value <= trig_value) {
+                        entry_triggered()
                     }
                 }
 
