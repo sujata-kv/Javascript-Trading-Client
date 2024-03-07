@@ -1,20 +1,6 @@
 client_api = window.client_api || {};
 
 client_api = function () {
-
-/*
-    let navigation = {
-        segments : [
-            'table.watch-list',
-            'table.active-trades',
-            'table.open-orders',
-            'table.order-book',
-            'table.positions'
-        ],
-        focused_segment : 0,
-    }
-*/
-
     let vix_tk, nifty_tk, bank_nifty_tk, fin_nifty_tk = '';
     let user_id = '', session_token='', ws = '';
     let subscribed_symbols = []
@@ -4057,24 +4043,10 @@ $(document).ready(function() {
     });
 
     document.addEventListener('keydown', function (event) {
-        if(event.ctrlKey && event.key.toLowerCase() == "s") {
+        if(event.ctrlKey && event.key.toLowerCase() == "s") { // Ctrl + S, focuses on search box for instrument
             event.preventDefault();
             $('input.search-instrument').focus();
-        } /*else if(event.altKey && event.key.toLowerCase() == "w") {
-            $('table.watch-list').addClass('selected')
-        } else if(event.altKey && event.key.toLowerCase() == "a") {
-            event.preventDefault();
-            $('table.active-trades').addClass('selected')
-        } else if(event.altKey && event.key.toLowerCase() == "o") {
-            event.preventDefault();
-            $('table.open-orders').addClass('selected')
-        } else if(event.altKey && event.key.toLowerCase() == "b") {
-            event.preventDefault();
-            $('table.order-book').addClass('selected')
-        } else if(event.altKey && event.key.toLowerCase() == "p") {
-            event.preventDefault();
-            $('table.positions').addClass('selected')
-        }*/
+        }
     })
 
     $("#watch_list_body").sortable({
