@@ -3529,12 +3529,12 @@ client_api = function () {
                     spot = Math.round(spot/round) * round
                     $(input).val("Finnifty " + spot)
                 }
-            } else if(e.key == "Enter") { // TODO - Doesn't work as of now. Needs some modification
-                // $('#add_to_watchlist').click();
             } else if(e.ctrlKey && e.key.toLowerCase() == "x") {  // Ctrl + x  clears input
                 $(input).val("")
             }  else if(e.ctrlKey && e.key.toLowerCase() == "a") {  // Ctrl + a  selects input
                 $(input).select();
+            } else if(e.key == 'Escape') {
+                $(input).blur()
             }
         },
 
@@ -4057,10 +4057,10 @@ $(document).ready(function() {
     });
 
     document.addEventListener('keydown', function (event) {
-        if(event.altKey && event.key.toLowerCase() == "s") {
+        if(event.ctrlKey && event.key.toLowerCase() == "s") {
             event.preventDefault();
             $('input.search-instrument').focus();
-        } else if(event.altKey && event.key.toLowerCase() == "w") {
+        } /*else if(event.altKey && event.key.toLowerCase() == "w") {
             $('table.watch-list').addClass('selected')
         } else if(event.altKey && event.key.toLowerCase() == "a") {
             event.preventDefault();
@@ -4074,7 +4074,7 @@ $(document).ready(function() {
         } else if(event.altKey && event.key.toLowerCase() == "p") {
             event.preventDefault();
             $('table.positions').addClass('selected')
-        }
+        }*/
     })
 
     $("#watch_list_body").sortable({
