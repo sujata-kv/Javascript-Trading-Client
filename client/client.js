@@ -106,9 +106,9 @@ client_api = function () {
                     // trigger("quote", [result]);
                 }
                 if (result.t == 'om') {
-                    console.log('On message : ' + result.t)
-                    // console.log("..................  OM ...................")
+                    console.log('On message : ----------- ' + result.t)
                     console.log(result)
+                    orderbook.handle_order_update(result)
                 }
             }
 
@@ -333,7 +333,7 @@ client_api = function () {
                 values["ret"] = 'DAY';
                 values["remarks"] = remarks;
 
-                // values["amo"] = "Yes";          // TODO - AMO ORDER
+                values["amo"] = "Yes";          // TODO - AMO ORDER
 
                 return values;
             },
@@ -342,19 +342,20 @@ client_api = function () {
                 shoonya.post_request(shoonya.url.place_order, params, success_cb);
             },
 
-            cancel_order: function (orderno, tr_elm, success_cb) {
+            cancel_order: function (orderno) {
                 let values = {'ordersource': 'WEB'};
                 values["uid"] = user_id;
                 values["norenordno"] = orderno;
 
                 shoonya.post_request(broker.url.cancel_order, values, function (data) {
-                    if (data.stat.toUpperCase() === "OK")
-                        if(tr_elm!=null) tr_elm.remove();
-
-                    if (data.result != undefined) {
+                    if (data.stat.toUpperCase() === "OK" && data.result != undefined) {
                         let orderno = data.result;  //For cancel order, order-id is contained in result variable
-                        if(success_cb!=undefined)
-                            broker.order.get_orderbook(success_cb)
+                        // success_cb(orderno)
+                        console.info("Cancel request placed for the order num : ", orderno)
+                    } else {
+                        lib.show_error_msg("Something went wrong while trying to cancel order ", orderno)
+                        console.error("Something went wrong while trying to cancel order ", orderno)
+                        console.error(data)
                     }
                 });
             },
@@ -1012,7 +1013,7 @@ client_api = function () {
                 });
             },
 
-            cancel_order: function (orderno, tr_elm, success_cb) {
+            cancel_order: function (orderno) {
                 let variety = tr_elm.attr('variety')
                 // let url = kite.url.cancel_order + "regular/" + orderno + "?order_id=" + orderno + "&parent_order_id=&variety=regular"
                 let url = kite.url.cancel_order + variety + "/" + orderno + "?order_id=" + orderno + "&parent_order_id=&variety=" + variety
@@ -1306,52 +1307,92 @@ client_api = function () {
         }
     }
 
+    const ORDER_TYPE = Object.freeze({
+        fresh_order : "fresh",
+        open_order : "open",
+        exit_order : "exit",
+        modify_order: "modify"
+    });
+
     const ACTION = Object.freeze({
         place_order: "place_order",
         modify: "modify",
         exit: "exit",
         open_order: "open_order",
+        cancel: "cancel",
     });
 
     class OpenOrderManager{
         constructor() {
-            this.open_orders = {}
+            this.open_orders = {}   // For each open order, there will be an array of actions   {'ord1': [modify, exit], 'ord2': [place_order]}
+            this.callbacks = {}     // For each open order, there will be an array of actions mapped to callbacks  {'ord1': [{modify: callback1}, {exit: callback2}], 'ord2': [{place_order: callback}]}
+            this.order_details = {}
         }
 
-        add_action(order_id, action) {
+        store_details(orderno, params) {
+            this.order_details[orderno] = params;
+        }
+
+        get_details(orderno) {
+            return this.order_details[orderno]
+        }
+
+        add_action(order_id, action, callback) {
             if (this.open_orders[order_id] == undefined) {  //Create new
                 this.open_orders[order_id] = [];
+                this.callbacks[order_id] = [];
                 this.open_orders[order_id].push(action);
+                this.callbacks[order_id].push({action : callback});
             } else {
-                if(!this.open_orders[order_id].includes(action))
+                if(!this.open_orders[order_id].includes(action)) {
                     this.open_orders[order_id].push(action)
+                    this.callbacks[order_id][action] = callback
+                }
             }
         }
 
-        add_open_order(order_id) {
+        execute_action(order, action) {
+            let order_id = order.norenordno
+            if (this.open_orders[order_id] != undefined && this.callbacks[order_id] != undefined) {
+                let callback_fn = this.callbacks[order_id][action]
+                if(callback_fn!=undefined)
+                    callback_fn(order);
+            }
+            this.remove_order_id(order_id)
+        }
+
+        add_open_order(order_id, callbk) {
             if (this.open_orders[order_id] == undefined){  //Add open order only if there is no other action present
                 console.log("!!! Add open order : ", order_id)
-                this.add_action(order_id, ACTION.open_order)
+                this.add_action(order_id, ACTION.open_order, callbk)
             }
         }
 
-        add_place_order(order_id) {
+        add_place_order(order_id, callbk) {
             console.log("!!! Add place order : ", order_id)
-            this.add_action(order_id, ACTION.place_order)
+            this.add_action(order_id, ACTION.place_order, callbk)
         }
 
-        add_exit(order_id) {
+        add_exit(order_id, callbk) {
             console.log("!!! Add exit : ", order_id)
-            this.add_action(order_id, ACTION.exit)
+            this.add_action(order_id, ACTION.exit, callbk)
         }
 
-        add_modify(order_id) { //Returns if monitored already or not
+        add_cancel(order_id, callbk) {
+            console.log("!!! Add cancel : ", order_id)
+            this.add_action(order_id, ACTION.cancel, callbk)
+        }
+
+        add_modify(order_id, callbk) { //Returns if monitored already or not
             console.log("!!! Add modify : ", order_id)
-            if(this.open_orders[order_id].includes(ACTION.modify))  // Already first modify is monitoring it
+            if(this.open_orders[order_id].includes(ACTION.modify)) {// Already first modify is monitoring it
+                this.callbacks[order_id][ACTION.modify] = callbk; //Update callback
                 return true
-            else
-                this.add_action(order_id, ACTION.modify)
+            }
+            else {
+                this.add_action(order_id, ACTION.modify, callbk)
                 return false
+            }
         }
 
         exec_permission(order_id, action) {
@@ -1391,6 +1432,7 @@ client_api = function () {
 
         remove_order_id(order_id) {
             delete this.open_orders[order_id]
+            delete this.callbacks[order_id]
         }
     }
 
@@ -1435,6 +1477,50 @@ client_api = function () {
             }
         },
 
+        handle_order_update: function(order) {
+            switch (order.status) {
+                case "OPEN":
+                    let params = open_order_mgr.get_details(order.norenordno);
+                    order.token = params.token;     //Token is not present in the OM. So, adding it
+                    orderbook.add_open_order(order)
+                    break;
+                case "PENDING":
+                    //TODO - change order status in OPEN orders to pending
+                    break;
+                case "COMPLETE": // TODO - AMO ORDER CHANGE TO COMPLETE
+                    console.log("Calling " + action + " on complete cb")
+                    oncomplete_cb(order, orders);
+                    setTimeout(function () {
+                        console.log("Playing complete order sound..")
+                        document.getElementById('notify3').play()
+                    }, 10);
+                    break;
+                case "REJECTED":
+                    orderbook.display_order_exec_msg(order);
+                    setTimeout(function () {
+                        console.log("Playing rejected order sound..")
+                        document.getElementById('notify1').play()
+                    }, 10);
+                    break;
+                case "CANCELED":
+                    open_order_mgr.execute_action(order, ACTION.cancel)
+                    orderbook.display_order_exec_msg(order);
+                    setTimeout(function () {
+                        console.log("Playing cancelled order sound..")
+                        document.getElementById('notify1').play()
+                    }, 10);
+                    break;
+                default:
+                    console.log("Unknown order status.. Please verify the order status manually in the broker client")
+                    console.log(order)
+                    orderbook.display_order_exec_msg(order);
+                    setTimeout(function () {
+                        console.log("Playing default status sound..")
+                        document.getElementById('notify1').play()
+                    }, 10);
+            }
+        },
+
         display_order_exec_msg: function(order) {
             switch (order.status) {
                 case "OPEN" :
@@ -1458,17 +1544,10 @@ client_api = function () {
             }
         },
 
-        update_open_order_list : function(orders) {
-            $('#open_order_list').html('')
-            if(orders!=undefined && Array.isArray(orders))
-                orders.forEach(function(order) {
-                    orderbook.add_open_order(order)
-                })
-        },
-
         add_open_order : function(order) {
             if (order.status == "OPEN" || order.status == "PENDING") {
-                broker.subscribe_token(order.subscribe_token)
+                let sub_token = broker.get_subscribe_token(order)
+                broker.subscribe_token(sub_token)
 
                 let type = order.amo == "Yes"? "AMO ": "";
                 let buy_sell = '';
@@ -1510,28 +1589,26 @@ client_api = function () {
 
                 let order_id = order.norenordno
                 if(!open_order_mgr.is_monitored(order_id)) {
-                    open_order_mgr.add_open_order(order_id)
-                    orderbook.get_order_status(order_id, ACTION.open_order, (function(row_id){
-                        return function(matching_order, orders){
-
-                        let tr_elm = $('#' + row_id);
-                        console.log("Row id : " + row_id + " ")
-                        let trade_pos = trade.getCounterTradePosition(tr_elm);
-                        if(trade_pos.length > 0) {
-                            //Close the position
-                            orderbook.exit_order_cb(matching_order, orders, trade_pos)
-                        } else {
-                            //Add new trade
-                            orderbook.place_order_default_cb(matching_order, orders, row_id)
-                        }
-                        tr_elm.remove();
-                    }})(row_id)
+                    open_order_mgr.add_open_order(order_id, (function(row_id){
+                        return function(order){
+                            let tr_elm = $('#' + row_id);
+                            console.log("Row id : " + row_id + " ")
+                            let trade_pos = trade.getCounterTradePosition(tr_elm);
+                            if(trade_pos.length > 0) {
+                                //Close the position
+                                orderbook.exit_order_cb(order, trade_pos)
+                            } else {
+                                //Add new trade
+                                orderbook.place_order_default_cb(order, row_id)
+                            }
+                            tr_elm.remove();
+                        }})(row_id)
                     )
                 }
             }
         },
 
-        place_buy_sell_order : function(tr_elm, buy_sell, success_cb) {
+        place_buy_sell_order : function(tr_elm, buy_sell) {
             tr_elm.find('.buy').attr('disabled', 'disabled');
             tr_elm.find('.sell').attr('disabled', 'disabled');
 
@@ -1555,16 +1632,25 @@ client_api = function () {
                 let orderId = tr_elm.attr('ordid')
                 let paper_entry = false;
                 paper_entry = orderId!=undefined && orderId.startsWith("paper");
+
                 if(!is_paper_trade() && !paper_entry) { //Real trade
-                    broker.order.place_order(params, function (data) {
-                        if (success_cb != undefined) {  // Call custom function provided.. In case of exit, it needs to remove tr
-                            console.log("Success call back is provided. Will be called")
-                            success_cb(data)
-                        } else { // No custom function provided. Default actions
-                            console.log("Default place order call back called")
-                            orderbook.place_order_cb_carry_target_sl_to_active_trade(data)
+
+                    broker.order.place_order(params, (function(params) {
+                        return function (data) {
+                            if(data.stat.toUpperCase() === "OK") {
+                                let order_id = data.norenordno;
+                                console.log("place order OK : " + order_id);
+                                open_order_mgr.store_details(order_id, params)
+
+                               /* open_order_mgr.add_place_order(data.norenordno, function(order){
+                                    order.token = token
+                                    orderbook.place_order_default_cb(order, row_id)
+                                });*/
+
+                            } else
+                                lib.show_error_msg(data.emsg);
                         }
-                    })
+                    })(params))
                 } else {    //Paper trade
                     if(entry_val == 0.0) { //Market order. Place paper trade order immediately
                         params.norenordno = tr_elm.attr('ordid')
@@ -1641,9 +1727,21 @@ client_api = function () {
                 milestone_manager.add_entry(row_id, ticker, ttype, item.trantype, entry_obj);
         },
 
-        update_open_orders : function() {
+        show_open_orders : function() {
             hide_other_tabs('#open_orders')
-            broker.order.get_orderbook(function(data) {orderbook.update_open_order_list(data);})
+            broker.order.get_orderbook(function(orders) {
+                // $('#open_order_list').html('')
+                if(orders!=undefined && Array.isArray(orders)) {
+                    orders.forEach(function (order) {
+                        let ord = $(`#open_order_list tr[ordid=${order.norenordno}]`)
+                        if(ord.length == 0) {   // Add open order only if the order is not present in the open orders
+                            orderbook.add_open_order(order)
+                        } /*else {
+                            console.debug(`${order.norenordno} already present in the open orders`)
+                        }*/
+                    })
+                }
+            })
         },
 
         cancel_order : function(td_elm) {
@@ -1655,14 +1753,18 @@ client_api = function () {
                 milestone_manager.remove_milestone(row_id);
                 tr_elm.remove();
             } else {
-                broker.order.cancel_order(orderno, tr_elm, function(orders) {
-                    let matching_order = orders.find(order => order.norenordno === orderno)
-                    if (matching_order != undefined) {
-                        // orderbook.display_order_exec_msg(matching_order);    //Already being displayed in get_order_status
-                    }
-                    milestone_manager.remove_milestone(row_id); //Remove milestone
-                    orderbook.update_open_order_list(orders);
+                open_order_mgr.add_cancel(orderno, function(order) {
+                    orderbook.remove_open_order(order.norenordno)
                 })
+                broker.order.cancel_order(orderno)
+            }
+        },
+
+        remove_open_order: function(orderno){
+            let tr_elm = $(`#open_order_list tr[ordid=${orderno}]`)
+            if(tr_elm.length == 1) {
+                milestone_manager.remove_milestone(tr_elm.attr('id')); //Remove milestone
+                tr_elm.remove();
             }
         },
 
@@ -1753,10 +1855,10 @@ client_api = function () {
                             })(row_id));
                         }
                     });
-                } else { // Place fresh order as spot entry value has been removed as orderno contains "Spot based entry"
+                } else { // Place fresh order as the spot entry is triggered. So the orderno field contains "Spot based entry"
                     if(!is_paper_trade()) { //Do this only if real trade
                         orderbook.place_buy_sell_order(tr_elm, tr_elm.attr('trtype'), function (data) {
-                            orderbook.place_order_cb_carry_target_sl_to_active_trade(data, row_id)
+                            orderbook.place_order_cb(data, row_id)
                         });
                         tr_elm.remove()
                     }
@@ -1765,7 +1867,7 @@ client_api = function () {
 
             setTimeout(function() {
                 tr_elm.find('.modify').removeAttr('disabled');
-            }, 1000)
+            }, 500)
         },
 
         get_row_id_by_order_id : function(order_id) {
@@ -1773,46 +1875,32 @@ client_api = function () {
             return tr_elm.attr('id');
         },
 
-        place_order_cb_carry_target_sl_to_active_trade : function (data, row_id) {
-            if(data.stat.toUpperCase() === "OK") {
-                console.log("place_order_cb_carry_target_sl_to_active_trade row_id : " + row_id )
-                orderbook.update_open_orders();
-                let order_id = data.norenordno;
+        place_order_default_cb : function(order, row_id) {
+            if(order.status == "OPEN" || order.status == "PENDING") {
+                orderbook.add_open_order(order)
+            } else if(order.status == "COMPLETE") {
+                let order_id = order.norenordno
+                console.log("Place Order completed.. " + order_id)
+                console.log(open_order_mgr.open_orders[order_id])
+                if (row_id == undefined)
+                    row_id = orderbook.get_row_id_by_order_id(order_id);
 
-                open_order_mgr.add_place_order(data.norenordno)
+                milestone_manager.add_order_id(row_id, order_id);
 
-                orderbook.get_order_status(order_id, ACTION.place_order, (function(row_id){
-                    return function(matching_order, orders){
-                        orderbook.place_order_default_cb(matching_order, orders, row_id)
-                    }
-                })(row_id));
-            } else
-                lib.show_error_msg(data.emsg);
-        },
-
-        place_order_default_cb : function(matching_order, orders, row_id) {
-
-            let  order_id = matching_order.norenordno
-            console.log("Place Order completed.. " + order_id)
-            console.log(open_order_mgr.open_orders[order_id])
-            if (row_id == undefined)
-                row_id = orderbook.get_row_id_by_order_id(order_id);
-
-            milestone_manager.add_order_id(row_id, order_id);
-
-            matching_order.prc = matching_order.avgprc; // When order status is COMPLETE avgprc field contains the correct price
-            const ms_obj = milestone_manager.get_milestone_by_order_id(order_id);
-            let target = '';
-            let sl = '';
-            if (ms_obj != undefined) {
-                const old_row_id = ms_obj.row_id;
-                target = milestone_manager.get_value_string(ms_obj.milestone.target)
-                sl = milestone_manager.get_value_string(ms_obj.milestone.sl)
-                milestone_manager.remove_milestone(old_row_id); //Target and SL have been taken into Active Trade Row
+                order.prc = order.avgprc; // When order status is COMPLETE avgprc field contains the correct price
+                const ms_obj = milestone_manager.get_milestone_by_order_id(order_id);
+                let target = '';
+                let sl = '';
+                if (ms_obj != undefined) {
+                    const old_row_id = ms_obj.row_id;
+                    target = milestone_manager.get_value_string(ms_obj.milestone.target)
+                    sl = milestone_manager.get_value_string(ms_obj.milestone.sl)
+                    milestone_manager.remove_milestone(old_row_id); //Target and SL have been taken into Active Trade Row
+                }
+                console.log("Adding active trade row now for " + order_id)
+                trade.display_active_trade(order, target, sl);
+                orderbook.update_open_order_list(orders);
             }
-            console.log("Adding active trade row now for " + order_id)
-            trade.display_active_trade(matching_order, target, sl);
-            orderbook.update_open_order_list(orders);
         },
 
         place_paper_trade : function(order, ltp, target, sl) {
@@ -1860,16 +1948,14 @@ client_api = function () {
                 broker.order.exit_order(values, function (data) {
                     if (data.stat.toUpperCase() === "OK") {
                         let orderno = data.norenordno;
-                        open_order_mgr.add_exit(orderno)
-
-                        orderbook.get_order_status(orderno, ACTION.exit, (function (tr_elm) {
-                            return function (matching_order, orders) {
-                                orderbook.exit_order_cb(matching_order, orders, tr_elm);
+                        open_order_mgr.add_exit(orderno, (function (tr_elm) {
+                            return function (matching_order) {
+                                orderbook.exit_order_cb(matching_order, tr_elm);
                                 open_order_mgr.remove_order_id(orderno)
                             }
                         })(tr_elm))
 
-                        orderbook.update_open_orders();  // This line was before add_exit() call above. Moved to see if it fixes the kill-switch bug
+                        // orderbook.update_open_orders();  // This line was before add_exit() call above. Moved to see if it fixes the kill-switch bug
                     } else
                         lib.show_error_msg(data.emsg);
                 });
@@ -1879,14 +1965,13 @@ client_api = function () {
                 values.avgprc = tr_elm.find('.ltp').text()
                 values.norentm = new Date().toLocaleTimeString()
                 values.remarks = values.remarks == undefined? values.tag : values.remarks
-                orderbook.exit_order_cb(values, null, tr_elm);
+                orderbook.exit_order_cb(values, tr_elm);
             }
         },
 
-        exit_order_cb: function(matching_order, orders, tr_elm){
-            console.log("Exit order complete cb : "+ matching_order.norenordno)
-            // console.log(open_order_mgr.open_orders[matching_order.norenordno])
-            console.log(matching_order)
+        exit_order_cb: function(order, tr_elm){
+            console.log("Exit order complete cb : "+ order.norenordno)
+            console.log(order)
 
             milestone_manager.remove_milestone(tr_elm.attr('id'));
             tr_elm.removeClass('table-danger'); //For bearish trade, this class is present.. needs to be removed in order to turn it into gray
@@ -1894,12 +1979,12 @@ client_api = function () {
             tr_elm.attr('trade', 'closed');
             let td_elm = tr_elm.find('.exit-limit').parent();
             // let remarks = matching_order.remarks.substring(0, matching_order.remarks.indexOf(" Vix"));
-            let remarks = matching_order.remarks;
-            td_elm.html(`<span class="badge badge-pill bg-dark">${matching_order.norentm.split(" ")[0]}</span>
+            let remarks = order.remarks;
+            td_elm.html(`<span class="badge badge-pill bg-dark">${order.norentm.split(" ")[0]}</span>
                                     </br><span class="badge bg-primary">${remarks}</span>
-                                    </br><span class="price exit-price">${matching_order.avgprc}</span>
+                                    </br><span class="price exit-price">${order.avgprc}</span>
                                 `);
-            trade.update_pnl(tr_elm, matching_order.avgprc)
+            trade.update_pnl(tr_elm, order.avgprc)
             let group_id = tr_elm.parent().attr('id')
             trade.update_total_pnl(group_id)
 
@@ -1907,10 +1992,6 @@ client_api = function () {
             tr_elm.find('.exit').parent().html(`<button type="button" class="btn btn-dark btn-sm delete" onclick="client_api.trade.delete(this)">Delete</button>`);
             tr_elm.find('.qty').attr('disabled', 'disabled');
             tr_elm.find('.exit').attr('disabled', 'disabled');
-
-            if(orders) { // In case of paper trade, orders will be null and the below code will not execute
-                orderbook.update_open_order_list(orders);
-            }
 
             //Remove SL and Target set on Total row, if there are no active trades
             if($(`#${group_id} tr[trade="active"]`).length < 1) {
@@ -1920,7 +2001,7 @@ client_api = function () {
             }
         },
 
-        get_order_status(orderno, action, oncomplete_cb) {
+        /*get_order_status(orderno, action, oncomplete_cb) {
 
             if(open_order_mgr.exec_permission(orderno, action)) {
                 // console.log(action + ": get_order_status : " + orderno + " Making get_orderbook post req")
@@ -1974,7 +2055,7 @@ client_api = function () {
                 })
             }
 
-        },
+        },*/
 
         show_orderbook : function() {
             $('#order_book_table').html("")
@@ -2658,7 +2739,7 @@ client_api = function () {
 
             trade.update_gross_pnl();
 
-            setTimeout(trade.trigger, conf.target_sl_check_interval)
+            // setTimeout(trade.trigger, conf.target_sl_check_interval)
 
             function check_entry_trigger(row_id, mile_stone) {
                 let cur_value = 0;
@@ -2711,7 +2792,7 @@ client_api = function () {
                         tr_elm.find('.entry').val('') // Set entry value to '' in order to place market order
                         milestone_manager.remove_entry(row_id)
                         orderbook.place_buy_sell_order(tr_elm, tr_elm.attr('trtype'), function(data) {
-                            orderbook.place_order_cb_carry_target_sl_to_active_trade(data, row_id)
+                            orderbook.place_order_cb(data, row_id)
                         })
                         tr_elm.remove();    //Remove entry from Open order table
                     }
@@ -2886,7 +2967,7 @@ client_api = function () {
                 }
 
                 if(sl_obj.delay != null) {
-                    sl_action_threshold = Math.round(parseInt(sl_obj.delay) * 1000 / (conf.target_sl_check_interval + 20)); //20 milli seconds, extra execution time
+                    sl_action_threshold = Math.round(parseInt(sl_obj.delay) * 1000 / (conf.target_sl_check_interval)); //+ 20;was added to denominator. removed now. check again.  20 milli seconds, extra execution time
                     console.log(`Checking SL : ${ttype} for ${sl_obj.instrument} current : ${cur_spot_value}  trig : ${trig_value}  delay : ${sl_obj.delay}s`)
                 } else
                     console.log(`Checking SL : ${ttype} for ${sl_obj.instrument} current : ${cur_spot_value}  trig : ${trig_value}`)
@@ -3994,10 +4075,10 @@ client_api = function () {
         broker.init();
         broker.connect();
         broker.search.attach_search_autocomplete();
-        setTimeout(client_api.orderbook.update_open_orders, 100);
+        setTimeout(client_api.orderbook.show_open_orders, 100);
         setTimeout(client_api.trade.load_open_positions, 100);
         setTimeout(client_api.watch_list.restore_watch_list, 100);
-        setTimeout(client_api.trade.trigger, 1000);
+        setInterval(client_api.trade.trigger, 1000);
     }
 
     function load_login_creds_from_conf() {
@@ -4012,7 +4093,7 @@ client_api = function () {
         load_login_creds_from_conf();
         select_broker();
         hide_other_tabs('#open_orders')
-        setInterval(lib.updateClock, 1000);
+        setInterval(lib.updateClock,  conf.target_sl_check_interval);
     });
 
     return {
