@@ -8,6 +8,7 @@ client_api = function () {
     let logged_in = false;
     let live_data = {};
     let broker = '';
+    let tsym_token_map = {};
 
     function select_broker() {
         let broker_name = $('#broker_option').val();
@@ -333,7 +334,7 @@ client_api = function () {
                 values["ret"] = 'DAY';
                 values["remarks"] = remarks;
 
-                values["amo"] = "Yes";          // TODO - AMO ORDER
+                // values["amo"] = "Yes";          // TODO - AMO ORDER
 
                 return values;
             },
@@ -1557,8 +1558,8 @@ client_api = function () {
                     } else { //If already present in open orders, update it
                         orderbook.modify_open_order(order)
                     }
-
                     break;
+
                 case "COMPLETE": // TODO - TO DEBUG AMO ORDER CHANGE COMPLETE TO OPEN. Revert to COMPLETE once debugging is done
                     console.log("Order completed " + order.norenordno)
                     orderbook.complete_order_callback(order)
@@ -1567,14 +1568,16 @@ client_api = function () {
                         document.getElementById('notify3').play()
                     }, 10);
                     break;
+
                 case "REJECTED":
                     orderbook.display_order_exec_msg(order);
-                    orderbook.remove_open_order(order.norenordno)
+                    // orderbook.remove_open_order(order.norenordno)
                     setTimeout(function () {
                         console.log("Playing rejected order sound..")
                         document.getElementById('notify1').play()
                     }, 10);
                     break;
+
                 case "CANCELED":
                     orderbook.display_order_exec_msg(order);
                     orderbook.remove_open_order(order.norenordno)
@@ -1583,6 +1586,7 @@ client_api = function () {
                         document.getElementById('notify1').play()
                     }, 10);
                     break;
+
                 default:
                     console.log("Unknown order status.. Please verify the order status manually in the broker client")
                     console.log(order)
@@ -1663,17 +1667,22 @@ client_api = function () {
         },
 
         complete_order_callback: function(order) {
-            let tr_elm = $('#' + row_id);
-            console.log("Row id : " + row_id + " ")
-            let trade_pos = trade.getCounterTradePosition(tr_elm);
+            let counter_trtype= order.trantype === 'B'? 'S': 'B'
+            order.token = tsym_token_map[order.tsym]
+
+            console.log("Trying to find counter position : " + order.exch + "|" + order.token + " - " + order.qty + " trtype = " + counter_trtype);
+            let trade_pos = trade.getTradePosition(order.token, order.exch, counter_trtype, order.qty);
+
             if(trade_pos.length > 0) {
                 //Close the position
                 orderbook.exit_order_cb(order, trade_pos)
             } else {
                 //Add new trade
-                orderbook.place_order_default_cb(order, row_id)
+                orderbook.place_order_default_cb(order)
             }
-            tr_elm.remove();
+            let row_id = orderbook.find_row_id_by_order_id(order.norenordno);
+            if(row_id != undefined)
+                $(`#${row_id}`).remove();
         },
 
         modify_open_order: function(order) {
@@ -1734,11 +1743,14 @@ client_api = function () {
                 if(!is_paper_trade() && !paper_entry) { //Real trade
 
                     order_mgr.store(params, tr_elm.attr('id'));
-                    broker.order.place_order(params, (function(params, su_order_id) {
+                    broker.order.place_order(params, (function(params) {
                         return function (data) {
                             if(data.stat.toUpperCase() === "OK") {
                                 let order_id = data.norenordno;
                                 console.log("place order OK : " + order_id);
+
+                                let ticker = broker.get_ticker(params);
+                                tsym_token_map[params.tsym] = ticker
                                 order_mgr.link_order_id(params, order_id);
                             } else
                                 lib.show_error_msg(data.emsg);
@@ -1935,20 +1947,21 @@ client_api = function () {
             }, 500)
         },
 
-        get_row_id_by_order_id : function(order_id) {
+        find_row_id_by_order_id : function(order_id) {
             let tr_elm = $(`#open_order_list tr[ordid=${order_id}]`)
-            return tr_elm.attr('id');
+            if(tr_elm!=undefined)
+                return tr_elm.attr('id');
         },
 
         place_order_default_cb : function(order, row_id) {
             if(order.status == "OPEN" || order.status == "PENDING") {
-                orderbook.add_open_order(order)
+                console.error("Hey, called here --------------- ")
+                orderbook.add_open_order(order)     //TODO - Check when it gets called
             } else if(order.status == "COMPLETE") {
                 let order_id = order.norenordno
                 console.log("Place Order completed.. " + order_id)
-                console.log(open_order_mgr.open_orders[order_id])
                 if (row_id == undefined)
-                    row_id = orderbook.get_row_id_by_order_id(order_id);
+                    row_id = orderbook.find_row_id_by_order_id(order_id);
 
                 milestone_manager.add_order_id(row_id, order_id);
 
@@ -1964,7 +1977,7 @@ client_api = function () {
                 }
                 console.log("Adding active trade row now for " + order_id)
                 trade.display_active_trade(order, target, sl);
-                orderbook.update_open_order_list(orders);
+                orderbook.remove_open_order(order_id)
             }
         },
 
@@ -2045,7 +2058,7 @@ client_api = function () {
             let td_elm = tr_elm.find('.exit-limit').parent();
             // let remarks = matching_order.remarks.substring(0, matching_order.remarks.indexOf(" Vix"));
             let remarks = order.remarks;
-            td_elm.html(`<span class="badge badge-pill bg-dark">${order.norentm.split(" ")[0]}</span>
+            td_elm.html(`<span class="badge badge-pill bg-dark">${order.norentm!=undefined?order.norentm.split(" ")[0]:""}</span>
                                     </br><span class="badge bg-primary">${remarks}</span>
                                     </br><span class="price exit-price">${order.avgprc}</span>
                                 `);
@@ -3177,7 +3190,7 @@ client_api = function () {
                         <td>${buy_sell + ticker}</td>
                         <td class="instrument">${dname}</td>
                         <td class="entry num" title="Margin Used : ${margin_used}">
-                            <span class="badge badge-pill bg-dark">${order.norentm.split(" ")[0]}</span>
+                            <span class="badge badge-pill bg-dark">${order.norentm!=undefined?order.norentm.split(" ")[0]:""}</span>
                             </br><span class="badge bg-primary">${remarks}</span>
                             </br><span class="price" ondblclick="client_api.trade.edit_entry_price(this)">${order.prc}</span>
                         </td>
@@ -3591,6 +3604,7 @@ client_api = function () {
             }
 
             let ticker = broker.get_ticker(params);
+            tsym_token_map[params.tsym] = ticker
 
             $('#watch_list_body').append(`<tr class="${class_name}" exch="${params.exch}" token="${params.token}" instrument_token="${params.instrument_token}" tsym="${params.tsym}" lot_size="${params.lot_size}" dname="${params.sym}">
     
