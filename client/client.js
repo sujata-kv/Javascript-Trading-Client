@@ -342,7 +342,7 @@ client_api = function () {
                 shoonya.post_request(shoonya.url.place_order, params, success_cb);
             },
 
-            cancel_order: function (orderno, success_cb) {
+            cancel_order: function (orderno) {
                 let values = {'ordersource': 'WEB'};
                 values["uid"] = user_id;
                 values["norenordno"] = orderno;
@@ -351,7 +351,7 @@ client_api = function () {
                     if (data.stat.toUpperCase() === "OK" && data.result != undefined) {
                         let orderno = data.result;  //For cancel order, order-id is contained in result variable
                         console.info("Cancel request placed for the order num : ", orderno)
-                        success_cb(orderno)
+                        // success_cb(orderno)
                     } else {
                         lib.show_error_msg("Something went wrong while trying to cancel order ", orderno)
                         console.error("Something went wrong while trying to cancel order ", orderno)
@@ -360,7 +360,7 @@ client_api = function () {
                 });
             },
 
-            modify_order: function (tr_elm, entry_obj, success_call_bk) {
+            modify_order: function (tr_elm, entry_obj) {
                 let prctyp = 'LMT', price = "0.0";
                 if (entry_obj.value == '') {
                     prctyp = 'MKT'
@@ -384,8 +384,7 @@ client_api = function () {
                     if (data.stat == "Ok") {
                         let orderno = data.result;  // In case of modify and cancel order 'result' contains order ID.
                         data.orderno = orderno
-                        success_call_bk(data)
-                        lib.show_success_msg("Order with order num : " + orderno + " modified successfully")
+                        console.info("Order with order num : " + orderno + " modified successfully")
                     } else lib.show_error_msg(data.emsg)
                 })
             },
@@ -1044,7 +1043,7 @@ client_api = function () {
                 });
             },
 
-            modify_order: function (tr_elm, entry_obj, success_call_bk) {
+            modify_order: function (tr_elm, entry_obj) {
                 let prctyp = 'LIMIT', price = "0.0";
                 if (entry_obj.value == '') {
                     prctyp = 'MARKET'
@@ -1088,8 +1087,8 @@ client_api = function () {
                             if (data.data.order_id != undefined) {
                                 let orderno = data.data.order_id
                                 data.data.orderno = orderno
-                                success_call_bk(data)
-                                lib.show_success_msg("Order with order num : " + orderno + " modified successfully")
+                                // success_call_bk(data)
+                                console.info("Order with order num : " + orderno + " modified successfully")
                             }
                         } else lib.show_error_msg(data.emsg)
                     },
@@ -1307,12 +1306,6 @@ client_api = function () {
         }
     }
 
-    const ORDER_TYPE = Object.freeze({
-        new : "new",
-        modify: "modify",
-        cancel: "cancel",
-    });
-
     class OrderManager {
         constructor() {
             this.orders = {}; //Key is order_id, if order id is not present, then su_order_id
@@ -1322,18 +1315,19 @@ client_api = function () {
             return params.tsym + params.trantype + params.qty
         }
 
-        add_order_id(params, order_id) {
+        link_order_id(params, order_id) {
             let key = this.get_key(params)
             let order = this.orders[key]
             if(order != undefined) {
                 delete this.orders[key]
                 order.norenordno = order_id
                 this.orders[order_id] = order
+                console.log("Link : " + order_id + " Key = " + key)
             }
         }
 
-        store(order, order_type, row_id) {
-            order.order_type = order_type
+        store(order, row_id) {
+            console.log("Store : row_id = " + row_id + " Key = " + this.get_key(order))
             order.row_id = row_id
             if(order.norenorderno == undefined)
                 this.orders[this.get_key(order)] = order
@@ -1343,6 +1337,7 @@ client_api = function () {
 
         find_by_order_id(order_id) {
             let ord = this.orders[order_id]
+            if(ord != undefined) console.log("Found by order_id : order_id = " + order_id)
             return ord
         }
 
@@ -1352,6 +1347,7 @@ client_api = function () {
             if(tr_elm.length > 0) {
                 order.row_id = tr_elm.attr('id')
                 order.token = tr_elm.attr('token')
+                console.log("Found in open order list : row_id = " + order.row_id)
                 return order
             }
         }
@@ -1359,6 +1355,7 @@ client_api = function () {
         find_by_params(order) {
             let ord = this.orders[this.get_key(order)]
             if(ord != undefined) {
+                console.log("Found by params : key = " + this.get_key(ord) + " Order ID = " + ord.norenordno)
                 // order.token = ord.token; //For shoonya token is not present in OM message. So, add it
                 return ord;     //Stored one contains token
             }
@@ -1548,23 +1545,23 @@ client_api = function () {
             switch (order.status) {
                 case "OPEN":
                 case "PENDING":
-                    let params = order_mgr.find_in_open_orders(order.norenordno); //If already present in open orders, don't do anything.
+                    let params = order_mgr.find_in_open_orders(order);
                     if(params == undefined ) {
                         params = order_mgr.find_by_order_id(order.norenordno);
                         if (params == undefined) {
                             params = order_mgr.find_by_params(order)
                         }
-                        if (params != undefined) {
-                            order.token = params.token;     //For shoonya, Token is not present in the OM. So, adding it
-                            orderbook.add_open_order(order)
-                        }
+                        order.token = params.token;     //For shoonya, Token is not present in the OM. So, adding it
+                        orderbook.add_open_order(order)
+
+                    } else { //If already present in open orders, update it
+                        orderbook.modify_open_order(order)
                     }
+
                     break;
-                case "COMPLETE": // TODO - AMO ORDER CHANGE TO COMPLETE
+                case "COMPLETE": // TODO - TO DEBUG AMO ORDER CHANGE COMPLETE TO OPEN. Revert to COMPLETE once debugging is done
                     console.log("Order completed " + order.norenordno)
-                    let callbk = open_order_mgr.get_executable_callback(order.norenordno)
-                    if(callbk!=undefined)
-                        callbk(order)
+                    orderbook.complete_order_callback(order)
                     setTimeout(function () {
                         console.log("Playing complete order sound..")
                         document.getElementById('notify3').play()
@@ -1572,6 +1569,7 @@ client_api = function () {
                     break;
                 case "REJECTED":
                     orderbook.display_order_exec_msg(order);
+                    orderbook.remove_open_order(order.norenordno)
                     setTimeout(function () {
                         console.log("Playing rejected order sound..")
                         document.getElementById('notify1').play()
@@ -1579,6 +1577,7 @@ client_api = function () {
                     break;
                 case "CANCELED":
                     orderbook.display_order_exec_msg(order);
+                    orderbook.remove_open_order(order.norenordno)
                     setTimeout(function () {
                         console.log("Playing cancelled order sound..")
                         document.getElementById('notify1').play()
@@ -1645,11 +1644,9 @@ client_api = function () {
                     void_cond = milestone_manager.get_value_string(ret.milestone.void_cond)
                 }
 
-                // $(`#open_order_list tr[ordid=${order.norenordno}]`).remove(); //Delete row if it already exists, as it will be updated with latest values
-
                 $('#open_order_list').append(`<tr id="${row_id}" ordid="${order.norenordno}" exch="${order.exch}" tsym="${order.tsym}" 
                                     qty="${order.qty}" token="${order.token}" ttype="${ttype}" trtype="${order.trantype}" variety="${order.variety}"">
-                        <td>${buy_sell + order.token}</td>
+                        <td>${buy_sell + order.token + "<br>"+ order.status}</td>
                         <td class="order-num">${order.norenordno}</td>
                         <td>${dname}</td>
                         <th class="open_order_${order.token} ltp"></th>
@@ -1662,10 +1659,29 @@ client_api = function () {
                         <td><button type="button" class="btn btn-success modify" onclick="client_api.orderbook.modify_order(this)">Modify</button></td>
                         <td><button type="button" class="btn btn-danger cancel" onclick="client_api.orderbook.cancel_order(this)">Cancel</button></td>
                 </tr>`);
-
-                /*let order_id = order.norenordno
-                this.monitor_open_order(order_id, row_id)*/
             }
+        },
+
+        complete_order_callback: function(order) {
+            let tr_elm = $('#' + row_id);
+            console.log("Row id : " + row_id + " ")
+            let trade_pos = trade.getCounterTradePosition(tr_elm);
+            if(trade_pos.length > 0) {
+                //Close the position
+                orderbook.exit_order_cb(order, trade_pos)
+            } else {
+                //Add new trade
+                orderbook.place_order_default_cb(order, row_id)
+            }
+            tr_elm.remove();
+        },
+
+        modify_open_order: function(order) {
+            let order_id = order.norenordno;
+            let row_id = order.row_id;  //Row id is stored in OrderManager and passed on to here
+
+            $(`#${row_id}`).find('.entry').text(order.prc)
+
         },
 
         /*monitor_open_order: function(order_id, open_order_row_id) {
@@ -1717,17 +1733,17 @@ client_api = function () {
 
                 if(!is_paper_trade() && !paper_entry) { //Real trade
 
-                    let su_order_id = order_mgr.store(params, ORDER_TYPE.new, tr_elm.attr('id'));
+                    order_mgr.store(params, tr_elm.attr('id'));
                     broker.order.place_order(params, (function(params, su_order_id) {
                         return function (data) {
                             if(data.stat.toUpperCase() === "OK") {
                                 let order_id = data.norenordno;
                                 console.log("place order OK : " + order_id);
-                                order_mgr.add_order_id(params, order_id)
+                                order_mgr.link_order_id(params, order_id);
                             } else
                                 lib.show_error_msg(data.emsg);
                         }
-                    })(params, su_order_id))
+                    })(params))
 
                 } else {    //Paper trade
 
@@ -1832,9 +1848,7 @@ client_api = function () {
                 milestone_manager.remove_milestone(row_id);
                 tr_elm.remove();
             } else {
-                broker.order.cancel_order(orderno, function(order_id) {
-                    orderbook.remove_open_order(order_id)
-                })
+                broker.order.cancel_order(orderno)
             }
         },
 
@@ -1897,43 +1911,15 @@ client_api = function () {
                 milestone_manager.add_entry(row_id, ticker, ttype, trtype, entry_obj)
                 //Existing order should be cancelled, if there is an open order
                 if(!order_id.includes('Spot')) {  // If the previous order is not Spot based entry, i.e there is an open order and now it is changed to Spot order
-                    broker.order.cancel_order(order_id, null)
+                    broker.order.cancel_order(order_id)
                 }
             } else {
                 milestone_manager.remove_entry(row_id); // Entry should be present in milestone_mgr only if it is spot based. Else LIMIT & MKT order should be placed immediately
 
                 if(!order_id.includes("Spot")) {  // Modify value order.. Not spot based order
+                   // order_mgr.
+                    broker.order.modify_order(tr_elm, entry_obj)
 
-                    broker.order.modify_order(tr_elm, entry_obj, function(data) {
-                        let monitored = open_order_mgr.add_modify(data.orderno)
-
-                        if(!monitored) {
-                            orderbook.get_order_status(order_id, ACTION.modify, (function (row_id) {
-                                return function (matching_order, orders) {
-                                    let order_id = matching_order.norenordno;
-                                    console.log("Modified Order status = completed.. " + order_id + " row_id = " + row_id)
-                                    console.log(open_order_mgr.open_orders[order_id])
-                                    /*if (row_id == undefined)
-                                        row_id = orderbook.get_row_id_by_order_id(order_id);*/
-
-                                    milestone_manager.add_order_id(row_id, order_id);
-
-                                    matching_order.prc = matching_order.avgprc; // When order status is COMPLETE avgprc field contains the correct price
-                                    const ms_obj = milestone_manager.get_milestone_by_order_id(order_id);
-                                    let target = '';
-                                    let sl = '';
-                                    if (ms_obj != undefined) {
-                                        const old_row_id = ms_obj.row_id;
-                                        target = (ms_obj.milestone.target != undefined)? milestone_manager.get_value_string(ms_obj.milestone.target) : ''
-                                        sl = (ms_obj.milestone.sl != undefined)? milestone_manager.get_value_string(ms_obj.milestone.sl) : ''
-                                        milestone_manager.remove_milestone(old_row_id); //Target and SL have been taken into Active Trade Row
-                                    }
-                                    trade.display_active_trade(matching_order, target, sl);
-                                    orderbook.update_open_order_list(orders);
-                                }
-                            })(row_id));
-                        }
-                    });
                 } else { // Place fresh order as the spot entry is triggered. So the orderno field contains "Spot based entry"
                     if(!is_paper_trade()) { //Do this only if real trade
                         orderbook.place_buy_sell_order(tr_elm, tr_elm.attr('trtype'), function (data) {
@@ -2575,6 +2561,17 @@ client_api = function () {
             // var err = new Error();
             // console.log(JSON.stringify( err.stack));
             delete this.milestones[row_id]
+        }
+
+        add_mile_stone(row_id) {
+            let tr_elm = $(`#${row_id}`)
+            let ttype = tr_elm.attr('ttype')
+            let buy_sell = tr_elm.attr('trtype')
+            let token = tr_elm.attr('instrument_token') || tr_elm.attr('token')
+
+            let ms = new MileStone(ttype, buy_sell, token);
+            this.milestones[tr_elm.attr('id')] = ms
+            return ms
         }
     }
 
@@ -3281,12 +3278,12 @@ client_api = function () {
         },
 
         getTradePosition : function(token, exch, trtype, qty) {
-            //TODO - Iterate through all the groups and then find the position
+            //TODO - Parial exit.. If small quantity is exited then close the exited quantity and create new row for remaining. If qty closed is more then create sell/buy leg accordingly for the open qty
             let position;
             if(broker.name === "shoonya")
-                position = $(`#at-pool tr[token=${token}][exch=${exch}][qty=${qty}]`)     //Search by attribute value [trtype=${trtype}]
+                position = $(`#active_trades_div tbody tr[token=${token}][exch=${exch}]`)     //Search by attribute value [trtype=${trtype}] [qty=${qty}]
             else if(broker.name === "kite")
-                position = $(`#at-pool tr[instrument_token=${token}][exch=${exch}][qty=${qty}]`)    //[trtype=${trtype}]
+                position = $(`#active_trades_div tbody tr[instrument_token=${token}][exch=${exch}]`)    //[trtype=${trtype}] [qty=${qty}]
             return position;
         },
 
