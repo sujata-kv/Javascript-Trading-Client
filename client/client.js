@@ -1987,7 +1987,7 @@ client_api = function () {
             } else {
                 order_id = order.norenordno
             }
-            order.prc = ltp
+            order.prc = order.avgprc = ltp
             order.exch_tm = new Date().toLocaleString()
             order.exch = (order.exch === undefined)? order.exchange : order.exch
             order.trantype = (order.trantype === undefined)? (order.transaction_type=="BUY"? "B": "S") : order.trantype
@@ -1997,12 +1997,25 @@ client_api = function () {
 
             order.tsym = decodeURIComponent(order.tsym)
             order.dname = decodeURIComponent(order.dname)
+            order.status = "COMPLETE"
 
-/*            ++unique_row_id;
-            let row_id = "row_id_" + unique_row_id;
-            milestone_manager.add_order_id(row_id, order_id);*/
+            let counter_trtype = order.trantype === 'B'? 'S': 'B'
+            console.log("Trying to find counter position : " + order.exch + "|" + order.token + " - " + order.qty + " trtype = " + counter_trtype);
+            let trade_pos = trade.getTradePosition(order.token, order.exch, counter_trtype, order.qty);
 
-            trade.display_active_trade(order, target, sl, true);
+            let trade_status_closed = trade_pos.attr("trade") === "closed"
+            if(trade_pos.length > 0 && !trade_status_closed) {
+                //Close the position
+                orderbook.exit_order_cb(order, trade_pos)
+            } else {
+                //Add new trade
+                orderbook.place_order_default_cb(order)
+            }
+            /*if(row_id == undefined)
+                row_id = orderbook.find_row_id_by_order_id(order.norenordno);
+            if(row_id != undefined) $(`#${row_id}`).remove();*/
+
+            // trade.display_active_trade(order, target, sl, true);
         },
 
         //TODO - Partial quantity exit should be done
