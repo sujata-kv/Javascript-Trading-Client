@@ -1990,7 +1990,6 @@ client_api = function () {
             order.prc = order.avgprc = ltp
             order.exch_tm = new Date().toLocaleString()
             order.exch = (order.exch === undefined)? order.exchange : order.exch
-            order.trantype = (order.trantype === undefined)? (order.transaction_type=="BUY"? "B": "S") : order.trantype
             order.qty = (order.qty === undefined)? order.quantity : order.qty
             order.remarks = (order.remarks === undefined)? order.tag : order.remarks
             order.tsym = (order.tsym === undefined)? order.tradingsymbol : order.tsym
@@ -3248,9 +3247,9 @@ client_api = function () {
             //TODO - Parial exit.. If small quantity is exited then close the exited quantity and create new row for remaining. If qty closed is more then create sell/buy leg accordingly for the open qty
             let position;
             if(broker.name === "shoonya")
-                position = $(`#active_trades_div tbody tr[token=${token}][exch=${exch}]`)     //Search by attribute value [trtype=${trtype}] [qty=${qty}]
+                position = $(`#active_trades_div tbody tr[token=${token}][exch=${exch}][trtype=${trtype}][qty=${qty}]`)     //Search by attribute value
             else if(broker.name === "kite")
-                position = $(`#active_trades_div tbody tr[instrument_token=${token}][exch=${exch}]`)    //[trtype=${trtype}] [qty=${qty}]
+                position = $(`#active_trades_div tbody tr[instrument_token=${token}][exch=${exch}][trtype=${trtype}][qty=${qty}]`)
             return position;
         },
 
