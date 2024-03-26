@@ -1327,9 +1327,8 @@ client_api = function () {
             }
         }
 
-        store(order, row_id) {
-            console.log("Store : row_id = " + row_id + " Key = " + this.get_key(order))
-            order.row_id = row_id
+        store(order) {
+            console.log("Store : Key = " + this.get_key(order))
             if(order.norenorderno == undefined)
                 this.orders[this.get_key(order)] = order
             else
@@ -1637,6 +1636,7 @@ client_api = function () {
         },
 
         add_open_order : function(order) {
+            let row_id = ''
             if (order.status == "OPEN" || order.status == "PENDING") {
                 let sub_token = broker.get_subscribe_token(order)
                 broker.subscribe_token(sub_token)
@@ -1652,7 +1652,7 @@ client_api = function () {
 
                 let dname = (order.dname != undefined)? order.dname : order.tsym;
                 ++unique_row_id;
-                let row_id = "row_id_" + unique_row_id;
+                row_id = "row_id_" + unique_row_id;
                 let target = sl = void_cond = "";
                 let ret = milestone_manager.get_milestone_by_order_id(order.norenordno);
 
@@ -1679,6 +1679,7 @@ client_api = function () {
                         <td><button type="button" class="btn btn-danger cancel" onclick="client_api.orderbook.cancel_order(this)">Cancel</button></td>
                 </tr>`);
             }
+            return row_id
         },
 
         place_order_cb : function(data, params) {
@@ -1749,7 +1750,7 @@ client_api = function () {
 
                 if(!is_paper_trade() && !paper_entry) { //Real trade
 
-                    order_mgr.store(params, tr_elm.attr('id'));
+                    order_mgr.store(params);
                     broker.order.place_order(params, (function(params) {
                             return function(data) {
                                 orderbook.place_order_cb(data, params)
@@ -1841,6 +1842,7 @@ client_api = function () {
                     orders.forEach(function (order) {
                         let ord = $(`#open_order_list tr[ordid=${order.norenordno}]`)
                         if(ord.length == 0) {   // Add open order only if the order is not present in the open orders
+                            order_mgr.store(order);
                             orderbook.add_open_order(order)
                         } /*else {
                             console.debug(`${order.norenordno} already present in the open orders`)
@@ -2069,7 +2071,7 @@ client_api = function () {
             let remarks = order.remarks;
             td_elm.html(`<span class="badge badge-pill bg-dark">${order.exch_tm!=undefined?order.exch_tm.split(" ")[1]:""}</span>
                                     </br><span class="badge bg-primary">${remarks}</span>
-                                    </br><span class="price exit-price">${order.avgprc}</span>
+                                    </br><span class="price exit-price" ondblclick="client_api.trade.edit_entry_price(this)">${order.avgprc}</span>
                                 `);
             trade.update_pnl(tr_elm, order.avgprc)
             let group_id = tr_elm.parent().attr('id')
@@ -2349,26 +2351,28 @@ client_api = function () {
         get_value_string(value_obj) {
             let value_str = '';
 
-            switch(value_obj.type) {
-                case MS_TYPE.spot_based:
-                    switch(value_obj.instrument) {
-                        case 'nifty' : value_str = 'N '; break;
-                        case 'bank_nifty' : value_str = 'B '; break;
-                        case 'fin_nifty' : value_str = 'F '; break;
-                        // default : value_str = 'T' + instrument + " "; break;
-                    }
-                    value_str = value_str + value_obj.value.trim();
-                    break;
-                case MS_TYPE.token_based:
-                    value_str = 'T' + instrument + " " + value_obj.value.trim();
-                    break;
-                case MS_TYPE.price_based:
-                    value_str = value_obj.value.trim()
-                    break;
-            }
+            if(value_obj != undefined) {
+                switch (value_obj.type) {
+                    case MS_TYPE.spot_based:
+                        switch(value_obj.instrument) {
+                            case 'nifty' : value_str = 'N '; break;
+                            case 'bank_nifty' : value_str = 'B '; break;
+                            case 'fin_nifty' : value_str = 'F '; break;
+                            // default : value_str = 'T' + instrument + " "; break;
+                        }
+                        value_str = value_str + value_obj.value.trim();
+                        break;
+                    case MS_TYPE.token_based:
+                        value_str = 'T' + instrument + " " + value_obj.value.trim();
+                        break;
+                    case MS_TYPE.price_based:
+                        value_str = value_obj.value.trim()
+                        break;
+                }
 
-            if(value_obj.delay != undefined && value_obj.delay!=null) {
-                value_str = `${value_str} D${value_obj.delay}`;
+                if (value_obj.delay != undefined && value_obj.delay != null) {
+                    value_str = `${value_str} D${value_obj.delay}`;
+                }
             }
 
             console.log(value_str)
@@ -2433,6 +2437,10 @@ client_api = function () {
         }
 
         add_sl(row_id, token, ttype, buy_sell, value_obj, open_order=false) {
+            if(value_obj.type== MS_TYPE.price_based && row_id.startsWith("summary")) { // For group SL
+                if(value_obj.value > 0)
+                    lib.show_error_msg("SL looks to be a positive number. Please cancel immediately if wrong.")
+            }
             let old_ms = this.milestones[row_id]
             let order_id = open_order? $(`#${row_id}`).attr('ordid') : ""
             if(old_ms == undefined) {
