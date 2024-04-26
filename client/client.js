@@ -3028,7 +3028,7 @@ client_api = function () {
                         <td class="pnl"></td>
                         <td><input type="text" disabled class="form-control target" placeholder="" value="" ondblclick="client_api.watch_list.toggle_ltp(this);" onkeydown="client_api.util.handle_enter_key(event, $(this).parent().parent().find('.modify'))"></td>
                         <td><input type="text" disabled class="form-control sl" placeholder="" value="" ondblclick="client_api.watch_list.toggle_ltp(this);" onkeydown="client_api.util.handle_enter_key(event, $(this).parent().parent().find('.modify'))"></td>
-                        <td><input type="text" class="form-control exit-limit" placeholder="" ondblclick="client_api.watch_list.add_ltp(this); $(this).unbind('click');"></td>
+                        <td><input type="text" class="form-control exit-limit" placeholder="" ondblclick="client_api.watch_list.add_ltp(this); $(this).unbind('click');" onkeydown="client_api.util.handle_limit_exit(event, this, $(this).parent().parent().find('.exit'))"></td>
                         <td><input type="text" class="form-control qty" placeholder=""  value="${order.qty}"></td>
                         <td><button type="button" class="btn btn-success modify" onclick="client_api.trade.modify(this, $(this).text())">Edit</button></td>
                         <td><button type="button" class="btn btn-danger exit" onclick="client_api.trade.exit(this)">Exit</button></td>
@@ -3229,7 +3229,7 @@ client_api = function () {
                             <td class="pnl"></td>
                             <td><input type="text" disabled class="form-control target" placeholder="" ondblclick="client_api.watch_list.toggle_ltp(this);" onkeydown="client_api.util.handle_enter_key(event, $(this).parent().parent().find('.modify'))"></td>
                             <td><input type="text" disabled class="form-control sl" placeholder="" ondblclick="client_api.watch_list.toggle_ltp(this);" onkeydown="client_api.util.handle_enter_key(event, $(this).parent().parent().find('.modify'))"></td>
-                            <td><input type="text" class="form-control exit-limit" placeholder="" ondblclick="client_api.watch_list.add_ltp(this); $(this).unbind('click');"></td>
+                            <td><input type="text" class="form-control exit-limit" placeholder="" ondblclick="client_api.watch_list.add_ltp(this); $(this).unbind('click');" onkeydown="client_api.util.handle_limit_exit(event, this, $(this).parent().parent().find('.exit'))"></td>
                             <td><input type="text" class="form-control qty" placeholder=""  value="${qty}"></td>
                             <td><button type="button" class="btn btn-success modify" onclick="client_api.trade.modify(this, $(this).text())">Edit</button></td>
                             <td><button type="button" class="btn btn-danger exit" onclick="client_api.trade.exit(this)">Exit</button></td>
@@ -3951,7 +3951,19 @@ client_api = function () {
                 btn.click();
                 $(event.srcElement).blur();
             }
-        }
+        },
+
+        handle_limit_exit : function(event, input, btn) {
+            if(event.key == "Enter") {
+                let lim = $(input).text()
+                if (lim == null || lim == "") {
+                    client_api.watch_list.add_ltp(input)
+                }
+                btn.click();
+                $(event.srcElement).blur();
+            }
+        },
+
     };
 
     const toggle_exit_at_eom = function() {
