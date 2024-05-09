@@ -220,8 +220,8 @@
                         <th scope="col"></th>
                         <th scope="col">Total</th>
                         <th scope="col" class="pnl" id="pnl-at-pool"></th>
-                        <th><input type="text" disabled class="form-control target" placeholder="" value=""></th>
-                        <th><input type="text" disabled class="form-control sl" placeholder="" value=""></th>
+                        <th><input type="text" disabled class="form-control target" placeholder="" value="" onkeydown="client_api.util.handle_enter_key(event, $(this).parent().parent().find('.modify'))"></th>
+                        <th><input type="text" disabled class="form-control sl" placeholder="" value="" onkeydown="client_api.util.handle_enter_key(event, $(this).parent().parent().find('.modify'))"></th>
                         <th>
                             <select disabled class="form-select" onchange="client_api.trade.select_trade_type(this, $(this).parent().parent())" title="Trade type Bull/Bear">
                                 <option selected value="bull">Bull</option>

@@ -3465,6 +3465,8 @@ client_api = function () {
             let cur_val = $(input_elm).val().trim().toUpperCase();
             let new_val = '';
             if(cur_val == '') {
+                new_val = row_elm.find('.ltp').text();
+            } else if(/^[0-9]+/.test(cur_val)) { //If it contains spot based value, then toggle to LTP and vice versa
                 let tsym = row_elm.attr("tsym");
                 if(tsym.startsWith("NIFTY")) {
                     new_val = `N ${parseInt(live_data[nifty_tk])}`
@@ -3473,8 +3475,6 @@ client_api = function () {
                 } else if(tsym.startsWith("FIN")) {
                     new_val = `F ${parseInt(live_data[fin_nifty_tk])}`
                 }
-            } else if(/^[NBF]/.test(cur_val)) { //If it contains spot based value, then toggle to LTP and vice versa
-                new_val = row_elm.find('.ltp').text();
             } else {
                 new_val = '';
             }
@@ -3954,14 +3954,14 @@ client_api = function () {
         },
 
         handle_limit_exit : function(event, input, btn) {
-            if(event.key == "Enter") {
+/*            if(event.key == "Enter") {
                 let lim = $(input).text()
                 if (lim == null || lim == "") {
                     client_api.watch_list.add_ltp(input)
                 }
                 btn.click();
                 $(event.srcElement).blur();
-            }
+            }*/
         },
 
     };
