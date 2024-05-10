@@ -3954,14 +3954,14 @@ client_api = function () {
         },
 
         handle_limit_exit : function(event, input, btn) {
-/*            if(event.key == "Enter") {
-                let lim = $(input).text()
+            if(event.key == "Enter") {
+                let lim = $(input).val()
                 if (lim == null || lim == "") {
                     client_api.watch_list.add_ltp(input)
                 }
                 btn.click();
                 $(event.srcElement).blur();
-            }*/
+            }
         },
 
     };
