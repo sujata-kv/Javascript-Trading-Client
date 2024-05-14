@@ -1897,7 +1897,7 @@ client_api = function () {
             let remarks = matching_order.remarks;
             td_elm.html(`<span class="badge badge-pill bg-dark">${matching_order.norentm.split(" ")[0]}</span>
                                     </br><span class="badge bg-primary">${remarks}</span>
-                                    </br><span class="price exit-price">${matching_order.avgprc}</span>
+                                    </br><span class="price exit-price" ondblclick="client_api.trade.edit_entry_price(this)">${matching_order.avgprc}</span>
                                 `);
             trade.update_pnl(tr_elm, matching_order.avgprc)
             let group_id = tr_elm.parent().attr('id')
