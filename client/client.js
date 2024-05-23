@@ -3954,12 +3954,11 @@ client_api = function () {
         },
 
         handle_buy_sell : function(event, buy_btn, sell_btn) {
+            event.preventDefault();
             let input = event.srcElement;
-            //Market Buy - CTRL + Enter or CTRL+B
-            if(event.ctrlKey && event.key == "Enter" || event.ctrlKey && event.key.toLowerCase() == "b") {
-                buy_btn.click();
-                $(input).blur();
-            } else if (event.ctrlKey && event.shiftKey && event.key.toLowerCase() == "b") { // Limit buy - CTRL + Shift + B
+
+            // Limit buy - CTRL + Shift + B
+            if (event.ctrlKey && event.shiftKey && event.key.toLowerCase() == "b") {
                 let lim = $(input).val()
                 if (lim == null || lim == "") {
                     client_api.watch_list.add_ltp(input)
@@ -3967,16 +3966,23 @@ client_api = function () {
                 buy_btn.click();
                 $(input).blur();
             }
-
-            //Market Sell - CTRL + S
-            else if(event.ctrlKey && event.key.toLowerCase() == "s") {
-                sell_btn.click();
+            //Market Buy - CTRL + Enter or CTRL+B
+            else if(event.ctrlKey && event.key == "Enter" || event.ctrlKey && event.key.toLowerCase() == "b") {
+                buy_btn.click();
                 $(input).blur();
-            } else if (event.ctrlKey && event.shiftKey && event.key.toLowerCase() == "b") { // Limit sell - CTRL + Shift + S
+            }
+
+            // Limit sell - CTRL + Shift + S
+            else if (event.ctrlKey && event.shiftKey && event.key.toLowerCase() == "b") {
                 let lim = $(input).val()
                 if (lim == null || lim == "") {
                     client_api.watch_list.add_ltp(input)
                 }
+                sell_btn.click();
+                $(input).blur();
+            }
+            //Market Sell - CTRL + S
+            else if(event.ctrlKey && event.key.toLowerCase() == "s") {
                 sell_btn.click();
                 $(input).blur();
             }
