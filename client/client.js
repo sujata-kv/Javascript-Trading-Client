@@ -3954,7 +3954,7 @@ client_api = function () {
         },
 
         handle_buy_sell : function(event, buy_btn, sell_btn) {
-            event.preventDefault();
+            // event.preventDefault();
             let input = event.srcElement;
 
             // Limit buy - CTRL + Shift + B
