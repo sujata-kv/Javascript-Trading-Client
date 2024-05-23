@@ -3980,6 +3980,22 @@ client_api = function () {
                 sell_btn.click();
                 $(input).blur();
             }
+
+            // If up or down arrow is pressed, move the price up or down
+            else if(event.key == "ArrowUp") {
+                let price = parseInt($(input).val())
+                if (isNaN(price) || price == "") {
+                    price = parseInt($(input).parent().parent().find(".ltp").html())
+                }
+                $(input).val(price + 1)
+            } else if(event.key == "ArrowDown") {
+                let price = parseInt($(input).val())
+                if (isNaN(price) || price == "") {
+                    price = parseInt($(input).parent().parent().find(".ltp").html())
+                }
+                if(price > 1)
+                    $(input).val(price - 1)
+            }
         },
 
         handle_qty : function(event, lot_size) {
