@@ -3441,7 +3441,7 @@ client_api = function () {
                 <td class="token">${ticker}</td>
                 <td class="margin_req num"></td>
                 <td class="watch_${ticker} ltp" lot_size="${params.lot_size}"></td>
-                <td class="input_box"><input type="text" class="form-control entry" placeholder="" ondblclick="client_api.watch_list.toggle_ltp(this); $(this).unbind('click');" onkeydown="client_api.util.handle_buy_sell(event, $(this).parent().parent().find('.buy'), $(this).parent().parent().find('.sell'))"></td>  
+                <td class="input_box"><input type="text" class="form-control entry" placeholder="" ondblclick="client_api.watch_list.toggle_ltp(this); $(this).unbind('click');" onkeydown="client_api.util.handle_buy_sell(event, $(this).parent().parent().find('.buy'), $(this).parent().parent().find('.sell'))" title="Market buy: Shift+Enter or Shift+B \nLimit buy: Ctrl+Enter or Ctrl+B \nMarket sell: Shift+S \nLimit sell: Ctrl+S \n"></td>  
                 <td class="input_box"><input type="text" class="form-control qty" placeholder="" value="${params.lot_size}"  onkeydown="client_api.util.handle_qty(event, ${params.lot_size})"></td>
                 <td><button type="button" class="btn btn-success buy" onclick="client_api.orderbook.buy(this)">BUY</button></td>
                 <td><button type="button" class="btn btn-danger sell" onclick="client_api.orderbook.sell(this)">SELL</button></td>
@@ -3954,35 +3954,35 @@ client_api = function () {
         },
 
         handle_buy_sell : function(event, buy_btn, sell_btn) {
-            // event.preventDefault();
             let input = event.srcElement;
 
-            // Limit buy - CTRL + Shift + B
-            if (event.ctrlKey && event.shiftKey && event.key.toLowerCase() == "b") {
-                let lim = $(input).val()
-                if (lim == null || lim == "") {
-                    client_api.watch_list.add_ltp(input)
-                }
-                buy_btn.click();
-                $(input).blur();
-            }
-            //Market Buy - CTRL + Enter or CTRL+B
-            else if(event.ctrlKey && event.key == "Enter" || event.ctrlKey && event.key.toLowerCase() == "b") {
+            // Market buy - Shift + Enter or Shift + B
+            if (event.shiftKey && event.key == "Enter" || event.shiftKey && event.key.toLowerCase() == "b") {
                 buy_btn.click();
                 $(input).blur();
             }
 
-            // Limit sell - CTRL + Shift + S
-            else if (event.ctrlKey && event.shiftKey && event.key.toLowerCase() == "b") {
+            //Limit Buy - CTRL + Enter or CTRL+B
+            else if(event.ctrlKey && event.key == "Enter" || event.ctrlKey && event.key.toLowerCase() == "b") {
                 let lim = $(input).val()
                 if (lim == null || lim == "") {
                     client_api.watch_list.add_ltp(input)
                 }
+                buy_btn.click();
+                $(input).blur();
+            }
+
+            // Market sell - Shift + S
+            else if (event.shiftKey && event.key.toLowerCase() == "s") {
                 sell_btn.click();
                 $(input).blur();
             }
-            //Market Sell - CTRL + S
+            //Limit Sell - CTRL + S
             else if(event.ctrlKey && event.key.toLowerCase() == "s") {
+                let lim = $(input).val()
+                if (lim == null || lim == "") {
+                    client_api.watch_list.add_ltp(input)
+                }
                 sell_btn.click();
                 $(input).blur();
             }
