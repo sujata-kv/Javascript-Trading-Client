@@ -1545,7 +1545,7 @@ client_api = function () {
             let qty = tr_elm.find('.qty').val()
 
             let params = broker.order.get_order_params(tr_elm, buy_sell, entry_obj, qty)
-            if (entry_obj.type == MS_TYPE.spot_based) {
+            if (entry_obj.type == MS_TYPE.spot_based || entry_obj.type == MS_TYPE.token_based || entry_obj.type == MS_TYPE.counter_token) {
                 params.dname = tr_elm.attr('dname')
                 if(broker.name != "shoonya")
                     params = broker.order.map_order(params)
@@ -1637,7 +1637,7 @@ client_api = function () {
                 milestone_manager.add_entry(row_id, ticker, ttype, item.trantype, entry_obj);
                 milestone_manager.add_order_id(row_id, item.norenordno)
             }
-            else if(entry_obj.type == MS_TYPE.spot_based || entry_obj.type == MS_TYPE.token_based)
+            else if(entry_obj.type == MS_TYPE.spot_based || entry_obj.type == MS_TYPE.token_based || entry_obj.type == MS_TYPE.counter_token)
                 milestone_manager.add_entry(row_id, ticker, ttype, item.trantype, entry_obj);
         },
 
@@ -2167,6 +2167,7 @@ client_api = function () {
     const MS_TYPE = Object.freeze({
         spot_based : "spot",
         token_based : "token",
+        counter_token : "ctoken",
         price_based : "price",
         paper_entry : "paper",
     });
@@ -2197,8 +2198,13 @@ client_api = function () {
                 value = value.trim();
                 value = value.toUpperCase()
                 console.log(value)
-                if(value.startsWith('N')  || value.startsWith('B') || value.startsWith('F') || value.startsWith('T')) {
-                    type = value.startsWith('T')? MS_TYPE.token_based: MS_TYPE.spot_based;
+                if(value.startsWith('N')  || value.startsWith('B') || value.startsWith('F') || value.startsWith('T') || value.startsWith('C')) {
+                    if(value.startsWith('T'))
+                        type = MS_TYPE.token_based
+                    else if(value.startsWith('C'))
+                        type = MS_TYPE.counter_token
+                    else
+                        type = MS_TYPE.spot_based;
                     // value = value.replace(/-/, '')
                     value = value.trim()
                     let ii = (value).charAt(0)
@@ -2208,8 +2214,8 @@ client_api = function () {
                         instrument = 'bank_nifty'
                     else if(ii === 'F')
                         instrument = 'fin_nifty'
-                    else if (ii === 'T') {
-                        const regexPattern = /T(\d+) (.+)/;
+                    else if (ii === 'T' || ii === 'C') {
+                        const regexPattern = /[TC](\d+) (.+)/;
                         const matches = value.match(regexPattern);
                         if (matches) {
                             // Extracted values
@@ -2221,7 +2227,7 @@ client_api = function () {
                             broker.subscribe_token(sym_token);
                         }
                     }
-                    value = value.replace(/[ NBFT-]/g, '');
+                    value = value.replace(/[ NBFTC-]/g, '');
                 }
 
                 if(value.includes("D")) { //Extract delay
@@ -2249,6 +2255,9 @@ client_api = function () {
                     break;
                 case MS_TYPE.token_based:
                     value_str = 'T' + instrument + " " + value_obj.value.trim();
+                    break;
+                case MS_TYPE.counter_token:
+                    value_str = 'C' + instrument + " " + value_obj.value.trim();
                     break;
                 case MS_TYPE.price_based:
                     value_str = value_obj.value.trim()
@@ -2672,9 +2681,9 @@ client_api = function () {
                         case "bank_nifty" : cur_value = live_data[bank_nifty_tk]; break;
                         case "fin_nifty" : cur_value = live_data[fin_nifty_tk]; break;
                     }
-                } else if (entry_obj.type == MS_TYPE.token_based) {
+                } else if (entry_obj.type == MS_TYPE.token_based || entry_obj.type == MS_TYPE.counter_token) {
                     cur_value = live_data[entry_obj.instrument];
-                } else if(entry_obj.type == MS_TYPE.paper_entry) {
+                } else if(entry_obj.type == MS_TYPE.paper_entry) { // For paper entry counter token and token doesn't work
                     // console.log(row_id + " Paper trade with limit order.");
                     cur_value = live_data[mile_stone.token];
                 }
@@ -2695,8 +2704,12 @@ client_api = function () {
                     if (cur_value <= trig_value) {
                         entry_triggered()
                     }
-                } else if(entry_obj.type == MS_TYPE.token_based) {  //TODO - Yet to be implemented
+                } else if(entry_obj.type == MS_TYPE.token_based) {
                     if (cur_value <= trig_value) {
+                        entry_triggered()
+                    }
+                } else if(entry_obj.type == MS_TYPE.counter_token) {
+                    if(cur_value >= trig_value) {
                         entry_triggered()
                     }
                 }
@@ -2730,7 +2743,7 @@ client_api = function () {
                         case "bank_nifty" : cur_spot_value = live_data[bank_nifty_tk]; break;
                         case "fin_nifty" : cur_spot_value = live_data[fin_nifty_tk]; break;
                     }
-                } else if (void_cond_obj.type == MS_TYPE.token_based) {
+                } else if (void_cond_obj.type == MS_TYPE.token_based || void_cond_obj.type == MS_TYPE.counter_token) {
                     cur_spot_value = live_data[void_cond_obj.instrument];
                 } else { // Price based
                     cur_spot_value = live_data[mile_stone.token]; //Check for LTP of the instrument
@@ -2748,15 +2761,29 @@ client_api = function () {
                             void_cond_triggered()
                         }
                     }
-                } else {  //Price based and token based
-                    // Instrument LTP based checking
-                    if (buy_sell === 'B') {
-                        if (cur_spot_value >= trig_value) {
-                            void_cond_triggered()
+                } else {
+                    //Counter token based
+                    if(void_cond_obj.type === MS_TYPE.counter_token) {
+                        if (buy_sell === 'S') {
+                            if (cur_spot_value >= trig_value) {
+                                void_cond_triggered()
+                            }
+                        } else if (buy_sell === 'B') {
+                            if (cur_spot_value <= trig_value) {
+                                void_cond_triggered()
+                            }
                         }
-                    } else if (buy_sell === 'S') {
-                        if (cur_spot_value <= trig_value) {
-                            void_cond_triggered()
+                    } else {
+                        //Price based and token based
+                        // Instrument LTP based checking
+                        if (buy_sell === 'B') {
+                            if (cur_spot_value >= trig_value) {
+                                void_cond_triggered()
+                            }
+                        } else if (buy_sell === 'S') {
+                            if (cur_spot_value <= trig_value) {
+                                void_cond_triggered()
+                            }
                         }
                     }
                 }
@@ -2786,7 +2813,7 @@ client_api = function () {
                         case "bank_nifty" : cur_spot_value = live_data[bank_nifty_tk]; break;
                         case "fin_nifty" : cur_spot_value = live_data[fin_nifty_tk]; break;
                     }
-                } else if (target_obj.type == MS_TYPE.token_based) {
+                } else if (target_obj.type == MS_TYPE.token_based || target_obj.type == MS_TYPE.counter_token) {
                     cur_spot_value = live_data[target_obj.instrument];
                 } else { // Price based
                     if(row_id.startsWith("summary-")) { // Use total P & L value in case of cumulative target and SL
@@ -2818,14 +2845,28 @@ client_api = function () {
                             target_triggered()
                         }
                     }else {
-                        // Instrument LTP based checking
-                        if (buy_sell === 'B') {
-                            if (cur_spot_value >= trig_value) {
-                                target_triggered()
+                        if(target_obj.type === MS_TYPE.counter_token) {
+                            //Counter token
+                            if (buy_sell === 'S') {
+                                if (cur_spot_value >= trig_value) {
+                                    target_triggered()
+                                }
+                            } else if (buy_sell === 'B') {
+                                if (cur_spot_value <= trig_value) {
+                                    target_triggered()
+                                }
                             }
-                        } else if (buy_sell === 'S') {
-                            if (cur_spot_value <= trig_value) {
-                                target_triggered()
+                        }
+                        else {
+                            // Instrument LTP based checking or Token based checking
+                            if (buy_sell === 'B') {
+                                if (cur_spot_value >= trig_value) {
+                                    target_triggered()
+                                }
+                            } else if (buy_sell === 'S') {
+                                if (cur_spot_value <= trig_value) {
+                                    target_triggered()
+                                }
                             }
                         }
                     }
@@ -2871,7 +2912,7 @@ client_api = function () {
                         case "bank_nifty" : cur_spot_value = live_data[bank_nifty_tk]; break;
                         case "fin_nifty" : cur_spot_value = live_data[fin_nifty_tk]; break;
                     }
-                } else if (sl_obj.type === MS_TYPE.token_based) {
+                } else if (sl_obj.type === MS_TYPE.token_based || sl_obj.type === MS_TYPE.counter_token) {
                     cur_spot_value = live_data[sl_obj.instrument];
                 } else { // Price based
                     if (row_id.startsWith("summary-")) { // Use total P & L value in case of cumulative target and SL
@@ -2901,19 +2942,33 @@ client_api = function () {
                             sl_triggered()
                         }
                     }
-                } else { //Price and token based
+                } else {
                     if(row_id.startsWith("summary-")) {
                         if (cur_spot_value <= trig_value) {
                             sl_triggered()
                         }
-                    } else {      // Instrument LTP based checking has to be this way
-                        if (buy_sell === 'B') {
-                            if (cur_spot_value <= trig_value) {
-                                sl_triggered()
+                    } else {
+                        if(sl_obj.type === MS_TYPE.counter_token) {
+                            //Counter token
+                            if (buy_sell === 'S') {
+                                if (cur_spot_value <= trig_value) {
+                                    sl_triggered()
+                                }
+                            } else if (buy_sell === 'B') {
+                                if (cur_spot_value >= trig_value) {
+                                    sl_triggered()
+                                }
                             }
-                        } else if (buy_sell === 'S') {
-                            if (cur_spot_value >= trig_value) {
-                                sl_triggered()
+                        } else {
+                            // //Price and token based
+                            if (buy_sell === 'B') {
+                                if (cur_spot_value <= trig_value) {
+                                    sl_triggered()
+                                }
+                            } else if (buy_sell === 'S') {
+                                if (cur_spot_value >= trig_value) {
+                                    sl_triggered()
+                                }
                             }
                         }
                     }
