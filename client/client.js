@@ -1,7 +1,7 @@
 client_api = window.client_api || {};
 
 client_api = function () {
-    let vix_tk, nifty_tk, bank_nifty_tk, fin_nifty_tk = '';
+    let vix_tk, nifty_tk, bank_nifty_tk, fin_nifty_tk, midcap_nifty_tk, sensex_tk, bankex_tk = '';
     let user_id = '', session_token='', ws = '';
     let subscribed_symbols = []
     let pending_to_subscribe_tokens = new Set();
@@ -55,8 +55,8 @@ client_api = function () {
         },
 
         init: function () {
-            vix_tk = '26017', nifty_tk = '26000', bank_nifty_tk = '26009', fin_nifty_tk = '26037';
-            subscribed_symbols = ["NSE|26017", "NSE|26000", "NSE|26009", "NSE|26037"];
+            vix_tk = '26017', nifty_tk = '26000', bank_nifty_tk = '26009', fin_nifty_tk = '26037', midcap_nifty_tk = '', sensex_tk = '1', bankex_tk = '12';
+            subscribed_symbols = ["NSE|26017", "NSE|26000", "NSE|26009", "NSE|26037", "BSE|1", "BSE|12"];
         },
 
         connect: function () {
@@ -438,8 +438,8 @@ client_api = function () {
         },
         
         init : function() {
-            vix_tk = 264969, nifty_tk = 256265, bank_nifty_tk = 260105, fin_nifty_tk = 257801;
-            subscribed_symbols = [256265, 260105, 257801, 264969];
+            vix_tk = 264969, nifty_tk = 256265, bank_nifty_tk = 260105, fin_nifty_tk = 257801, midcap_nifty_tk = 260873, sensex_tk = 265, bankex_tk =0 ;
+            subscribed_symbols = [256265, 260105, 257801, 264969, 260873, 265];
         },
 
         connect : function() {
@@ -2036,7 +2036,7 @@ client_api = function () {
 
         know_bull_or_bear: function(order) {
             let trade_type = "bull"
-            if(order.exch === "NFO") {
+            if(order.exch === "NFO" || order.exch === "BFO") {
                 if(order.dname != undefined && order.dname != '') {  //"dname":"BANKNIFTY MAR FUT", "NIFTY 23MAR23 16000 PE ", "NIFTY 23MAR23 16000 CE ",
                     let dname = order.dname.trim()
                     if (dname.includes("PE")) {
@@ -3423,7 +3423,7 @@ client_api = function () {
                 params.dname = $('input.watch_item').attr('dname')
                 let optt = $('input.watch_item').attr('optt')
                 params.put_option = false
-                if (optt === "PE" && params.exch === "NFO") {
+                if (optt === "PE" && (params.exch === "NFO" || params.exch === "BFO")) {
                     params.put_option = true
                 }
                 if(!this.already_exists(params.token)) {
@@ -3559,7 +3559,7 @@ client_api = function () {
                     round = conf['bank_nifty'].round_to;
                     spot = Math.round(spot/round) * round
                     $(input).val("Banknifty " + spot)
-                } else if(val == "nif" || val == "nifty") {
+                } else if(val == "nif" || val == "nift" || val == "nifty") {
                     spot = live_data[nifty_tk];
                     round = conf['nifty'].round_to;
                     spot = Math.round(spot/round) * round
@@ -3569,6 +3569,21 @@ client_api = function () {
                     round = conf['fin_nifty'].round_to;
                     spot = Math.round(spot/round) * round
                     $(input).val("Finnifty " + spot)
+                } else if(val == "mid" || val == "midcap") {
+                    spot = live_data[midcap_nifty_tk];
+                    round = conf['midcap_nifty'].round_to;
+                    spot = Math.round(spot/round) * round
+                    $(input).val("Midcpnifty " + spot)
+                } else if(val == "sen" || val == "sens" || val == "sensex") {
+                    spot = live_data[sensex_tk];
+                    round = conf['sensex'].round_to;
+                    spot = Math.round(spot/round) * round
+                    $(input).val("sensex " + spot)
+                } else if(val == "bankex" ) {
+                    spot = live_data[bankex_tk];
+                    round = conf['bankex'].round_to;
+                    spot = Math.round(spot/round) * round
+                    $(input).val("bankex " + spot)
                 }
             } else if(e.ctrlKey && e.key.toLowerCase() == "x") {  // Ctrl + x  clears input
                 $(input).val("")
