@@ -3511,7 +3511,7 @@ client_api = function () {
                 let date_str = tsym.replace('FINNIFTY', '').slice(0, 7)
                 let month_str = date_str.substring(2,5)
                 dname = dname.replace(month_str, date_str)
-            } else if(tsym.startsWith('BANKEX')) {
+            } else if(tsym.startsWith('BANKEX') || tsym.startsWith('SENSEX')) {
                 //BANKEX2460358300PE or BANKEX24JUN58300CE = tsym         dname = undefined
                 dname = this.parseTsymBankex(tsym)
             }
@@ -3669,7 +3669,7 @@ client_api = function () {
                     round = conf['midcap_nifty'].round_to;
                     spot = Math.round(spot/round) * round
                     $(input).val("MIDCPNIFTY " + spot)
-                } else if(val == "sn" || val == "sen" || val == "sens" || val == "sensex") {
+                } else if(val == "se" || val == "sen" || val == "sens" || val == "sensex") {
                     spot = live_data[sensex_tk];
                     round = conf['sensex'].round_to;
                     spot = Math.round(spot/round) * round
