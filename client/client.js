@@ -55,8 +55,8 @@ client_api = function () {
         },
 
         init: function () {
-            vix_tk = '26017', nifty_tk = '26000', bank_nifty_tk = '26009', fin_nifty_tk = '26037', midcap_nifty_tk = '', sensex_tk = '1', bankex_tk = '12';
-            subscribed_symbols = ["NSE|26017", "NSE|26000", "NSE|26009", "NSE|26037", "BSE|1", "BSE|12"];
+            vix_tk = '26017', nifty_tk = '26000', bank_nifty_tk = '26009', fin_nifty_tk = '26037', midcap_nifty_tk = '', sensex_tk = '1', bankex_tk = '12', midcap_nifty_tk = '26074';
+            subscribed_symbols = ["NSE|26017", "NSE|26000", "NSE|26009", "NSE|26037", "NSE|26074", "BSE|1", "BSE|12"];
         },
 
         connect: function () {
@@ -3467,9 +3467,54 @@ client_api = function () {
                 let date_str = tsym.replace('FINNIFTY', '').slice(0, 7)
                 let month_str = date_str.substring(2,5)
                 dname = dname.replace(month_str, date_str)
+            } else if(tsym.startsWith('BANKEX')) {
+                //BANKEX2460358300PE or BANKEX24JUN58300CE = tsym         dname = undefined
+                dname = this.parseTsymBankex(tsym)
             }
 
             return dname
+        },
+
+        parseTsymBankex : function(tsym) {
+            const instrumentName = tsym.slice(0, 6); // Extract the fixed instrument name "BANKEX"
+            const year = tsym.slice(6, 8); // Extract the year (2 characters)
+
+            let dateOrMonth, price, optionType;
+            const monthMap = {
+                '1': 'JAN',
+                '2': 'FEB',
+                '3': 'MAR',
+                '4': 'APR',
+                '5': 'MAY',
+                '6': 'JUN',
+                '7': 'JUL',
+                '8': 'AUG',
+                '9': 'SEP',
+                '10': 'OCT',
+                '11': 'NOV',
+                '12': 'DEC'
+            };
+
+            // Check if the 9th character (index 8) is a digit (for month 1-9) or a letter (for month abbreviation)
+            if (isNaN(tsym.charAt(8))) {
+                // It's a month abbreviation (like JUN)
+                dateOrMonth = tsym.slice(8, 11);
+                price = tsym.slice(11, -2); // Price starts after month and ends 2 characters before the end
+            } else {
+                // It's a date with month (e.g., 603)
+                const month = tsym.charAt(8); // Single digit month
+                const day = tsym.slice(9, 11); // Two digit day
+                const monthAbbreviation = monthMap[month]; // Convert month digit to abbreviation
+                dateOrMonth = day + ' ' + monthAbbreviation;
+                price = tsym.slice(11, -2); // Price starts after date and ends 2 characters before the end
+            }
+
+            optionType = tsym.slice(-2); // The last 2 characters are the option type (CE/PE)
+
+            return instrumentName + " " + dateOrMonth + " " + year + " " + price + " " + optionType;
+
+            //BANKEX2460358300PE { instrumentName: 'BANKEX', year: '24', dateOrMonth: '03 JUN', price: '58300', optionType: 'PE' }
+            //BANKEX24JUN58300CE { instrumentName: 'BANKEX', year: '24', dateOrMonth: 'JUN', price: '58300', optionType: 'CE' }
         },
 
         add_row_to_watch : function(params) {
@@ -3569,17 +3614,17 @@ client_api = function () {
                     round = conf['fin_nifty'].round_to;
                     spot = Math.round(spot/round) * round
                     $(input).val("Finnifty " + spot)
-                } else if(val == "mid" || val == "midcap") {
+                } else if(val == "mid" || val == "midc" || val == "midcap") {
                     spot = live_data[midcap_nifty_tk];
                     round = conf['midcap_nifty'].round_to;
                     spot = Math.round(spot/round) * round
-                    $(input).val("Midcpnifty " + spot)
-                } else if(val == "sen" || val == "sens" || val == "sensex") {
+                    $(input).val("MIDCPNIFTY " + spot)
+                } else if(val == "sn" || val == "sen" || val == "sens" || val == "sensex") {
                     spot = live_data[sensex_tk];
                     round = conf['sensex'].round_to;
                     spot = Math.round(spot/round) * round
                     $(input).val("sensex " + spot)
-                } else if(val == "bankex" ) {
+                } else if(val == "bx" || val == "bankex" ) {
                     spot = live_data[bankex_tk];
                     round = conf['bankex'].round_to;
                     spot = Math.round(spot/round) * round
