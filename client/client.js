@@ -312,6 +312,12 @@ client_api = function () {
                             remarks = "B-" + Math.round(live_data[bank_nifty_tk])
                         else if (tsym.startsWith("FINNIFTY"))
                             remarks = "F-" + Math.round(live_data[fin_nifty_tk])
+                        else if (tsym.startsWith("SENSEX"))
+                            remarks = "S-" + Math.round(live_data[sensex_tk])
+                        else if (tsym.startsWith("BANKEX"))
+                            remarks = "K-" + Math.round(live_data[bankex_tk])
+                        else if (tsym.startsWith("MIDCP"))
+                            remarks = "M-" + Math.round(live_data[midcap_nifty_tk])
                         remarks += " Vix " + live_data[vix_tk]
                     }
                 }
@@ -1130,6 +1136,12 @@ client_api = function () {
                             remarks = "B-" + Math.round(live_data[bank_nifty_tk])
                         else if (tsym.startsWith("FINNIFTY"))
                             remarks = "F-" + Math.round(live_data[fin_nifty_tk])
+                        else if (tsym.startsWith("SENSEX"))
+                            remarks = "S-" + Math.round(live_data[sensex_tk])
+                        else if (tsym.startsWith("BANKEX"))
+                            remarks = "K-" + Math.round(live_data[bankex_tk])
+                        else if (tsym.startsWith("MIDCP"))
+                            remarks = "M-" + Math.round(live_data[midcap_nifty_tk])
                         remarks += " Vix " + live_data[vix_tk]
                     }
                 }
@@ -1297,6 +1309,15 @@ client_api = function () {
                 break;
             case fin_nifty_tk:
                 $('#fin_nifty').html(ltp)
+                break;
+            case sensex_tk:
+                $('#sensex').html(ltp)
+                break;
+            case bankex_tk:
+                $('#bankex').html(ltp)
+                break;
+            case midcap_nifty_tk:
+                $('#midcap').html(ltp)
                 break;
             default:
                 update_ltp('#watch_list_body .watch_' + instr_token, ltp);   //In watch list
@@ -2198,7 +2219,9 @@ client_api = function () {
                 value = value.trim();
                 value = value.toUpperCase()
                 console.log(value)
-                if(value.startsWith('N')  || value.startsWith('B') || value.startsWith('F') || value.startsWith('T') || value.startsWith('C')) {
+                if(value.startsWith('N')  || value.startsWith('B') || value.startsWith('F') ||
+                    value.startsWith('S')  || value.startsWith('K') || value.startsWith('M') ||
+                    value.startsWith('T') || value.startsWith('C')) {
                     if(value.startsWith('T'))
                         type = MS_TYPE.token_based
                     else if(value.startsWith('C'))
@@ -2214,6 +2237,12 @@ client_api = function () {
                         instrument = 'bank_nifty'
                     else if(ii === 'F')
                         instrument = 'fin_nifty'
+                    else if(ii === 'S')
+                        instrument = 'sensex'
+                    else if(ii === 'K')
+                        instrument = 'bankex'
+                    else if(ii === 'M')
+                        instrument = 'midcap_nifty'
                     else if (ii === 'T' || ii === 'C') {
                         const regexPattern = /[TC](\d+) (.+)/;
                         const matches = value.match(regexPattern);
@@ -2227,7 +2256,7 @@ client_api = function () {
                             broker.subscribe_token(sym_token);
                         }
                     }
-                    value = value.replace(/[ NBFTC-]/g, '');
+                    value = value.replace(/[ NBFSKMTC-]/g, '');
                 }
 
                 if(value.includes("D")) { //Extract delay
@@ -2249,6 +2278,9 @@ client_api = function () {
                         case 'nifty' : value_str = 'N '; break;
                         case 'bank_nifty' : value_str = 'B '; break;
                         case 'fin_nifty' : value_str = 'F '; break;
+                        case 'sensex' : value_str = 'S '; break;
+                        case 'bankex' : value_str = 'K '; break;
+                        case 'midcap_nifty' : value_str = 'M '; break;
                         // default : value_str = 'T' + instrument + " "; break;
                     }
                     value_str = value_str + value_obj.value.trim();
@@ -2680,6 +2712,9 @@ client_api = function () {
                         case "nifty" : cur_value = live_data[nifty_tk]; break;
                         case "bank_nifty" : cur_value = live_data[bank_nifty_tk]; break;
                         case "fin_nifty" : cur_value = live_data[fin_nifty_tk]; break;
+                        case "sensex" : cur_value = live_data[sensex_tk]; break;
+                        case "bankex" : cur_value = live_data[bankex_tk]; break;
+                        case "midcap_nifty" : cur_value = live_data[midcap_nifty_tk]; break;
                     }
                 } else if (entry_obj.type == MS_TYPE.token_based || entry_obj.type == MS_TYPE.counter_token) {
                     cur_value = live_data[entry_obj.instrument];
@@ -2742,6 +2777,9 @@ client_api = function () {
                         case "nifty" : cur_spot_value = live_data[nifty_tk]; break;
                         case "bank_nifty" : cur_spot_value = live_data[bank_nifty_tk]; break;
                         case "fin_nifty" : cur_spot_value = live_data[fin_nifty_tk]; break;
+                        case "sensex" : cur_spot_value = live_data[sensex_tk]; break;
+                        case "bankex" : cur_spot_value = live_data[bankex_tk]; break;
+                        case "midcap_nifty" : cur_spot_value = live_data[midcap_nifty_tk]; break;
                     }
                 } else if (void_cond_obj.type == MS_TYPE.token_based || void_cond_obj.type == MS_TYPE.counter_token) {
                     cur_spot_value = live_data[void_cond_obj.instrument];
@@ -2812,6 +2850,9 @@ client_api = function () {
                         case "nifty" : cur_spot_value = live_data[nifty_tk]; break;
                         case "bank_nifty" : cur_spot_value = live_data[bank_nifty_tk]; break;
                         case "fin_nifty" : cur_spot_value = live_data[fin_nifty_tk]; break;
+                        case "sensex" : cur_spot_value = live_data[sensex_tk]; break;
+                        case "bankex" : cur_spot_value = live_data[bankex_tk]; break;
+                        case "midcap_nifty" : cur_spot_value = live_data[midcap_nifty_tk]; break;
                     }
                 } else if (target_obj.type == MS_TYPE.token_based || target_obj.type == MS_TYPE.counter_token) {
                     cur_spot_value = live_data[target_obj.instrument];
@@ -2911,6 +2952,9 @@ client_api = function () {
                         case "nifty" : cur_spot_value = live_data[nifty_tk]; break;
                         case "bank_nifty" : cur_spot_value = live_data[bank_nifty_tk]; break;
                         case "fin_nifty" : cur_spot_value = live_data[fin_nifty_tk]; break;
+                        case "sensex" : cur_spot_value = live_data[sensex_tk]; break;
+                        case "bankex" : cur_spot_value = live_data[bankex_tk]; break;
+                        case "midcap_nifty" : cur_spot_value = live_data[midcap_nifty_tk]; break;
                     }
                 } else if (sl_obj.type === MS_TYPE.token_based || sl_obj.type === MS_TYPE.counter_token) {
                     cur_spot_value = live_data[sl_obj.instrument];
@@ -3570,10 +3614,16 @@ client_api = function () {
                 let tsym = row_elm.attr("tsym");
                 if(tsym.startsWith("NIFTY")) {
                     new_val = `N ${parseInt(live_data[nifty_tk])}`
-                } else if(tsym.startsWith("BANK")) {
+                } else if(tsym.startsWith("BANKNIFTY")) {
                     new_val = `B ${parseInt(live_data[bank_nifty_tk])}`
                 } else if(tsym.startsWith("FIN")) {
                     new_val = `F ${parseInt(live_data[fin_nifty_tk])}`
+                } else if(tsym.startsWith("BANKEX")) {
+                    new_val = `K ${parseInt(live_data[bankex_tk])}`
+                } else if(tsym.startsWith("SEN")) {
+                    new_val = `S ${parseInt(live_data[sensex_tk])}`
+                } else if(tsym.startsWith("MID")) {
+                    new_val = `M ${parseInt(live_data[midcap_nifty_tk])}`
                 }
             } else {
                 new_val = '';
