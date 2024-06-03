@@ -55,7 +55,7 @@ client_api = function () {
         },
 
         init: function () {
-            vix_tk = '26017', nifty_tk = '26000', bank_nifty_tk = '26009', fin_nifty_tk = '26037', midcap_nifty_tk = '', sensex_tk = '1', bankex_tk = '12', midcap_nifty_tk = '26074';
+            vix_tk = '26017', nifty_tk = '26000', bank_nifty_tk = '26009', fin_nifty_tk = '26037', sensex_tk = '1', bankex_tk = '12', midcap_nifty_tk = '26074';
             subscribed_symbols = ["NSE|26017", "NSE|26000", "NSE|26009", "NSE|26037", "NSE|26074", "BSE|1", "BSE|12"];
         },
 

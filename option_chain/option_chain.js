@@ -3,7 +3,7 @@ client_api = window.client_api || {};
 client_api = function () {
     let broker_name = "shoonya";
 
-    let nifty_tk, bank_nifty_tk, fin_nifty_tk = '';
+    let nifty_tk, bank_nifty_tk, fin_nifty_tk, sensex_tk, bankex_tk, midcap_nifty_tk = '';
     let ws = '';
     let subscribed_symbols = []
     let pending_to_subscribe_tokens = new Set();
@@ -52,8 +52,8 @@ client_api = function () {
         },
 
         init: function () {
-            nifty_tk = '26000', bank_nifty_tk = '26009', fin_nifty_tk = '26037';
-            subscribed_symbols = ["NSE|26000", "NSE|26009", "NSE|26037"];
+            nifty_tk = '26000', bank_nifty_tk = '26009', fin_nifty_tk = '26037', sensex_tk = '1', bankex_tk = '12', midcap_nifty_tk = '26074';
+            subscribed_symbols = ["NSE|26000", "NSE|26009", "NSE|26037", "NSE|26074", "BSE|1", "BSE|12"];
         },
 
         connect: function () {
@@ -218,8 +218,9 @@ client_api = function () {
             search_subscribe_strike: function (strike, ce_pe) {
                 let params = {
                     "uid": conf.broker[broker_name].user_id,
-                    "stext": conf.spreads.instrument.replace('_', '') + " " + strike + " " + ce_pe
+                    "stext": get_search_text()
                 }
+
                 $.ajax({
                     url: shoonya.url.search_instrument,
                     type: "POST",
@@ -230,13 +231,21 @@ client_api = function () {
                         let info = data.values[0];
                         option_chain_tracker.monitored_strikes.push({"token": parseInt(info.token), "strike": strike, "optt": ce_pe});
                         option_chain_tracker.token_details[info.token] = {strike : strike, optt: ce_pe, "tsym": info.tsym, "dname": info.dname, "ls": info.ls};
-                        shoonya.subscribe_token('NFO|' + info.token);
+                        shoonya.subscribe_token(info.exch + "|" + info.token);
                     },
                     error: function (jqXHR, textStatus, errorThrown) {
                         console.log("Ajax error")
                         console.error(JSON.parse(jqXHR.responseText).emsg)
                     },
                 })
+
+                function get_search_text() {
+                    let stext = conf.spreads.instrument.replace('_', '') + " " + strike + " " + ce_pe
+                    if(stext.includes("midcap")) {
+                        stext = stext.replace("midcap", "midcp")
+                    }
+                    return stext;
+                }
             },
         },
 
@@ -264,6 +273,15 @@ client_api = function () {
                         remarks = "B-" + Math.round(live_data[bank_nifty_tk])
                     else if (tsym.startsWith("FINNIFTY"))
                         remarks = "F-" + Math.round(live_data[fin_nifty_tk])
+                    else if (tsym.startsWith("SENSEX")) {
+                        remarks = "S-" + Math.round(live_data[sensex_tk])
+                        exch = "BFO"
+                    } else if (tsym.startsWith("BANKEX")) {
+                        remarks = "K-" + Math.round(live_data[bankex_tk])
+                        exch = "BFO"
+                    }
+                    else if (tsym.startsWith("MIDCP"))
+                        remarks = "M-" + Math.round(live_data[midcap_nifty_tk])
                     // remarks += " Vix " + live_data[vix_tk]
                 }
 
@@ -424,6 +442,15 @@ client_api = function () {
                     break;
                 case 'fin_nifty':
                     return live_data[fin_nifty_tk];
+                    break;
+                case 'sensex':
+                    return live_data[sensex_tk];
+                    break;
+                case 'bankex':
+                    return live_data[bankex_tk];
+                    break;
+                case 'midcap_nifty':
+                    return live_data[midcap_nifty_tk];
                     break;
                 default :
                     return NaN;
@@ -751,6 +778,9 @@ client_api = function () {
         console.log("Select instrument " + conf.spreads.instrument)
         conf.spreads.instrument_token = conf.spreads.instrument === "nifty"? nifty_tk
             : conf.spreads.instrument === "bank_nifty"? bank_nifty_tk
+            : conf.spreads.instrument === "sensex"? sensex_tk
+            : conf.spreads.instrument === "bankex"? bankex_tk
+            : conf.spreads.instrument === "midcap_nifty"? midcap_nifty_tk
                 : conf.spreads.instrument === "fin_nifty" ? fin_nifty_tk : "unknown_instrument";
         $('#instrument').html(conf.spreads.instrument.toUpperCase().replace("_", " "))
         conf.spreads.strikes_after_before_atm = Math.abs(parseInt($('#num_strikes').val()));
