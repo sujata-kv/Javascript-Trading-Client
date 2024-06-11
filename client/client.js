@@ -97,8 +97,9 @@ client_api = function () {
                     if (result.lp != undefined) {
                         let instr_token = result.tk
                         let ltpf = parseFloat(result.lp).toFixed(2)
+                        let pc = parseFloat(result.pc).toFixed(2)
                         live_data[instr_token] = ltpf
-                        update_ltps(instr_token, ltpf)
+                        update_ltps(instr_token, ltpf, pc)
                     }
                 }
                 if (result.t == 'dk' || result.t == 'df') {
@@ -1296,28 +1297,40 @@ client_api = function () {
         });
     }
     
-    function update_ltps(instr_token, ltp) {
+    function update_ltps(instr_token, ltp, pc) {
+        function set_values(id, ltp, pc) {
+            $(id + ' .price').html(ltp)
+            $(id +' .pc').html(pc + "%")
+            if (pc < 0) {
+                $(id).removeClass("pos-mtm")
+                $(id).addClass("neg-mtm")
+            } else {
+                $(id).removeClass("neg-mtm")
+                $(id).addClass("pos-mtm")
+            }
+        }
+
         switch (instr_token) {
             case vix_tk:
-                $('#vix').html(ltp)
+                set_values('#vix', ltp, pc);
                 break;
             case nifty_tk:
-                $('#nifty').html(ltp)
+                set_values('#nifty', ltp, pc);
                 break;
             case bank_nifty_tk:
-                $('#bank_nifty').html(ltp)
+                set_values('#bank_nifty', ltp, pc);
                 break;
             case fin_nifty_tk:
-                $('#fin_nifty').html(ltp)
+                set_values('#fin_nifty', ltp, pc);
                 break;
             case sensex_tk:
-                $('#sensex').html(ltp)
+                set_values('#sensex', ltp, pc);
                 break;
             case bankex_tk:
-                $('#bankex').html(ltp)
+                set_values('#bankex', ltp, pc);
                 break;
             case midcap_nifty_tk:
-                $('#midcap').html(ltp)
+                set_values('#midcap', ltp, pc);
                 break;
             default:
                 update_ltp('#watch_list_body .watch_' + instr_token, ltp);   //In watch list

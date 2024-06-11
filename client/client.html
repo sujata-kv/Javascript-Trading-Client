@@ -58,57 +58,57 @@
 
             <div class="list-group-item list-group-item-action py-3 lh-tight instrument" aria-current="true">
                 <div class="col">
-                    <div class="card-body">
+                    <div class="card-body"  id="vix">
                         <h5 class="card-title">VIX</h5>
-                        <h3 class="card-subtitle mb-2" id="vix"> &nbsp; </h3>
+                        <span class="card-subtitle mb-2 price" > </span>&nbsp; <span class="pc"></span>
                     </div>
                 </div>
             </div>
             <div class="list-group-item list-group-item-action py-3 lh-tight instrument">
                 <div class="col">
-                    <div class="card-body">
+                    <div class="card-body" id="nifty">
                         <h5 class="card-title">NIFTY</h5>
-                        <h3 class="card-subtitle mb-2" id="nifty"> &nbsp; </h3>
+                        <span class="card-subtitle mb-2 price" ></span>&nbsp; <span class="pc"></span>
                     </div>
                 </div>
             </div>
             <div class="list-group-item list-group-item-action py-3 lh-tight instrument">
                 <div class="col">
-                    <div class="card-body">
+                    <div class="card-body" id="bank_nifty">
                         <h5 class="card-title">BANK_NIFTY</h5>
-                        <h3 class="card-subtitle mb-2" id="bank_nifty"> &nbsp; </h3>
+                        <span class="card-subtitle mb-2 price" ></span> &nbsp; <span class="pc"></span>
                     </div>
                 </div>
             </div>
             <div class="list-group-item list-group-item-action py-3 lh-tight instrument" aria-current="true">
                 <div class="col">
-                    <div class="card-body">
+                    <div class="card-body" id="fin_nifty">
                         <h5 class="card-title">FIN_NIFTY</h5>
-                        <h3 class="card-subtitle mb-2" id="fin_nifty"> &nbsp; </h3>
+                        <span class="card-subtitle mb-2 price" > </span>&nbsp; <span class="pc"></span>
                     </div>
                 </div>
             </div>
             <div class="list-group-item list-group-item-action py-3 lh-tight instrument" aria-current="true">
                 <div class="col">
-                    <div class="card-body">
+                    <div class="card-body"  id="sensex">
                         <h5 class="card-title">SENSEX</h5>
-                        <h3 class="card-subtitle mb-2" id="sensex"> &nbsp; </h3>
+                        <span class="card-subtitle mb-2 price" > </span>&nbsp; <span class="pc"></span>
                     </div>
                 </div>
             </div>
             <div class="list-group-item list-group-item-action py-3 lh-tight instrument" aria-current="true">
                 <div class="col">
-                    <div class="card-body">
+                    <div class="card-body"  id="bankex">
                         <h5 class="card-title">BANKEX</h5>
-                        <h3 class="card-subtitle mb-2" id="bankex"> &nbsp; </h3>
+                        <span class="card-subtitle mb-2 price" > </span>&nbsp; <span class="pc"></span>
                     </div>
                 </div>
             </div>
             <div class="list-group-item list-group-item-action py-3 lh-tight instrument" aria-current="true">
                 <div class="col">
-                    <div class="card-body">
+                    <div class="card-body"  id="midcap">
                         <h5 class="card-title">MIDCAP</h5>
-                        <h3 class="card-subtitle mb-2" id="midcap"> &nbsp; </h3>
+                        <span class="card-subtitle mb-2 price" > </span> &nbsp;<span class="pc"></span>
                     </div>
                 </div>
             </div>
@@ -524,10 +524,10 @@
         text-align:right;
     }
     .pos-mtm {
-        color: green !important;
+        color: #19723f !important;
     }
     .neg-mtm {
-        color: red !important;
+        color: #cc1f1f !important;
     }
 
     .ltp{
@@ -608,8 +608,10 @@
     .badge {
         font-weight: 400 !important;
     }
-    .card-body {
+
+    .sidebar .card-body {
         padding : 0.5rem;
+        text-align: left !important;
     }
 
     .price_diff {
@@ -666,6 +668,15 @@
 
     .sidebar .instrument {
         padding-bottom : 0rem !important;
+    }
+
+    .sidebar .price {
+        font-weight: 600;
+        font-size : 1.9rem;
+    }
+
+    .sidebar .pc {
+        font-size : 1.3rem;
     }
 
     /*    @media screen and (max-width: 900px) {
