@@ -2001,8 +2001,10 @@ client_api = function () {
             $('#order_book_table').html("")
             hide_other_tabs('#order_book')
             broker.order.get_orderbook(function(orders) {
-                if(orders!=undefined && Array.isArray(orders))
-                    orders.forEach((order)=> orderbook.show_order(order))
+                if(orders!=undefined && Array.isArray(orders)) {
+                    orders.forEach((order) => orderbook.show_order(order))
+                    lib.show_success_msg("Brokerage " + orders.length * 20 + " Rs (No of orders: " + orders.length + ")")
+                }
             })
         },
 
