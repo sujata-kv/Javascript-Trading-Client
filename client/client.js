@@ -2015,8 +2015,11 @@ client_api = function () {
             hide_other_tabs('#order_book')
             broker.order.get_orderbook(function(orders) {
                 if(orders!=undefined && Array.isArray(orders)) {
-                    orders.forEach((order) => orderbook.show_order(order))
-                    lib.show_success_msg("Brokerage " + orders.length * 20 + " Rs (No of orders: " + orders.length + ")")
+                    let completed_orders = 0;
+                    orders.forEach((order) => { orderbook.show_order(order);
+                        if(order.status === "COMPLETE") ++completed_orders;
+                    })
+                    lib.show_success_msg("Brokerage " + completed_orders * 20 + " Rs (No of completed orders: " + completed_orders + ")")
                 }
             })
         },
