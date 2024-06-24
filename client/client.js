@@ -1532,7 +1532,7 @@ client_api = function () {
                         <td class="order-num">${order.norenordno}</td>
                         <td>${dname}</td>
                         <th class="open_order_${order.token} ltp"></th>
-                        <td><input type="text" class="form-control entry" placeholder=""  value="${order.prc}" ondblclick="client_api.watch_list.toggle_ltp(this);" onkeydown="client_api.util.handle_enter_key(event, $(this).parent().parent().find('.modify'))"></td>
+                        <td><input type="text" class="form-control entry" placeholder=""  value="${order.prc}" ondblclick="client_api.watch_list.toggle_ltp(this);" onkeydown="client_api.util.handle_entry(event, this, $(this).parent().parent().find('.modify'))"></td>
                         <td><input type="text" class="form-control target" placeholder=""  value="${target}" ondblclick="client_api.watch_list.toggle_ltp(this);" onkeydown="client_api.util.handle_enter_key(event, $(this).parent().parent().find('.modify'))"></td>
                         <td><input type="text" class="form-control sl" placeholder=""  value="${sl}" ondblclick="client_api.watch_list.toggle_ltp(this);" onkeydown="client_api.util.handle_enter_key(event, $(this).parent().parent().find('.modify'))"></td>
                         <td><input type="text" class="form-control void-cond" placeholder=""  value="${void_cond}" ondblclick="client_api.watch_list.toggle_ltp(this);" onkeydown="client_api.util.handle_enter_key(event, $(this).parent().parent().find('.modify'))"></td>
@@ -4135,6 +4135,18 @@ client_api = function () {
                 $(event.srcElement).blur();
             }
         },
+
+        handle_entry : function(event, input, btn) {
+            if(event.key == "Enter" && event.ctrlKey) { // Enter with Market order for CTRL + ENTER
+                $(input).val("")
+                btn.click();
+                $(event.srcElement).blur();
+            } else if(event.key == "Enter") {
+                btn.click();
+                $(event.srcElement).blur();
+            }
+        },
+
 
         handle_buy_sell : function(event, buy_btn, sell_btn) {
             let input = event.srcElement;
