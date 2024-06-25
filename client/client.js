@@ -4182,6 +4182,14 @@ client_api = function () {
                 $(input).blur();
             }
 
+            else if(event.key == "Enter") { //If there is a limit price entered and Enter button is pressed it triggers limit buy
+                let lim = $(input).val()
+                if (lim != null && lim != "") {
+                    buy_btn.click();
+                    $(input).blur();
+                }
+            }
+
             // If up or down arrow is pressed, move the price up or down
             else if(event.key == "ArrowUp") {
                 let price = parseInt($(input).val())
