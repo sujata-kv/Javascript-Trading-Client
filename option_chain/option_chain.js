@@ -26,6 +26,18 @@ client_api = function () {
         }
     };
 
+
+    const handle_qty = function(event) {
+        if(event.key == "ArrowUp") {
+            let qty = parseInt($(event.srcElement).val())
+            $(event.srcElement).val(qty + 1)
+        } else if(event.key == "ArrowDown") {
+            let qty = parseInt($(event.srcElement).val())
+            if(qty > 1)
+                $(event.srcElement).val(qty - 1)
+        }
+    };
+
     function login_status(success) {
         if(success) {
             logged_in = true
@@ -318,6 +330,7 @@ client_api = function () {
                 console.log("Buy called.. for " + cell_elm)
                 // cell_elm.find('.buy').attr('disabled', 'disabled');
                 let token = cell_elm.attr('token')
+
                 orderbook.place_buy_sell_order(token, 'B', num_lots)
             } else {
                 lib.show_error_msg("You are in watch mode. Switch to 'Trade Mode' to place the order")
@@ -382,10 +395,12 @@ client_api = function () {
 
         cell_mapping : {        /*If any of these mappings change, then make sure to update the switch case where we create buttons */
             cvol : 0,
-            ce : 1,
-            strike : 2,
-            pe : 3,
-            pvol: 4,
+            ce_lots : 1,
+            ce : 2,
+            strike : 3,
+            pe : 4,
+            pe_lots : 5,
+            pvol: 6,
         },
 
         selected_cells :{},
@@ -581,11 +596,10 @@ client_api = function () {
                 const cellCnt = Object.keys(this.cell_mapping).length;
                 for (let i = 0; i < cellCnt; i++) {
                     let cell = row.insertCell(i);
-                    $(cell).append('<span></span>')
-                    $(cell).append('<div class="btn-container"></div>');
-
 
                     if (i == option_chain_tracker.cell_mapping.ce || i == option_chain_tracker.cell_mapping.pe) {
+                        $(cell).append('<span></span>')
+                        $(cell).append('<div class="btn-container"></div>');
                         //Restore buy, sell leg selections
                         if(selected_cells[i]!=undefined) {
                             cell.className = selected_cells[i]=='B'? 'select_buy num':'select_sell num'
@@ -601,6 +615,10 @@ client_api = function () {
                             })
                     } else if(i == option_chain_tracker.cell_mapping.cvol || i == option_chain_tracker.cell_mapping.pvol) {
                         cell.className = 'num'
+                    } else if(i == option_chain_tracker.cell_mapping.ce_lots) {
+                        $(cell).append('<input class="form-control ce-lots num" value="1" onkeydown="client_api.handle_qty(event)"/>')
+                    } else if( i == option_chain_tracker.cell_mapping.pe_lots) {
+                        $(cell).append('<input class="form-control pe-lots num" value="1" onkeydown="client_api.handle_qty(event)"/>')
                     }
 
                     function cell_click_handler(e) {
@@ -637,11 +655,11 @@ client_api = function () {
                 if (data.optt === 'CE') {
                     $(row.cells[this.cell_mapping.ce]).find('span').text(lp.toFixed(2));
                     if(vol!=undefined)
-                        $(row.cells[this.cell_mapping.cvol]).find('span').text((parseInt(vol)/100000).toFixed(0));
+                        $(row.cells[this.cell_mapping.cvol]).text((parseInt(vol)/100000).toFixed(0));
                 } else if (data.optt === 'PE') {
                     $(row.cells[this.cell_mapping.pe]).find('span').text(lp.toFixed(2));
                     if(vol!=undefined)
-                        $(row.cells[this.cell_mapping.pvol]).find('span').text((parseInt(vol)/100000).toFixed(0));
+                        $(row.cells[this.cell_mapping.pvol]).text((parseInt(vol)/100000).toFixed(0));
                 }
 
                 let combined_prem = parseFloat(row.cells[this.cell_mapping.ce].textContent) + parseFloat(row.cells[this.cell_mapping.pe].textContent)
@@ -668,11 +686,15 @@ client_api = function () {
             row.cells[this.cell_mapping.ce].setAttribute('token', ce_leg)
             row.cells[this.cell_mapping.pe].setAttribute('token', pe_leg)
 
+            $(row.cells[this.cell_mapping.ce]).addClass('ce')
+            $(row.cells[this.cell_mapping.pe]).addClass('pe')
+
             this.spreads[strike] = row_spread;
 
             this.update_spreads(strike, "CE")       //Update spreads for the first time
             this.update_spreads(strike, "PE")       //Update spreads for the first time
             $('#spot').html(live_data[conf.spreads.instrument_token])
+            $('#lot_size').html(conf[conf.spreads.instrument].lot_size)
             this.update_totals();   //Update CE and PE totals
         },
 
@@ -741,13 +763,26 @@ client_api = function () {
                 lib.show_error_msg("Nothing is selected")
                 return;
             } else {
-                let num_lots = parseInt($('#num_lots').val())
                 $("#option_chain_body").find('td.select_buy').each(function (i, cell_item) {
-                    orderbook.buy($(cell_item), num_lots)
+                    let num_lots = 1;
+                    let cell_elm = $(cell_item)
+                    if(cell_elm.hasClass('ce')) {
+                        num_lots = cell_elm.parent().find('.ce-lots').val()
+                    } else if(cell_elm.hasClass('pe')) {
+                        num_lots = cell_elm.parent().find('.pe-lots').val()
+                    }
+                    orderbook.buy(cell_elm, num_lots)
                 })
                 setTimeout(function () {
                     $("#option_chain_body").find('td.select_sell').each(function (i, cell_item) {
-                        orderbook.sell($(cell_item), num_lots)
+                        let num_lots = 1;
+                        let cell_elm = $(cell_item)
+                        if(cell_elm.hasClass('ce')) {
+                            num_lots = cell_elm.parent().find('.ce-lots').val()
+                        } else if(cell_elm.hasClass('pe')) {
+                            num_lots = cell_elm.parent().find('.pe-lots').val()
+                        }
+                        orderbook.sell(cell_elm, num_lots)
                     })
                 }, 500)
             }
@@ -806,6 +841,7 @@ client_api = function () {
         "deploy_selected": deploy_selected,
         "close_event_handler": close_event_handler,
         "change_num_strikes": change_num_strikes,
+        "handle_qty": handle_qty,
     }
 }();
 

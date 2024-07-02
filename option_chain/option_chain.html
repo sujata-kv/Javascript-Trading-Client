@@ -33,9 +33,11 @@
                     <input type="text" class="form-control" id="num_strikes" value="" onchange="client_api.change_num_strikes()">
                 </div>
                 <div class="offset-md-4 col-md-5 btn-group">
+                    <div class="col-md-3 btn-group" style="font-size:15px;">
+                        <span>Lot size &nbsp;: &nbsp;</span>
+                        <span id="lot_size">&nbsp;</span>
+                    </div>
                     <button class="btn btn-outline-primary" id="unselect_all"  onclick="client_api.unselect_all()">Unselect All</button>
-                    <span>Number of Lots</span>
-                    <input type="text" class="form-control col-sm-2" id="num_lots"  value="1">
                     <button class="btn btn-outline-primary" id="deploy_selected"  onclick="client_api.deploy_selected()">Deploy Selected</button>
                     <button class="btn-sm" id="trade_type"  onclick="client_api.toggle_paper_trade()">Watch Mode</button>
                 </div>
@@ -61,9 +63,11 @@
                     <thead class="thead-light">
                     <tr>
                         <th scope="col" class="table-primary">Volume (L)</th>
+                        <th scope="col" class="table-primary">Lots</th>
                         <th scope="col" class="table-primary">Call</th>
                         <th scope="col" class="table-primary">Strike</th>
                         <th scope="col" class="table-primary">Put</th>
+                        <th scope="col" class="table-primary">Lots</th>
                         <th scope="col" class="table-primary">Volume (L)</th>
                     </tr>
                     </thead>
@@ -71,9 +75,11 @@
                     </tbody>
                     <tfoot class="table-secondary">
                         <th scope="col"></th>
+                        <th scope="col"></th>
                         <th scope="col" id="ce_total"></th>
                         <th scope="col"></th>
                         <th scope="col" id="pe_total"></th>
+                        <th scope="col"></th>
                         <th scope="col"></th>
                     </tfoot>
                 </table>
@@ -112,7 +118,7 @@
         }
 
         #option_chain_table {
-            width: 750px;
+            width: 1100px;
             margin: 0 auto;
             /*text-align: center;*/
         }
@@ -147,7 +153,7 @@
         }
 
         #option_chain  td {
-            width: 120px;
+            width: 284px;
             height: 55px
         }
 
@@ -170,7 +176,7 @@
 
         #trade_type, #unselect_all, #deploy_selected {
             padding: 5px 10px;
-            /*font-size: 10px;*/
+            /* font-size: 10px; */
             cursor: pointer;
             border: none;
             border-radius: 5px;
