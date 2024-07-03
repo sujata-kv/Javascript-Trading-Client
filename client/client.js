@@ -2743,7 +2743,7 @@ client_api = function () {
                 console.log(`Checking Entry : ${ttype}  current : ${cur_value}  trig : ${trig_value}`)
 
                 //Only spot based entry should be checked. If it is price based then limit order will be placed in real. But for paper trade, check has to be there.
-                if(entry_obj.type == MS_TYPE.spot_based) {
+                if(entry_obj.type == MS_TYPE.spot_based || entry_obj.type == MS_TYPE.paper_entry) {
                     if (ttype === 'bull') {
                         if (cur_value <= trig_value) {
                             entry_triggered()
