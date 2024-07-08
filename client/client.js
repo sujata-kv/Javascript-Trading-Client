@@ -3132,7 +3132,9 @@ client_api = function () {
             let remarks = order.remarks;
             let margin_used = (order.prc * order.qty).toFixed(2);
 
-            tbody_elm.append(`<tr id="${row_id}" class="${className}" ordid="${order.norenordno}"  exch="${order.exch}" token="${order.token}" instrument_token="${order.instrument_token}" qty="${order.qty}" tsym="${order.tsym}" ttype="${ttype}" trtype="${order.trantype}" prd="${order.prd}" trade="active" margin="${margin_used}">
+            let orders = this.get_order_chunks(order)
+            orders.forEach(order=> {
+                tbody_elm.append(`<tr id="${row_id}" class="${className}" ordid="${order.norenordno}"  exch="${order.exch}" token="${order.token}" instrument_token="${order.instrument_token}" qty="${order.qty}" tsym="${order.tsym}" ttype="${ttype}" trtype="${order.trantype}" prd="${order.prd}" trade="active" margin="${margin_used}">
                         <td> <input type="checkbox" class="select_box" value="" onclick="client_api.util.uncheck(this)"> </td>
                         <td>${buy_sell + ticker}</td>
                         <td class="instrument">${dname}</td>
@@ -3150,6 +3152,7 @@ client_api = function () {
                         <td><button type="button" class="btn btn-success modify" onclick="client_api.trade.modify(this, $(this).text())">Edit</button></td>
                         <td><button type="button" class="btn btn-danger exit" onclick="client_api.trade.exit(this)">Exit</button></td>
                 </tr>`);
+            });
 
             trade.update_total_margin(tbody_elm);
 
@@ -3163,6 +3166,40 @@ client_api = function () {
             }
 
             trade.calculate_spreads(tbody_elm, $('#summary-at-pool .max-profit-loss'));
+        },
+
+        get_order_chunks: function(order) {
+            let max_qty;
+            if(order.tsym.startsWith("NIFTY")) {
+                max_qty = conf.nifty.max_order_qty
+            } else if(order.tsym.startsWith("BANKNIFTY")) {
+                max_qty = conf.bank_nifty.max_order_qty
+            } else if(order.tsym.startsWith("FINNIFTY")) {
+                max_qty = conf.fin_nifty.max_order_qty
+            } else if(order.tsym.startsWith("MIDCPNIFTY")) {
+                max_qty = conf.midcap_nifty.max_order_qty
+            } else if(order.tsym.startsWith("SENSEX")) {
+                max_qty = conf.sensex.max_order_qty
+            } else if(order.tsym.startsWith("BANKEX")) {
+                max_qty = conf.bankex.max_order_qty
+            }
+
+            let orders = []
+            let cnt = Math.floor(order.qty / max_qty)
+            let rem = order.qty % max_qty
+            if(cnt > 0) {
+                while(cnt > 0) {
+                    let clone = {...order}
+                    clone.qty = max_qty
+                    orders.push(clone)
+                    --cnt;
+                }
+            }
+            if(rem > 0) {
+                order.qty = rem
+                orders.push(order)
+            }
+            return orders;
         },
 
         calculate_spreads : function(tbody_elm, print_cell) {
