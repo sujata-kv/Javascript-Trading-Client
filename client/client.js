@@ -3277,9 +3277,9 @@ client_api = function () {
         getTradePosition : function(token, exch, trtype, qty) {
             let position;
             if(broker.name === "shoonya")
-                position = $(`#at-pool tr[token=${token}][exch=${exch}][qty=${qty}]`)     //Search by attribute value [trtype=${trtype}]
+                position = $(`#at-pool tr[token=${token}][exch=${exch}][trtype=${trtype}]`)     //Search by attribute value [qty=${qty}]
             else if(broker.name === "kite")
-                position = $(`#at-pool tr[instrument_token=${token}][exch=${exch}][qty=${qty}]`)    //[trtype=${trtype}]
+                position = $(`#at-pool tr[instrument_token=${token}][exch=${exch}][trtype=${trtype}]`)    // [qty=${qty}]
             return position;
         },
 
@@ -3355,9 +3355,11 @@ client_api = function () {
                     buy_sell = '<span class="badge bg-danger">Sell</span><br>'
                     trtype='S'
                 }
+
                 pos.trantype = trtype;
                 let ttype = orderbook.know_bull_or_bear(pos)
                 qty = (qty < 0)? -1 * qty:qty; // Make it positive if it is negative
+                pos.qty = qty;
                 let dname = (pos.dname != undefined) ? pos.dname : pos.tsym;
 
                 if(qty >0) {
@@ -3372,24 +3374,25 @@ client_api = function () {
                         let tbody_elm = $('#at-pool');
                         let margin_used = (pos.netavgprc * qty).toFixed(2);
 
-                        tbody_elm.append(`<tr id="row_id_${++unique_row_id}" class="${className}" exch="${pos.exch}" token="${ticker}" instrument_token="${ticker}" tsym="${pos.tsym}" qty="${qty}" ttype="${ttype}" trtype="${trtype}" prd="${pos.prd}" trade="active" margin="${margin_used}">
-                            <td> <input type="checkbox" class="select_box" value="" onclick="client_api.util.uncheck(this)"> </td>
-                            <td>${buy_sell + ticker}</td>
-                            <td class="instrument">${dname}</td>
-                            <td class="entry num">
-                                <span class="price" title="Margin Used : ${margin_used}" ondblclick="client_api.trade.edit_entry_price(this)">${pos.netavgprc}</span>
-                            </td>
-                            <td class="trade_${ticker} ltp">${pos.lp}</td>
-                            <td class="pnl"></td>
-                            <td><input type="text" disabled class="form-control target" placeholder="" ondblclick="client_api.watch_list.toggle_ltp(this);" onkeydown="client_api.util.handle_enter_key(event, $(this).parent().parent().find('.modify'))"></td>
-                            <td><input type="text" disabled class="form-control sl" placeholder="" ondblclick="client_api.watch_list.toggle_ltp(this);" onkeydown="client_api.util.handle_enter_key(event, $(this).parent().parent().find('.modify'))"></td>
-                            <td><input type="text" class="form-control exit-limit" placeholder="" ondblclick="client_api.watch_list.add_ltp(this); $(this).unbind('click');" onkeydown="client_api.util.handle_limit_exit(event, this, $(this).parent().parent().find('.exit'))"></td>
-                            <td><input type="text" class="form-control qty" placeholder=""  value="${qty}"></td>
-                            <td><button type="button" class="btn btn-success modify" onclick="client_api.trade.modify(this, $(this).text())">Edit</button></td>
-                            <td><button type="button" class="btn btn-danger exit" onclick="client_api.trade.exit(this)">Exit</button></td>
-                        </tr>`);
-                        /*${live_data[ticker]}*/
-
+                        let orders = this.get_order_chunks(pos)
+                        orders.forEach(pos=> {
+                            tbody_elm.append(`<tr id="row_id_${++unique_row_id}" class="${className}" exch="${pos.exch}" token="${ticker}" instrument_token="${ticker}" tsym="${pos.tsym}" qty="${pos.qty}" ttype="${ttype}" trtype="${trtype}" prd="${pos.prd}" trade="active" margin="${margin_used}">
+                                <td> <input type="checkbox" class="select_box" value="" onclick="client_api.util.uncheck(this)"> </td>
+                                <td>${buy_sell + ticker}</td>
+                                <td class="instrument">${dname}</td>
+                                <td class="entry num">
+                                    <span class="price" title="Margin Used : ${margin_used}" ondblclick="client_api.trade.edit_entry_price(this)">${pos.netavgprc}</span>
+                                </td>
+                                <td class="trade_${ticker} ltp">${pos.lp}</td>
+                                <td class="pnl"></td>
+                                <td><input type="text" disabled class="form-control target" placeholder="" ondblclick="client_api.watch_list.toggle_ltp(this);" onkeydown="client_api.util.handle_enter_key(event, $(this).parent().parent().find('.modify'))"></td>
+                                <td><input type="text" disabled class="form-control sl" placeholder="" ondblclick="client_api.watch_list.toggle_ltp(this);" onkeydown="client_api.util.handle_enter_key(event, $(this).parent().parent().find('.modify'))"></td>
+                                <td><input type="text" class="form-control exit-limit" placeholder="" ondblclick="client_api.watch_list.add_ltp(this); $(this).unbind('click');" onkeydown="client_api.util.handle_limit_exit(event, this, $(this).parent().parent().find('.exit'))"></td>
+                                <td><input type="text" class="form-control qty" placeholder=""  value="${pos.qty}"></td>
+                                <td><button type="button" class="btn btn-success modify" onclick="client_api.trade.modify(this, $(this).text())">Edit</button></td>
+                                <td><button type="button" class="btn btn-danger exit" onclick="client_api.trade.exit(this)">Exit</button></td>
+                            </tr>`);
+                        });
                         trade.update_total_margin(tbody_elm);
                     }else {
                         console.log("Position is already present in active trades")
