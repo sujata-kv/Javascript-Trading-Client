@@ -3640,7 +3640,7 @@ client_api = function () {
     
                 <td> <input type="checkbox" class="select_box" value="" onclick="client_api.util.uncheck(this)"> </td>
                 <td class="dname">${params.sym}</td>
-                <td class="token">${ticker}</td>
+                <td class="token" ondblclick="navigator.clipboard.writeText('T${ticker} ')">${ticker}</td>
                 <td class="margin_req num"></td>
                 <td class="watch_${ticker} ltp" lot_size="${params.lot_size}"></td>
                 <td class="input_box"><input type="text" class="form-control entry" placeholder="" ondblclick="client_api.watch_list.toggle_ltp(this); $(this).unbind('click');" onkeydown="client_api.util.handle_buy_sell(event, $(this).parent().parent().find('.buy'), $(this).parent().parent().find('.sell'))" title="Market buy: Shift+Enter or Shift+B \nLimit buy: Ctrl+Enter or Ctrl+B \nMarket sell: Shift+S \nLimit sell: Ctrl+S \n"></td>  
