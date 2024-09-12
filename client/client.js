@@ -1289,11 +1289,11 @@ client_api = function () {
                         trade.update_total_pnl(group_id)
                     })
                 }
-            } else if(selector.startsWith('#watch_list')) {
+            } /*else if(selector.startsWith('#watch_list')) {
                 let margin = parseInt($(ltp_elm).attr('lot_size')) * ltp
                 if(!isNaN(margin))
                     $(ltp_elm).parent().find('.margin_req').text(margin.toFixed(0))
-            }
+            }*/
         });
     }
     
@@ -3635,13 +3635,16 @@ client_api = function () {
             }
 
             let ticker = broker.get_ticker(params);
+            params.sym = params.sym.trim();
+            let first_space = params.sym.indexOf(" ")
+            let instrument_index = params.sym.indexOf(" ", params.sym.indexOf(" ")+1)
 
             $('#watch_list_body').append(`<tr class="${class_name}" exch="${params.exch}" token="${params.token}" instrument_token="${params.instrument_token}" tsym="${params.tsym}" lot_size="${params.lot_size}" dname="${params.sym}">
     
                 <td> <input type="checkbox" class="select_box" value="" onclick="client_api.util.uncheck(this)"> </td>
-                <td class="dname">${params.sym}</td>
+                <td class="dname" title="${params.sym.substring(first_space+1, instrument_index)}"><b>${params.sym.substring(0, first_space)}</b> ${params.sym.substring(instrument_index)}</td>
                 <td class="token" ondblclick="navigator.clipboard.writeText('T${ticker} ')">${ticker}</td>
-                <td class="margin_req num"></td>
+                <!--<td class="margin_req num"></td>-->
                 <td class="watch_${ticker} ltp" lot_size="${params.lot_size}"></td>
                 <td class="input_box"><input type="text" class="form-control entry" placeholder="" ondblclick="client_api.watch_list.toggle_ltp(this); $(this).unbind('click');" onkeydown="client_api.util.handle_buy_sell(event, $(this).parent().parent().find('.buy'), $(this).parent().parent().find('.sell'))" title="Market buy: Shift+Enter or Shift+B \nLimit buy: Ctrl+Enter or Ctrl+B \nMarket sell: Shift+S \nLimit sell: Ctrl+S \n"></td>  
                 <td class="input_box"><input type="text" class="form-control qty" placeholder="" value="${params.lot_size}"  onkeydown="client_api.util.handle_qty(event, ${params.lot_size})"></td>
@@ -3707,17 +3710,17 @@ client_api = function () {
                 let val = $(input).val().toLowerCase();
                 val = val.replace(/[\s+-_]/, ""); // replace multiple spaces and - and _ with ''
                 let spot, round;
-                if(val == "ban" || val == "bank" || val== "banknifty") {
+                if(val == "bn" || val =="ban" || val == "bank" || val== "banknifty") {
                     spot = live_data[bank_nifty_tk];
                     round = conf['bank_nifty'].round_to;
                     spot = Math.round(spot/round) * round
                     $(input).val("Banknifty " + spot)
-                } else if(val == "nif" || val == "nift" || val == "nifty") {
+                } else if(val == "ni" || val == "nif" || val == "nift" || val == "nifty") {
                     spot = live_data[nifty_tk];
                     round = conf['nifty'].round_to;
                     spot = Math.round(spot/round) * round
                     $(input).val("Nifty " + spot)
-                } else if(val == "fin" || val == "finnifty") {
+                } else if(val == "fi" || val == "fin" || val == "finnifty") {
                     spot = live_data[fin_nifty_tk];
                     round = conf['fin_nifty'].round_to;
                     spot = Math.round(spot/round) * round
@@ -3727,7 +3730,7 @@ client_api = function () {
                     round = conf['midcap_nifty'].round_to;
                     spot = Math.round(spot/round) * round
                     $(input).val("MIDCPNIFTY " + spot)
-                } else if(val == "se" || val == "sen" || val == "sens" || val == "sensex") {
+                } else if(val == "se" || val == "sx" || val == "sen" || val == "sens" || val == "sensex") {
                     spot = live_data[sensex_tk];
                     round = conf['sensex'].round_to;
                     spot = Math.round(spot/round) * round

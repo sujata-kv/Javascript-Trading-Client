@@ -143,19 +143,19 @@
             </div>
         </div>
 
-        <table class="table table-secondary table-condensed table-striped table-bordered watch-list">
+        <table class="table table-secondary table-condensed table-striped table-bordered watch-list" style="width:100%">
             <thead class="thead-light">
             <tr>
-                <th> <input type="checkbox" value="" onclick="client_api.util.select_all(this, '#watch_list_body .select_box')"> </th>
-                <th scope="col">Instrument</th>
-                <th scope="col">Token</th>
-                <th scope="col" title="Margin required per lot">Margin</th>
+                <th style="width:5%"> <input type="checkbox" value="" onclick="client_api.util.select_all(this, '#watch_list_body .select_box')"> </th>
+                <th scope="col" style="width:20%">Instrument</th>
+                <th scope="col" style="width:7%">Token</th>
+<!--                <th scope="col" title="Margin required per lot">Margin</th>-->
                 <th scope="col">LTP</th>
                 <th scope="col">Entry</th>
-                <th scope="col">Qty</th>
-                <th scope="col">Buy</th>
-                <th scope="col">Sell</th>
-                <th scope="col">Delete</th>
+                <th scope="col" style="width:10%">Qty</th>
+                <th scope="col" style="width:10%">Buy</th>
+                <th scope="col" style="width:10%">Sell</th>
+                <th scope="col" style="width:7%">Delete</th>
             </tr>
             </thead>
             <tbody id="watch_list_body">
@@ -493,6 +493,9 @@
         padding-bottom: 15px;
     }
 
+    .tiny{
+        font-size: 10px;
+    }
     div.gross-pnl {
         float: right;
         position: relative;
