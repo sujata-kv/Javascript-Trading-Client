@@ -3637,8 +3637,8 @@ client_api = function () {
             let ticker = broker.get_ticker(params);
             params.sym = params.sym.trim();
             let first_space = params.sym.indexOf(" ")
-            let instrument_index = params.sym.indexOf(" ", params.sym.indexOf(" ")+1)
-
+            // let instrument_index = params.sym.indexOf(" ", params.sym.indexOf(" ")+1)
+            var instrument_index = params.sym.lastIndexOf(' ', params.sym.lastIndexOf(' ')-1)
             $('#watch_list_body').append(`<tr class="${class_name}" exch="${params.exch}" token="${params.token}" instrument_token="${params.instrument_token}" tsym="${params.tsym}" lot_size="${params.lot_size}" dname="${params.sym}">
     
                 <td> <input type="checkbox" class="select_box" value="" onclick="client_api.util.uncheck(this)"> </td>
