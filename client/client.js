@@ -2065,12 +2065,13 @@ client_api = function () {
                         <td>${item.norentm === undefined? "": item.norentm}</td>
                         <td>${rej_reason}</td>
                         <td>${item.remarks === undefined? "" : item.remarks}</td>
-                        <td>${item.exch_tm === undefined? "": item.exch_tm}</td>
-                        <td>${item.exch}</td>
-                        <td>${prd}</td>
-                        <td>${ticker}</td>
-                        <td>${item.exchordid === undefined?"":item.exchordid}</td>
+                        
                 </tr>`);
+                /*<td>${item.exch_tm === undefined? "": item.exch_tm}</td>
+                    <td>${item.exch}</td>
+                    <td>${prd}</td>
+                    <td>${ticker}</td>
+                    <td>${item.exchordid === undefined?"":item.exchordid}</td>*/
         },
 
         know_bull_or_bear: function(order) {
