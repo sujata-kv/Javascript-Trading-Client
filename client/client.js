@@ -2077,18 +2077,21 @@ client_api = function () {
         know_bull_or_bear: function(order) {
             let trade_type = "bull"
             if(order.exch === "NFO" || order.exch === "BFO") {
-                if(order.dname != undefined && order.dname != '') {  //"dname":"BANKNIFTY MAR FUT", "NIFTY 23MAR23 16000 PE ", "NIFTY 23MAR23 16000 CE ",
-                    let dname = order.dname.trim()
-                    if (dname.includes("PE")) {
-                        if(order.trantype === "B") trade_type = "bear"
-                        else if(order.trantype === "S") trade_type = "bull"
-                    }
-                    else if (dname.includes("CE")) {
-                        if(order.trantype === "B") trade_type = "bull"
-                        else if(order.trantype === "S") trade_type = "bear"
-                    } else {
-                        if(order.trantype === "S") trade_type = "bear"
-                    }
+                let dname = '';
+                if(order.dname != undefined && order.dname != '')   //"dname":"BANKNIFTY MAR FUT", "NIFTY 23MAR23 16000 PE ", "NIFTY 23MAR23 16000 CE ",
+                    dname = order.dname.trim()
+                else if(order.exch === "BFO" && order.tsym !== undefined && order.tsym !== "")
+                    dname = order.tsym.trim()
+
+                if (dname.includes("PE")) {
+                    if(order.trantype === "B") trade_type = "bear"
+                    else if(order.trantype === "S") trade_type = "bull"
+                }
+                else if (dname.includes("CE")) {
+                    if(order.trantype === "B") trade_type = "bull"
+                    else if(order.trantype === "S") trade_type = "bear"
+                } else {
+                    if(order.trantype === "S") trade_type = "bear"
                 }
             } else if(order.exch === "NSE" || order.exch === "BSE") {
                 if (order.trantype === "S") {
