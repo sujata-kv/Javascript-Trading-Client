@@ -3174,6 +3174,8 @@ client_api = function () {
 
         get_order_chunks: function(order) {
             let max_qty;
+            let orders = []
+
             if(order.tsym.startsWith("NIFTY")) {
                 max_qty = conf.nifty.max_order_qty
             } else if(order.tsym.startsWith("BANKNIFTY")) {
@@ -3186,9 +3188,11 @@ client_api = function () {
                 max_qty = conf.sensex.max_order_qty
             } else if(order.tsym.startsWith("BANKEX")) {
                 max_qty = conf.bankex.max_order_qty
+            } else {
+                orders.push(order)
+                return orders;
             }
 
-            let orders = []
             let cnt = Math.floor(order.qty / max_qty)
             let rem = order.qty % max_qty
             if(cnt > 0) {
@@ -3745,6 +3749,7 @@ client_api = function () {
                     spot = Math.round(spot/round) * round
                     $(input).val("bankex " + spot)
                 }
+                $(input).attr('round', round)
             } else if(e.ctrlKey && e.key.toLowerCase() == "x") {  // Ctrl + x  clears input
                 $(input).val("")
             }  else if(e.ctrlKey && e.key.toLowerCase() == "a") {  // Ctrl + a  selects input
