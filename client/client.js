@@ -3850,7 +3850,7 @@ client_api = function () {
                         <td> <input type="checkbox" class="select_box" value="" onclick="client_api.util.uncheck(this)"> </td>
                         <td class="text dname">${dname}</td>
                         <td class="num">${urmtm}</td>
-                        <td class="num rpnl">${rpnl}</td>
+                        <td class="num rpnl">${rpnl}<br><span class='price_diff'>${(item.daysellavgprc-item.daybuyavgprc).toFixed(2)}</span></td>
                         <td class="buy_price">${item.daybuyavgprc}</td>
                         <td class="sell_price">${item.daysellavgprc}</td>
                         <td class="buy_qty">${item.daybuyqty}</td>
